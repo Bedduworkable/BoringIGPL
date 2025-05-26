@@ -17,6 +17,11 @@ const db = firebase.firestore();
 let currentUser = null;
 let allLeads = [];
 let allUsers = [];
+let selectedUserId = null;
+let currentView = 'users'; // 'users', 'user-leads', 'all-leads', 'edit-lead'
+let currentEditLeadId = null;
+let currentEditLead = null;
+let editRemarksList = [];
 
 // DOM Elements
 const loadingScreen = document.getElementById('loading-screen');
@@ -90,10 +95,24 @@ function setupEventListeners() {
     logoutBtn.addEventListener('click', handleLogout);
 
     // Search functionality
-    const leadsSearch = document.getElementById('leads-search');
-    if (leadsSearch) {
-        leadsSearch.addEventListener('input', function() {
-            filterTable('leads-table', this.value);
+    const userSearch = document.getElementById('user-search');
+    if (userSearch) {
+        userSearch.addEventListener('input', function() {
+            filterUserCards(this.value);
+        });
+    }
+
+    const userLeadsSearch = document.getElementById('user-leads-search');
+    if (userLeadsSearch) {
+        userLeadsSearch.addEventListener('input', function() {
+            filterTable('user-leads-table', this.value);
+        });
+    }
+
+    const allLeadsSearch = document.getElementById('all-leads-search');
+    if (allLeadsSearch) {
+        allLeadsSearch.addEventListener('input', function() {
+            filterTable('all-leads-table', this.value);
         });
     }
 
@@ -257,13 +276,13 @@ async function handleLogout() {
 function showLogin() {
     loginPage.style.display = 'flex';
     dashboardPage.style.display = 'none';
-    document.body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    document.body.style.background = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
 }
 
 function showDashboard() {
     loginPage.style.display = 'none';
     dashboardPage.style.display = 'flex';
-    document.body.style.background = '#f8f9fa';
+    document.body.style.background = '#f7f8fc';
 
     // Update user info
     const userNameEl = document.getElementById('user-name');
@@ -301,13 +320,10 @@ function showSection(sectionName) {
         // Load section-specific data
         switch (sectionName) {
             case 'leads':
-                loadLeads();
+                loadUsersList();
                 break;
             case 'users':
                 loadUsers();
-                break;
-            case 'analytics':
-                loadAnalytics();
                 break;
         }
     }
@@ -500,26 +516,192 @@ async function loadRecentActivity() {
     }
 }
 
-// Leads Management
-async function loadLeads() {
-    console.log('📋 Loading leads...');
+// Users List for Leads Management
+async function loadUsersList() {
+    console.log('👥 Loading users list...');
+    currentView = 'users';
 
-    const tableBody = document.querySelector('#leads-table tbody');
-    tableBody.innerHTML = '<tr><td colspan="7" class="loading-row">Loading leads...</td></tr>';
+    // Show user list view, hide others
+    document.getElementById('user-list-view').style.display = 'block';
+    document.getElementById('user-leads-view').style.display = 'none';
+    document.getElementById('all-leads-view').style.display = 'none';
+
+    const usersList = document.getElementById('users-list');
+    usersList.innerHTML = `
+        <div class="user-card">
+            <div class="user-header">
+                <div class="user-avatar">L</div>
+                <div class="user-details">
+                    <h4>Loading users...</h4>
+                    <p>Please wait</p>
+                </div>
+            </div>
+            <div class="user-stats">
+                <span>Total Leads: <span class="highlight">-</span></span>
+                <span>This Month: <span class="highlight">-</span></span>
+            </div>
+        </div>
+    `;
 
     try {
-        if (allLeads.length === 0) {
-            const leadsSnapshot = await db.collection('leads').get();
+        if (allUsers.length === 0 || allLeads.length === 0) {
+            // Load both users and leads
+            const [usersSnapshot, leadsSnapshot] = await Promise.all([
+                db.collection('users').get(),
+                db.collection('leads').get()
+            ]);
+
+            allUsers = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             allLeads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         }
 
-        if (allLeads.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="7" class="loading-row">No leads found</td></tr>';
+        // Filter out admin users, only show regular users
+        const regularUsers = allUsers.filter(user => user.role !== 'admin');
+
+        if (regularUsers.length === 0) {
+            usersList.innerHTML = `
+                <div class="user-card">
+                    <div class="user-header">
+                        <div class="user-avatar">!</div>
+                        <div class="user-details">
+                            <h4>No users found</h4>
+                            <p>No regular users in the system</p>
+                        </div>
+                    </div>
+                    <div class="user-stats">
+                        <span>Total Leads: <span class="highlight">0</span></span>
+                        <span>This Month: <span class="highlight">0</span></span>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        // Calculate leads stats for each user
+        const usersWithStats = regularUsers.map(user => {
+            const userLeads = allLeads.filter(lead =>
+                lead.assignedTo === user.id ||
+                lead.assignedTo === user.email ||
+                lead.createdBy === user.id ||
+                lead.createdBy === user.email
+            );
+
+            // Leads created this month
+            const thisMonth = new Date();
+            thisMonth.setDate(1);
+            thisMonth.setHours(0, 0, 0, 0);
+
+            const thisMonthLeads = userLeads.filter(lead => {
+                const createdAt = new Date(lead.createdAt || 0);
+                return createdAt >= thisMonth;
+            }).length;
+
+            return {
+                ...user,
+                totalLeads: userLeads.length,
+                thisMonthLeads: thisMonthLeads
+            };
+        });
+
+        // Sort by total leads (descending)
+        usersWithStats.sort((a, b) => b.totalLeads - a.totalLeads);
+
+        usersList.innerHTML = usersWithStats.map(user => {
+            const initials = (user.name || user.email || 'U').charAt(0).toUpperCase();
+
+            return `
+                <div class="user-card" onclick="selectUser('${user.id}')" data-user-id="${user.id}">
+                    <div class="user-header">
+                        <div class="user-avatar">${initials}</div>
+                        <div class="user-details">
+                            <h4>${user.name || 'Unnamed User'}</h4>
+                            <p>${user.email}</p>
+                        </div>
+                    </div>
+                    <div class="user-stats">
+                        <span>Total Leads: <span class="highlight">${user.totalLeads}</span></span>
+                        <span>This Month: <span class="highlight">${user.thisMonthLeads}</span></span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        console.log('✅ Users list loaded successfully');
+
+    } catch (error) {
+        console.error('❌ Error loading users list:', error);
+        usersList.innerHTML = `
+            <div class="user-card">
+                <div class="user-header">
+                    <div class="user-avatar">!</div>
+                    <div class="user-details">
+                        <h4>Error loading users</h4>
+                        <p>Please refresh to try again</p>
+                    </div>
+                </div>
+                <div class="user-stats">
+                    <span>Total Leads: <span class="highlight">-</span></span>
+                    <span>This Month: <span class="highlight">-</span></span>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Select User and Show Their Leads
+async function selectUser(userId) {
+    console.log('👤 Selecting user:', userId);
+    selectedUserId = userId;
+    currentView = 'user-leads';
+
+    // Find the user
+    const user = allUsers.find(u => u.id === userId);
+    if (!user) {
+        alert('User not found');
+        return;
+    }
+
+    // Update active user card
+    document.querySelectorAll('.user-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    document.querySelector(`[data-user-id="${userId}"]`).classList.add('active');
+
+    // Show user leads view
+    document.getElementById('user-list-view').style.display = 'none';
+    document.getElementById('user-leads-view').style.display = 'block';
+    document.getElementById('all-leads-view').style.display = 'none';
+
+    // Update header
+    document.getElementById('selected-user-name').textContent = `${user.name || 'Unnamed User'}'s Leads`;
+
+    // Load user's leads
+    await loadUserLeads(userId);
+}
+
+// Load Leads for Selected User
+async function loadUserLeads(userId) {
+    console.log('📋 Loading leads for user:', userId);
+
+    const tableBody = document.querySelector('#user-leads-table tbody');
+    tableBody.innerHTML = '<tr><td colspan="7" class="loading-row">Loading user leads...</td></tr>';
+
+    try {
+        // Filter leads for this user
+        const userLeads = allLeads.filter(lead =>
+            lead.assignedTo === userId ||
+            lead.assignedTo === allUsers.find(u => u.id === userId)?.email ||
+            lead.createdBy === userId ||
+            lead.createdBy === allUsers.find(u => u.id === userId)?.email
+        );
+
+        if (userLeads.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="7" class="loading-row">No leads found for this user</td></tr>';
             return;
         }
 
         // Sort by creation date (newest first)
-        const sortedLeads = allLeads.sort((a, b) => {
+        const sortedLeads = userLeads.sort((a, b) => {
             const dateA = new Date(a.createdAt || 0);
             const dateB = new Date(b.createdAt || 0);
             return dateB - dateA;
@@ -528,11 +710,7 @@ async function loadLeads() {
         tableBody.innerHTML = sortedLeads.map(lead => {
             const createdAt = new Date(lead.createdAt || 0);
             const formattedDate = formatDate(createdAt);
-
-            // Handle email field - it might not exist for all leads
             const email = lead.email || 'Not provided';
-
-            // Handle status field mapping
             const status = lead.status || 'newLead';
 
             return `
@@ -552,12 +730,102 @@ async function loadLeads() {
             `;
         }).join('');
 
-        console.log('✅ Leads loaded successfully');
+        console.log('✅ User leads loaded successfully');
 
     } catch (error) {
-        console.error('❌ Error loading leads:', error);
+        console.error('❌ Error loading user leads:', error);
         tableBody.innerHTML = '<tr><td colspan="7" class="loading-row">Error loading leads. Please refresh.</td></tr>';
     }
+}
+
+// Show All Leads
+async function showAllLeads() {
+    console.log('📋 Loading all leads...');
+    currentView = 'all-leads';
+
+    // Show all leads view
+    document.getElementById('user-list-view').style.display = 'none';
+    document.getElementById('user-leads-view').style.display = 'none';
+    document.getElementById('all-leads-view').style.display = 'block';
+
+    await loadAllLeads();
+}
+
+// Load All Leads
+async function loadAllLeads() {
+    const tableBody = document.querySelector('#all-leads-table tbody');
+    tableBody.innerHTML = '<tr><td colspan="8" class="loading-row">Loading all leads...</td></tr>';
+
+    try {
+        if (allLeads.length === 0) {
+            const leadsSnapshot = await db.collection('leads').get();
+            allLeads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+
+        if (allLeads.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="8" class="loading-row">No leads found</td></tr>';
+            return;
+        }
+
+        // Sort by creation date (newest first)
+        const sortedLeads = allLeads.sort((a, b) => {
+            const dateA = new Date(a.createdAt || 0);
+            const dateB = new Date(b.createdAt || 0);
+            return dateB - dateA;
+        });
+
+        tableBody.innerHTML = sortedLeads.map(lead => {
+            const createdAt = new Date(lead.createdAt || 0);
+            const formattedDate = formatDate(createdAt);
+            const email = lead.email || 'Not provided';
+            const status = lead.status || 'newLead';
+
+            // Find assigned user
+            const assignedUser = allUsers.find(u =>
+                u.id === lead.assignedTo || u.email === lead.assignedTo
+            );
+            const assignedTo = assignedUser ? assignedUser.name || assignedUser.email : (lead.assignedTo || 'Unassigned');
+
+            return `
+                <tr>
+                    <td><strong>${lead.name || 'Unnamed Lead'}</strong></td>
+                    <td>${lead.phone || 'No phone'}</td>
+                    <td>${email}</td>
+                    <td><span class="status-badge status-${status.toLowerCase()}">${getStatusText(status)}</span></td>
+                    <td>${lead.source || 'Not specified'}</td>
+                    <td>${assignedTo}</td>
+                    <td>${formattedDate}</td>
+                    <td>
+                        <button class="action-btn view" onclick="viewLead('${lead.id}')">View</button>
+                        <button class="action-btn edit" onclick="editLead('${lead.id}')">Edit</button>
+                        <button class="action-btn delete" onclick="deleteLead('${lead.id}')">Delete</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        console.log('✅ All leads loaded successfully');
+
+    } catch (error) {
+        console.error('❌ Error loading all leads:', error);
+        tableBody.innerHTML = '<tr><td colspan="8" class="loading-row">Error loading leads. Please refresh.</td></tr>';
+    }
+}
+
+// Back to Users List
+function backToUsersList() {
+    selectedUserId = null;
+    currentView = 'users';
+
+    // Show user list view
+    document.getElementById('user-list-view').style.display = 'block';
+    document.getElementById('user-leads-view').style.display = 'none';
+    document.getElementById('all-leads-view').style.display = 'none';
+
+    // Clear active user selection
+    document.querySelectorAll('.user-card').forEach(card => {
+        card.classList.remove('active');
+    });
 }
 
 // Users Management
@@ -604,79 +872,6 @@ async function loadUsers() {
     } catch (error) {
         console.error('❌ Error loading users:', error);
         tableBody.innerHTML = '<tr><td colspan="6" class="loading-row">Error loading users. Please refresh.</td></tr>';
-    }
-}
-
-// Analytics
-async function loadAnalytics() {
-    console.log('📊 Loading analytics...');
-
-    try {
-        // Lead sources analysis
-        const sourcesChart = document.getElementById('sources-chart');
-        const sources = {};
-
-        allLeads.forEach(lead => {
-            const source = lead.source || 'Unknown';
-            sources[source] = (sources[source] || 0) + 1;
-        });
-
-        // Create simple bar chart representation
-        const maxCount = Math.max(...Object.values(sources));
-        sourcesChart.innerHTML = Object.entries(sources).map(([source, count]) => {
-            const percentage = maxCount > 0 ? (count / maxCount) * 100 : 0;
-            return `
-                <div style="margin-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                        <span style="font-size: 14px; color: #666;">${source}</span>
-                        <span style="font-size: 14px; font-weight: 600; color: #333;">${count}</span>
-                    </div>
-                    <div style="width: 100%; height: 8px; background: #f1f3f4; border-radius: 4px;">
-                        <div style="width: ${percentage}%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 4px;"></div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        // Monthly trends
-        const trendsChart = document.getElementById('trends-chart');
-        const monthlyData = {};
-
-        allLeads.forEach(lead => {
-            const date = new Date(lead.createdAt || 0);
-            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
-        });
-
-        const sortedMonths = Object.keys(monthlyData).sort();
-        const maxMonthlyCount = Math.max(...Object.values(monthlyData));
-
-        trendsChart.innerHTML = sortedMonths.map(month => {
-            const count = monthlyData[month];
-            const percentage = maxMonthlyCount > 0 ? (count / maxMonthlyCount) * 100 : 0;
-            const [year, monthNum] = month.split('-');
-            const monthName = new Date(year, monthNum - 1).toLocaleDateString('en-US', { month: 'short' });
-
-            return `
-                <div style="margin-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                        <span style="font-size: 14px; color: #666;">${monthName} ${year}</span>
-                        <span style="font-size: 14px; font-weight: 600; color: #333;">${count}</span>
-                    </div>
-                    <div style="width: 100%; height: 8px; background: #f1f3f4; border-radius: 4px;">
-                        <div style="width: ${percentage}%; height: 100%; background: linear-gradient(135deg, #10b981 0%, #047857 100%); border-radius: 4px;"></div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        console.log('✅ Analytics loaded successfully');
-
-    } catch (error) {
-        console.error('❌ Error loading analytics:', error);
-
-        document.getElementById('sources-chart').innerHTML = '<p style="color: #999;">Error loading chart data</p>';
-        document.getElementById('trends-chart').innerHTML = '<p style="color: #999;">Error loading chart data</p>';
     }
 }
 
@@ -815,34 +1010,333 @@ document.addEventListener('keydown', function(e) {
 function editLead(leadId) {
     const lead = allLeads.find(l => l.id === leadId);
     if (!lead) {
-        alert('Lead not found');
+        showToast('Lead not found', 'error');
         return;
     }
 
-    const newName = prompt('Enter new name:', lead.name);
-    if (newName === null) return;
+    currentEditLeadId = leadId;
+    currentEditLead = lead;
+    currentView = 'edit-lead';
 
-    const newPhone = prompt('Enter new phone:', lead.phone);
-    if (newPhone === null) return;
-
-    const newStatus = prompt('Enter new status (newLead, followUp, visit, booked, dropped):', lead.status);
-    if (newStatus === null) return;
-
-    // Update in Firestore
-    db.collection('leads').doc(leadId).update({
-        name: newName.trim(),
-        phone: newPhone.trim(),
-        status: newStatus.trim()
-    }).then(() => {
-        alert('Lead updated successfully');
-        // Refresh the leads data
-        allLeads = [];
-        loadLeads();
-        loadOverviewStats();
-    }).catch(error => {
-        console.error('Error updating lead:', error);
-        alert('Error updating lead: ' + error.message);
+    // Hide all other sections
+    document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.remove('active');
     });
+
+    // Show edit section
+    document.getElementById('edit-lead-section').classList.add('active');
+
+    // Update navigation
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Populate the edit form
+    populateEditForm(lead);
+    populateEditUserDropdown();
+    loadEditRemarks();
+}
+
+function populateEditForm(lead) {
+    // Update page title
+    document.getElementById('edit-title').textContent = `Edit Lead: ${lead.name || 'Unnamed Lead'}`;
+    document.getElementById('edit-subtitle').textContent = `Update information for ${lead.name || 'this lead'}`;
+
+    // Personal Information
+    setEditValue('edit-lead-name', lead.name);
+    setEditValue('edit-lead-phone', lead.phone);
+    setEditValue('edit-lead-email', lead.email);
+    setEditValue('edit-lead-alt-phone', lead.altPhone);
+
+    // Lead Information
+    setEditValue('edit-lead-status', lead.status);
+    setEditValue('edit-lead-source', lead.source);
+    setEditValue('edit-lead-property-type', lead.propertyType);
+    setEditValue('edit-lead-budget', lead.budget);
+    setEditValue('edit-lead-location', lead.location);
+    setEditValue('edit-lead-requirements', lead.requirements);
+
+    // Assignment & Tracking
+    setEditValue('edit-lead-assigned-to', lead.assignedTo);
+    setEditValue('edit-lead-priority', lead.priority);
+
+    // Convert timestamps to local datetime format
+    if (lead.nextFollowup) {
+        const followupDate = new Date(lead.nextFollowup);
+        setEditValue('edit-lead-next-followup', formatDateTimeLocal(followupDate));
+    }
+
+    if (lead.expectedClosure) {
+        const closureDate = new Date(lead.expectedClosure);
+        setEditValue('edit-lead-expected-closure', formatDateLocal(closureDate));
+    }
+}
+
+function populateEditUserDropdown() {
+    const select = document.getElementById('edit-lead-assigned-to');
+
+    // Clear existing options except the first one
+    while (select.children.length > 1) {
+        select.removeChild(select.lastChild);
+    }
+
+    // Add user options (exclude admin users)
+    const regularUsers = allUsers.filter(user => user.role !== 'admin');
+
+    regularUsers.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user.id;
+        option.textContent = user.name || user.email;
+        select.appendChild(option);
+    });
+}
+
+function loadEditRemarks() {
+    editRemarksList = currentEditLead.remarks || [];
+    renderEditRemarks();
+}
+
+function renderEditRemarks() {
+    const container = document.getElementById('edit-remarks-list');
+
+    if (editRemarksList.length === 0) {
+        container.innerHTML = `
+            <div class="no-remarks">
+                <p>No remarks added yet</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = editRemarksList.map((remark, index) => {
+        const date = new Date(remark.timestamp || Date.now());
+        return `
+            <div class="remark-item">
+                <div class="remark-header">
+                    <span class="remark-author">${remark.by || 'Unknown User'}</span>
+                    <span class="remark-date">${formatDetailDate(date)}</span>
+                </div>
+                <div class="remark-text">${remark.text || ''}</div>
+                <div class="remark-actions">
+                    <button class="remark-btn delete" onclick="removeEditRemark(${index})" title="Delete remark">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3,6 5,6 21,6"/>
+                            <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function addEditRemark() {
+    const remarkText = document.getElementById('new-remark').value.trim();
+
+    if (!remarkText) {
+        showToast('Please enter a remark before adding.', 'error');
+        return;
+    }
+
+    const newRemark = {
+        text: remarkText,
+        by: currentUser?.email || 'Unknown',
+        timestamp: Date.now()
+    };
+
+    editRemarksList.push(newRemark);
+    renderEditRemarks();
+
+    // Clear the input
+    document.getElementById('new-remark').value = '';
+
+    showToast('Remark added successfully!');
+}
+
+function removeEditRemark(index) {
+    if (confirm('Are you sure you want to delete this remark?')) {
+        editRemarksList.splice(index, 1);
+        renderEditRemarks();
+        showToast('Remark deleted successfully!');
+    }
+}
+
+async function saveEditedLead() {
+    if (!validateEditForm()) {
+        showToast('Please fill in all required fields.', 'error');
+        return;
+    }
+
+    try {
+        const saveBtn = document.querySelector('#edit-lead-section .btn-primary');
+        saveBtn.classList.add('btn-loading');
+        saveBtn.disabled = true;
+
+        const formData = collectEditFormData();
+
+        // Update lead in Firestore
+        await db.collection('leads').doc(currentEditLeadId).update({
+            ...formData,
+            updatedAt: Date.now(),
+            updatedBy: currentUser?.email || 'Unknown'
+        });
+
+        showToast('Lead updated successfully!');
+
+        // Refresh data and go back
+        allLeads = [];
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Brief delay for user feedback
+
+        cancelEditLead();
+        refreshCurrentView();
+
+    } catch (error) {
+        console.error('❌ Error saving lead:', error);
+        showToast('Error saving lead. Please try again.', 'error');
+    } finally {
+        const saveBtn = document.querySelector('#edit-lead-section .btn-primary');
+        saveBtn.classList.remove('btn-loading');
+        saveBtn.disabled = false;
+    }
+}
+
+function collectEditFormData() {
+    return {
+        // Personal Information
+        name: getEditValue('edit-lead-name'),
+        phone: getEditValue('edit-lead-phone'),
+        email: getEditValue('edit-lead-email'),
+        altPhone: getEditValue('edit-lead-alt-phone'),
+
+        // Lead Information
+        status: getEditValue('edit-lead-status'),
+        source: getEditValue('edit-lead-source'),
+        propertyType: getEditValue('edit-lead-property-type'),
+        budget: getEditValue('edit-lead-budget'),
+        location: getEditValue('edit-lead-location'),
+        requirements: getEditValue('edit-lead-requirements'),
+
+        // Assignment & Tracking
+        assignedTo: getEditValue('edit-lead-assigned-to'),
+        priority: getEditValue('edit-lead-priority'),
+        nextFollowup: getEditValue('edit-lead-next-followup') ? new Date(getEditValue('edit-lead-next-followup')).getTime() : null,
+        expectedClosure: getEditValue('edit-lead-expected-closure') ? new Date(getEditValue('edit-lead-expected-closure')).getTime() : null,
+
+        // Remarks
+        remarks: editRemarksList
+    };
+}
+
+function validateEditForm() {
+    const requiredFields = ['edit-lead-name', 'edit-lead-phone', 'edit-lead-status'];
+    let isValid = true;
+
+    requiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        const value = field.value.trim();
+
+        if (!value) {
+            field.classList.add('error');
+            isValid = false;
+        } else {
+            field.classList.remove('error');
+            field.classList.add('success');
+        }
+    });
+
+    return isValid;
+}
+
+function cancelEditLead() {
+    currentEditLeadId = null;
+    currentEditLead = null;
+    editRemarksList = [];
+
+    // Hide edit section
+    document.getElementById('edit-lead-section').classList.remove('active');
+
+    // Show the appropriate previous section
+    switch (currentView) {
+        case 'user-leads':
+            document.getElementById('user-leads-view').style.display = 'block';
+            document.getElementById('leads-section').classList.add('active');
+            document.querySelector('[data-section="leads"]').classList.add('active');
+            break;
+        case 'all-leads':
+            document.getElementById('all-leads-view').style.display = 'block';
+            document.getElementById('leads-section').classList.add('active');
+            document.querySelector('[data-section="leads"]').classList.add('active');
+            break;
+        default:
+            // Go back to users list
+            currentView = 'users';
+            backToUsersList();
+            document.querySelector('[data-section="leads"]').classList.add('active');
+    }
+}
+
+// Utility functions for edit form
+function setEditValue(id, value) {
+    const element = document.getElementById(id);
+    if (element && value !== undefined && value !== null) {
+        element.value = value;
+    }
+}
+
+function getEditValue(id) {
+    const element = document.getElementById(id);
+    return element ? element.value.trim() : '';
+}
+
+function formatDateTimeLocal(date) {
+    if (!date) return '';
+
+    const d = new Date(date);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+}
+
+function formatDateLocal(date) {
+    if (!date) return '';
+
+    const d = new Date(date);
+    return d.toISOString().slice(0, 10);
+}
+
+// Toast notification function
+function showToast(message, type = 'success') {
+    // Remove existing toasts
+    const existingToast = document.querySelector('.toast-notification');
+    if (existingToast) {
+        existingToast.remove();
+    }
+
+    // Create new toast
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+
+    const iconSvg = type === 'success'
+        ? '<polyline points="20,6 9,17 4,12"/>'
+        : '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>';
+
+    toast.innerHTML = `
+        <div class="toast-content">
+            <div class="toast-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    ${iconSvg}
+                </svg>
+            </div>
+            <div class="toast-message">${message}</div>
+        </div>
+    `;
+
+    document.body.appendChild(toast);
+    toast.style.display = 'block';
+
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
 }
 
 function deleteLead(leadId) {
@@ -859,10 +1353,8 @@ function deleteLead(leadId) {
     // Delete from Firestore
     db.collection('leads').doc(leadId).delete().then(() => {
         alert('Lead deleted successfully');
-        // Refresh the leads data
-        allLeads = [];
-        loadLeads();
-        loadOverviewStats();
+        // Refresh the current view
+        refreshCurrentView();
     }).catch(error => {
         console.error('Error deleting lead:', error);
         alert('Error deleting lead: ' + error.message);
@@ -902,7 +1394,7 @@ function editUser(userId) {
         status: newStatus.trim()
     }).then(() => {
         alert('User updated successfully');
-        // Refresh the users data
+        // Refresh data
         allUsers = [];
         loadUsers();
         loadOverviewStats();
@@ -931,7 +1423,7 @@ function deleteUser(userId) {
     // Delete from Firestore
     db.collection('users').doc(userId).delete().then(() => {
         alert('User deleted successfully');
-        // Refresh the users data
+        // Refresh data
         allUsers = [];
         loadUsers();
         loadOverviewStats();
@@ -942,6 +1434,44 @@ function deleteUser(userId) {
 }
 
 // Utility Functions
+function refreshCurrentView() {
+    // Clear cached data
+    allLeads = [];
+
+    switch (currentView) {
+        case 'users':
+            loadUsersList();
+            break;
+        case 'user-leads':
+            if (selectedUserId) {
+                loadUserLeads(selectedUserId);
+            }
+            break;
+        case 'all-leads':
+            loadAllLeads();
+            break;
+    }
+
+    // Also refresh overview stats
+    loadOverviewStats();
+}
+
+function filterUserCards(searchTerm) {
+    const userCards = document.querySelectorAll('.user-card');
+    searchTerm = searchTerm.toLowerCase();
+
+    userCards.forEach(card => {
+        const name = card.querySelector('h4').textContent.toLowerCase();
+        const email = card.querySelector('p').textContent.toLowerCase();
+
+        if (name.includes(searchTerm) || email.includes(searchTerm)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
 function filterTable(tableId, searchTerm) {
     const table = document.getElementById(tableId);
     const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
@@ -1060,9 +1590,9 @@ console.log(`
 🔧 Environment: ${window.location.hostname === 'localhost' ? 'Development' : 'Production'}
 
 📖 Available Commands:
-- loadLeads() - Refresh leads data
+- loadUsersList() - Refresh users list
 - loadUsers() - Refresh users data
-- loadAnalytics() - Refresh analytics
+- loadDashboardData() - Refresh dashboard
 - auth.currentUser - Get current user info
 - db - Access Firestore database
 
@@ -1071,11 +1601,13 @@ console.log(`
 
 // Export functions for global access (for debugging)
 window.adminPanel = {
-    loadLeads,
+    loadUsersList,
     loadUsers,
-    loadAnalytics,
     loadDashboardData,
     currentUser: () => currentUser,
     allLeads: () => allLeads,
-    allUsers: () => allUsers
+    allUsers: () => allUsers,
+    showAllLeads,
+    selectUser,
+    backToUsersList
 };
