@@ -120,7 +120,7 @@
             </button>
 
             <!-- Users menu - only for admin and master -->
-            <button class="nav-item admin-only master-only" data-section="users">
+            <button class="nav-item admin-only master-only" data-section="users" style="display: none;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
@@ -175,9 +175,9 @@
             <div class="section-header">
                 <h2>Dashboard Overview</h2>
                 <p class="role-specific-text">
-                    <span class="admin-only">Welcome to your Real Estate CRM Admin Panel - Full System Access</span>
-                    <span class="master-only">Welcome to your Real Estate CRM - Master Dashboard with Team Management</span>
-                    <span class="user-only">Welcome to your Real Estate CRM - User Dashboard</span>
+                    <span class="admin-only" style="display: none;">Welcome to your Real Estate CRM Admin Panel - Full System Access</span>
+                    <span class="master-only" style="display: none;">Welcome to your Real Estate CRM - Master Dashboard with Team Management</span>
+                    <span class="user-only" style="display: none;">Welcome to your Real Estate CRM - User Dashboard</span>
                 </p>
             </div>
 
@@ -194,9 +194,9 @@
                     <div class="stat-content">
                         <h3 id="total-leads">0</h3>
                         <p>
-                            <span class="admin-only">Total Leads</span>
-                            <span class="master-only">Team Leads</span>
-                            <span class="user-only">My Leads</span>
+                            <span class="admin-only" style="display: none;">Total Leads</span>
+                            <span class="master-only" style="display: none;">Team Leads</span>
+                            <span class="user-only" style="display: none;">My Leads</span>
                         </p>
                     </div>
                 </div>
@@ -212,8 +212,8 @@
                     <div class="stat-content">
                         <h3 id="total-users">0</h3>
                         <p>
-                            <span class="admin-only">Total Users</span>
-                            <span class="master-only">Team Members</span>
+                            <span class="admin-only" style="display: none;">Total Users</span>
+                            <span class="master-only" style="display: none;">Team Members</span>
                         </p>
                     </div>
                 </div>
@@ -302,8 +302,8 @@
             <div class="section-header">
                 <h2>Reports & Analytics</h2>
                 <p>
-                    <span class="admin-only">System-wide reports and analytics</span>
-                    <span class="master-only">Team performance reports and analytics</span>
+                    <span class="admin-only" style="display: none;">System-wide reports and analytics</span>
+                    <span class="master-only" style="display: none;">Team performance reports and analytics</span>
                 </p>
             </div>
 
@@ -324,205 +324,10 @@
     </main>
 </div>
 
-<!-- Add the complete script -->
-<script src="script.js" type="module"></script>
-
-<!-- Add these styles for table components -->
-<style>
-    .data-table-container {
-        background: white;
-        border-radius: 16px;
-        border: 1px solid #e5e7eb;
-        overflow: hidden;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-
-    .table-header {
-        padding: 20px;
-        border-bottom: 1px solid #e5e7eb;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: #f9fafb;
-    }
-
-    .search-box {
-        position: relative;
-        width: 280px;
-    }
-
-    .search-box input {
-        width: 100%;
-        padding: 10px 16px 10px 40px;
-        border: 1px solid #d1d5db;
-        border-radius: 8px;
-        font-size: 14px;
-        background: white;
-        transition: all 0.2s ease;
-    }
-
-    .search-box input:focus {
-        outline: none;
-        border-color: #6366f1;
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-    }
-
-    .search-box svg {
-        position: absolute;
-        left: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #9ca3af;
-    }
-
-    .refresh-btn {
-        background: #6366f1;
-        color: white;
-        border: none;
-        padding: 10px 16px;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 14px;
-        font-weight: 500;
-    }
-
-    .refresh-btn:hover {
-        background: #4f46e5;
-        transform: translateY(-1px);
-    }
-
-    .table-wrapper {
-        overflow-x: auto;
-    }
-
-    .data-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .data-table th {
-        background: #f9fafb;
-        padding: 16px;
-        text-align: left;
-        font-weight: 600;
-        color: #374151;
-        border-bottom: 2px solid #e5e7eb;
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        white-space: nowrap;
-    }
-
-    .data-table td {
-        padding: 16px;
-        border-bottom: 1px solid #f3f4f6;
-        color: #6b7280;
-        font-size: 14px;
-        vertical-align: middle;
-    }
-
-    .data-table tr:hover {
-        background: #f9fafb;
-    }
-
-    .loading-row {
-        text-align: center;
-        color: #9ca3af;
-        font-style: italic;
-        padding: 32px;
-    }
-
-    .status-badge {
-        padding: 4px 10px;
-        border-radius: 16px;
-        font-size: 12px;
-        font-weight: 500;
-        text-transform: capitalize;
-    }
-
-    .status-newlead,
-    .status-new { background: #dbeafe; color: #1d4ed8; }
-    .status-contacted { background: #e0e7ff; color: #3730a3; }
-    .status-interested { background: #dcfce7; color: #166534; }
-    .status-followup { background: #fef3c7; color: #92400e; }
-    .status-visit { background: #e0e7ff; color: #3730a3; }
-    .status-booked { background: #d1fae5; color: #065f46; }
-    .status-closed { background: #d1fae5; color: #065f46; }
-    .status-dropped { background: #fee2e2; color: #991b1b; }
-    .status-notinterested { background: #fee2e2; color: #991b1b; }
-    .status-active { background: #d1fae5; color: #065f46; }
-    .status-inactive { background: #fee2e2; color: #991b1b; }
-    .status-admin { background: #fee2e2; color: #991b1b; }
-    .status-master { background: #dbeafe; color: #1d4ed8; }
-    .status-user { background: #d1fae5; color: #065f46; }
-
-    .action-btn {
-        background: none;
-        border: 1px solid #d1d5db;
-        padding: 6px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-size: 12px;
-        font-weight: 500;
-        margin-right: 6px;
-    }
-
-    .action-btn:hover {
-        background: #f3f4f6;
-        transform: translateY(-1px);
-    }
-
-    .action-btn.view {
-        border-color: #3b82f6;
-        color: #3b82f6;
-    }
-    .action-btn.view:hover {
-        background: #eff6ff;
-    }
-
-    .coming-soon {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 80px 20px;
-        text-align: center;
-        background: white;
-        border-radius: 16px;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-
-    .coming-soon-icon {
-        width: 80px;
-        height: 80px;
-        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        margin-bottom: 24px;
-    }
-
-    .coming-soon h3 {
-        font-size: 20px;
-        font-weight: 700;
-        color: #111827;
-        margin-bottom: 8px;
-    }
-
-    .coming-soon p {
-        color: #6b7280;
-        font-size: 14px;
-        max-width: 400px;
-    }
-</style>
+<!-- Load Scripts -->
+<script src="sanitizer.js"></script>
+<script src="auth-guard.js"></script>
+<script src="script.js"></script>
 
 </body>
 </html>

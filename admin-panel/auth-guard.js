@@ -1,380 +1,51 @@
-// Authentication and Authorization Guard System
-class AuthGuard {
-    constructor() {
-        this.currentUser = null;
-        this.userRole = null;
-        this.permissions = {
-            admin: ['all'],
-            master: ['leads:own', 'leads:team', 'users:team', 'reports:read', 'team:manage'],
-            user: ['leads:assigned', 'leads:created', 'profile:edit']
-        };
-    }
+// Simplified Authentication and Authorization Guard System
+// This file provides additional utilities but main auth logic is in script.js
 
-    // Initialize auth guard
-    async init() {
-        return new Promise((resolve) => {
-            auth.onAuthStateChanged(async (user) => {
-                if (user) {
-                    try {
-                        await this.loadUserData(user);
-                        resolve(true);
-                    } catch (error) {
-                        console.error('❌ Error loading user data:', error);
-                        await this.signOut();
-                        resolve(false);
-                    }
-                } else {
-                    this.currentUser = null;
-                    this.userRole = null;
-                    resolve(false);
-                }
+// Security utilities
+const SecurityUtils = {
+    // Log security incidents
+    logSecurityIncident(type, details) {
+        console.warn(`🚨 Security Incident: ${type}`, details);
+
+        // Send to analytics/logging service if available
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'security_incident', {
+                'event_category': 'security',
+                'event_label': type,
+                'value': 1
             });
+        }
+    },
+
+    // Rate limiting for sensitive operations
+    rateLimitStorage: {},
+
+    checkRateLimit(operation, maxAttempts = 5, windowMs = 60000) {
+        const key = `${operation}_${Date.now()}`;
+        const now = Date.now();
+
+        // Clean old attempts
+        Object.keys(this.rateLimitStorage).forEach(k => {
+            if (now - parseInt(k.split('_')[1]) > windowMs) {
+                delete this.rateLimitStorage[k];
+            }
         });
-    }
 
-    // Load user data from Firestore
-    async loadUserData(user) {
-        try {
-            const userDoc = await db.collection('users').doc(user.uid).get();
+        // Count recent attempts
+        const recentAttempts = Object.keys(this.rateLimitStorage)
+            .filter(k => k.startsWith(operation) && now - parseInt(k.split('_')[1]) < windowMs)
+            .length;
 
-            if (!userDoc.exists) {
-                throw new Error('User profile not found');
-            }
-
-            const userData = userDoc.data();
-
-            // Validate user has valid role - updated to include master instead of cp
-            if (!userData.role || !['admin', 'master', 'user'].includes(userData.role)) {
-                throw new Error('Invalid user role');
-            }
-
-            // Check if user is active
-            if (userData.status === 'inactive') {
-                throw new Error('Account has been deactivated');
-            }
-
-            this.currentUser = {
-                uid: user.uid,
-                email: user.email,
-                ...userData
-            };
-            this.userRole = userData.role;
-
-            console.log('✅ User loaded:', this.currentUser.name || this.currentUser.email, `(${this.userRole})`);
-
-            // Update last login
-            await this.updateLastLogin();
-
-        } catch (error) {
-            console.error('❌ Failed to load user data:', error);
-            throw error;
-        }
-    }
-
-    // Update last login timestamp
-    async updateLastLogin() {
-        try {
-            await db.collection('users').doc(this.currentUser.uid).update({
-                lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-            });
-        } catch (error) {
-            console.warn('Could not update last login:', error);
-        }
-    }
-
-    // Check if user is authenticated
-    isAuthenticated() {
-        return this.currentUser !== null;
-    }
-
-    // Check if user has specific role
-    hasRole(role) {
-        return this.userRole === role;
-    }
-
-    // Check if user has any of the specified roles
-    hasAnyRole(roles) {
-        return roles.includes(this.userRole);
-    }
-
-    // Check specific permissions
-    hasPermission(permission) {
-        if (!this.isAuthenticated()) return false;
-
-        // Admin has all permissions
-        if (this.userRole === 'admin') return true;
-
-        // Check role-specific permissions
-        const rolePermissions = this.permissions[this.userRole] || [];
-        return rolePermissions.includes(permission) || rolePermissions.includes('all');
-    }
-
-    // Check if user can access specific lead
-    canAccessLead(lead) {
-        if (!this.isAuthenticated()) return false;
-
-        // Admin can access all leads
-        if (this.userRole === 'admin') return true;
-
-        // User can access leads they created or are assigned to
-        if (lead.createdBy === this.currentUser.uid ||
-            lead.assignedTo === this.currentUser.uid) {
-            return true;
-        }
-
-        // Master can access leads from their linked users
-        if (this.userRole === 'master') {
-            return this.isTeamLead(lead);
-        }
-
-        return false;
-    }
-
-    // Check if lead belongs to Master's team
-    isTeamLead(lead) {
-        // Check if the lead is assigned to someone in this master's team
-        // This would need to check the linkedMaster field in user documents
-        return this.isTeamMemberByUserId(lead.assignedTo) || this.isTeamMemberByUserId(lead.createdBy);
-    }
-
-    // Check if user can access specific user data
-    canAccessUser(userId) {
-        if (!this.isAuthenticated()) return false;
-
-        // Admin can access all users
-        if (this.userRole === 'admin') return true;
-
-        // Users can access their own data
-        if (userId === this.currentUser.uid) return true;
-
-        // Master can access their team members
-        if (this.userRole === 'master') {
-            return this.isTeamMember(userId);
-        }
-
-        return false;
-    }
-
-    // Check if user is team member
-    isTeamMember(userId) {
-        // This would need to check if the user has linkedMaster pointing to current master
-        // For now, we'll implement a placeholder that can be enhanced
-        return false; // Implement based on your team structure
-    }
-
-    // Check if user is team member by user ID
-    isTeamMemberByUserId(userId) {
-        // Similar to isTeamMember but for checking leads
-        return false; // Implement based on your team structure
-    }
-
-    // Require authentication - redirect to login if not authenticated
-    requireAuth() {
-        if (!this.isAuthenticated()) {
-            this.redirectToLogin();
+        if (recentAttempts >= maxAttempts) {
+            this.logSecurityIncident('rate_limit_exceeded', { operation, attempts: recentAttempts });
             return false;
         }
+
+        this.rateLimitStorage[key] = true;
         return true;
-    }
+    },
 
-    // Require specific role
-    requireRole(role) {
-        if (!this.requireAuth()) return false;
-
-        if (!this.hasRole(role)) {
-            this.showAccessDenied(`This feature requires ${role} role`);
-            return false;
-        }
-        return true;
-    }
-
-    // Require any of the specified roles
-    requireAnyRole(roles) {
-        if (!this.requireAuth()) return false;
-
-        if (!this.hasAnyRole(roles)) {
-            this.showAccessDenied(`This feature requires one of: ${roles.join(', ')}`);
-            return false;
-        }
-        return true;
-    }
-
-    // Show/hide UI elements based on role
-    applyRoleBasedUI() {
-        if (!this.isAuthenticated()) return;
-
-        console.log('🎨 Applying role-based UI for role:', this.userRole);
-
-        // Hide elements based on role - updated to use master instead of cp
-        const elementsToHide = {
-            user: [
-                '.admin-only',
-                '.master-only',
-                '[data-role="admin"]',
-                '[data-role="master"]'
-            ],
-            master: [
-                '.admin-only',
-                '[data-role="admin"]'
-            ],
-            admin: [] // Admin sees everything
-        };
-
-        const hideSelectors = elementsToHide[this.userRole] || [];
-        console.log('🙈 Hiding elements:', hideSelectors);
-
-        hideSelectors.forEach(selector => {
-            const elements = document.querySelectorAll(selector);
-            console.log(`Found ${elements.length} elements for selector: ${selector}`);
-            elements.forEach(el => {
-                el.style.display = 'none';
-            });
-        });
-
-        // Show role-specific elements
-        const showSelectors = [
-            `.${this.userRole}-only`,
-            '.authenticated-only'
-        ];
-
-        console.log('👁️ Showing elements:', showSelectors);
-
-        showSelectors.forEach(selector => {
-            const elements = document.querySelectorAll(selector);
-            console.log(`Found ${elements.length} elements for selector: ${selector}`);
-            elements.forEach(el => {
-                el.style.display = el.dataset.originalDisplay || 'block';
-            });
-        });
-
-        // Handle data-role attributes
-        const roleElements = document.querySelectorAll('[data-role]');
-        roleElements.forEach(el => {
-            const allowedRoles = el.dataset.role.split(',');
-            if (allowedRoles.includes(this.userRole)) {
-                el.style.display = el.tagName.toLowerCase() === 'button' ? 'flex' : 'block';
-            } else {
-                el.style.display = 'none';
-            }
-        });
-
-        // Update user info in UI
-        this.updateUserInfoUI();
-    }
-
-    // Update user info display
-    updateUserInfoUI() {
-        const userNameEl = document.getElementById('user-name');
-        const userEmailEl = document.getElementById('user-email');
-        const userRoleEl = document.getElementById('user-role');
-
-        if (userNameEl) userNameEl.textContent = this.currentUser.name || 'User';
-        if (userEmailEl) userEmailEl.textContent = this.currentUser.email;
-        if (userRoleEl) userRoleEl.textContent = this.userRole.toUpperCase();
-    }
-
-    // Sign out user
-    async signOut() {
-        try {
-            await auth.signOut();
-            this.currentUser = null;
-            this.userRole = null;
-            this.redirectToLogin();
-        } catch (error) {
-            console.error('❌ Sign out error:', error);
-        }
-    }
-
-    // Redirect to login page
-    redirectToLogin() {
-        // Hide dashboard, show login
-        const loginPage = document.getElementById('login-page');
-        const dashboardPage = document.getElementById('dashboard-page');
-
-        if (loginPage) loginPage.style.display = 'flex';
-        if (dashboardPage) dashboardPage.style.display = 'none';
-
-        document.body.style.background = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
-    }
-
-    // Show dashboard page
-    showDashboard() {
-        const loginPage = document.getElementById('login-page');
-        const dashboardPage = document.getElementById('dashboard-page');
-
-        if (loginPage) loginPage.style.display = 'none';
-        if (dashboardPage) dashboardPage.style.display = 'flex';
-
-        document.body.style.background = '#f7f8fc';
-
-        // Apply role-based UI
-        this.applyRoleBasedUI();
-    }
-
-    // Show access denied message
-    showAccessDenied(message = 'Access denied') {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'access-denied-message';
-        errorDiv.innerHTML = `
-            <div style="
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: #fef2f2;
-                border: 1px solid #fecaca;
-                color: #dc2626;
-                padding: 16px 20px;
-                border-radius: 8px;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                z-index: 10000;
-                max-width: 300px;
-            ">
-                <strong>🚫 Access Denied</strong><br>
-                ${message}
-            </div>
-        `;
-
-        document.body.appendChild(errorDiv);
-
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            if (errorDiv.parentNode) {
-                errorDiv.parentNode.removeChild(errorDiv);
-            }
-        }, 5000);
-    }
-
-    // Log activity for audit trail
-    async logActivity(action, details = {}) {
-        if (!this.isAuthenticated()) return;
-
-        try {
-            await db.collection('activity_logs').add({
-                userId: this.currentUser.uid,
-                userEmail: this.currentUser.email,
-                action: action,
-                details: details,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                ip: await this.getClientIP(),
-                userAgent: navigator.userAgent
-            });
-        } catch (error) {
-            console.warn('Could not log activity:', error);
-        }
-    }
-
-    // Get client IP (basic implementation)
-    async getClientIP() {
-        try {
-            const response = await fetch('https://api.ipify.org?format=json');
-            const data = await response.json();
-            return data.ip;
-        } catch (error) {
-            return 'unknown';
-        }
-    }
-
-    // Sanitize input to prevent XSS
+    // Enhanced input sanitization
     sanitizeInput(input) {
         if (typeof input !== 'string') return input;
 
@@ -385,52 +56,522 @@ class AuthGuard {
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#x27;')
             .replace(/\//g, '&#x2F;');
+    },
+
+    // Check for dangerous content patterns
+    containsDangerousContent(str) {
+        const dangerousPatterns = [
+            /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+            /javascript:/gi,
+            /on\w+\s*=/gi,
+            /<iframe/gi,
+            /<object/gi,
+            /<embed/gi,
+            /eval\s*\(/gi,
+            /expression\s*\(/gi
+        ];
+
+        return dangerousPatterns.some(pattern => pattern.test(str));
+    },
+
+    // Generate secure session tokens
+    generateSecureToken(length = 32) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < length; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
     }
+};
 
-    // Sanitize HTML content
-    sanitizeHTML(html) {
-        const div = document.createElement('div');
-        div.textContent = html;
-        return div.innerHTML;
-    }
+// Permission system
+const PermissionSystem = {
+    permissions: {
+        admin: [
+            'all', 'users:create', 'users:edit', 'users:delete', 'users:view',
+            'leads:create', 'leads:edit', 'leads:delete', 'leads:view',
+            'reports:view', 'settings:edit', 'system:admin'
+        ],
+        master: [
+            'leads:own', 'leads:team', 'users:team', 'reports:read',
+            'team:manage', 'leads:create', 'leads:edit', 'leads:view'
+        ],
+        user: [
+            'leads:assigned', 'leads:created', 'profile:edit',
+            'leads:view', 'leads:edit'
+        ]
+    },
 
-    // Rate limiting for sensitive operations
-    async checkRateLimit(operation, maxAttempts = 5, windowMs = 60000) {
-        const key = this.currentUser ? `${this.currentUser.uid}_${operation}` : `anonymous_${operation}`;
-        const now = Date.now();
+    hasPermission(userRole, permission) {
+        if (!userRole || !this.permissions[userRole]) return false;
 
-        // Get stored attempts from localStorage
-        const stored = localStorage.getItem(key);
-        let attempts = stored ? JSON.parse(stored) : [];
+        const rolePermissions = this.permissions[userRole];
+        return rolePermissions.includes('all') || rolePermissions.includes(permission);
+    },
 
-        // Remove old attempts outside the window
-        attempts = attempts.filter(time => now - time < windowMs);
+    canAccessLead(userRole, userId, lead) {
+        if (!lead || !userId) return false;
 
-        if (attempts.length >= maxAttempts) {
-            this.showAccessDenied(`Too many ${operation} attempts. Please wait a minute.`);
-            return false;
+        // Admin can access all leads
+        if (userRole === 'admin') return true;
+
+        // User can access leads they created or are assigned to
+        if (lead.createdBy === userId || lead.assignedTo === userId) {
+            return true;
         }
 
-        // Add current attempt
-        attempts.push(now);
-        localStorage.setItem(key, JSON.stringify(attempts));
+        // Master can access leads from their team (would need to check linkedMaster)
+        if (userRole === 'master') {
+            // This would require checking if the lead's assignedTo user has linkedMaster === userId
+            return false; // Placeholder - implement based on your team structure
+        }
 
-        return true;
+        return false;
     }
+};
 
-    // Get current user data
-    getCurrentUser() {
-        return this.currentUser;
+// UI Helper functions
+const UIHelpers = {
+    showToast(message, type = 'info', duration = 3000) {
+        // Remove existing toasts
+        const existingToasts = document.querySelectorAll('.toast-notification');
+        existingToasts.forEach(toast => toast.remove());
+
+        const toast = document.createElement('div');
+        toast.className = `toast-notification toast-${type}`;
+
+        const iconMap = {
+            success: '✓',
+            error: '✗',
+            warning: '⚠',
+            info: 'ℹ'
+        };
+
+        toast.innerHTML = `
+            <div class="toast-content">
+                <div class="toast-icon">${iconMap[type] || 'ℹ'}</div>
+                <div class="toast-message">${SecurityUtils.sanitizeInput(message)}</div>
+            </div>
+        `;
+
+        document.body.appendChild(toast);
+        toast.style.display = 'block';
+
+        // Auto remove
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, duration);
+    },
+
+    showConfirmDialog(message, onConfirm, onCancel) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 400px;">
+                <div class="modal-header">
+                    <h2>Confirm Action</h2>
+                </div>
+                <div class="modal-body">
+                    <p>${SecurityUtils.sanitizeInput(message)}</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancel-btn">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirm-btn">Confirm</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        modal.style.display = 'flex';
+
+        const confirmBtn = modal.querySelector('#confirm-btn');
+        const cancelBtn = modal.querySelector('#cancel-btn');
+
+        confirmBtn.addEventListener('click', () => {
+            modal.remove();
+            if (onConfirm) onConfirm();
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            modal.remove();
+            if (onCancel) onCancel();
+        });
+
+        // Close on background click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+                if (onCancel) onCancel();
+            }
+        });
+    },
+
+    showLoadingSpinner(show = true) {
+        let spinner = document.getElementById('global-loading-spinner');
+
+        if (show) {
+            if (!spinner) {
+                spinner = document.createElement('div');
+                spinner.id = 'global-loading-spinner';
+                spinner.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 10001;
+                `;
+                spinner.innerHTML = `
+                    <div style="
+                        width: 50px;
+                        height: 50px;
+                        border: 4px solid rgba(255,255,255,0.3);
+                        border-top: 4px solid white;
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                    "></div>
+                `;
+                document.body.appendChild(spinner);
+            }
+            spinner.style.display = 'flex';
+        } else {
+            if (spinner) {
+                spinner.style.display = 'none';
+            }
+        }
     }
+};
 
-    // Get current user role
-    getCurrentRole() {
-        return this.userRole;
+// Form validation helpers
+const FormValidation = {
+    validateEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    },
+
+    validatePhone(phone) {
+        const re = /^[\+]?[\d\s\-\(\)]{7,20}$/;
+        return re.test(phone.replace(/\s/g, ''));
+    },
+
+    validateRequired(value) {
+        return value && value.toString().trim().length > 0;
+    },
+
+    validateLength(value, min = 0, max = Infinity) {
+        const length = value ? value.toString().length : 0;
+        return length >= min && length <= max;
+    },
+
+    validateLeadData(data) {
+        const errors = {};
+
+        if (!this.validateRequired(data.name)) {
+            errors.name = 'Name is required';
+        } else if (!this.validateLength(data.name, 2, 100)) {
+            errors.name = 'Name must be between 2 and 100 characters';
+        }
+
+        if (!this.validateRequired(data.phone)) {
+            errors.phone = 'Phone number is required';
+        } else if (!this.validatePhone(data.phone)) {
+            errors.phone = 'Please enter a valid phone number';
+        }
+
+        if (data.email && !this.validateEmail(data.email)) {
+            errors.email = 'Please enter a valid email address';
+        }
+
+        const validStatuses = ['newLead', 'contacted', 'interested', 'followup', 'visit', 'booked', 'closed', 'notinterested', 'dropped'];
+        if (data.status && !validStatuses.includes(data.status)) {
+            errors.status = 'Invalid status selected';
+        }
+
+        return {
+            isValid: Object.keys(errors).length === 0,
+            errors
+        };
     }
-}
+};
 
-// Create global auth guard instance
-const authGuard = new AuthGuard();
+// Data management utilities
+const DataUtils = {
+    // Safe JSON parsing
+    safeJSONParse(str, defaultValue = null) {
+        try {
+            return JSON.parse(str);
+        } catch (e) {
+            SecurityUtils.logSecurityIncident('json_parse_error', { error: e.message });
+            return defaultValue;
+        }
+    },
 
-// Export for use in other files
-window.authGuard = authGuard;
+    // Format currency
+    formatCurrency(amount, currency = 'INR') {
+        if (isNaN(amount)) return '₹0';
+
+        const formatter = new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        });
+
+        return formatter.format(amount);
+    },
+
+    // Format date consistently
+    formatDate(date, options = {}) {
+        if (!date) return 'N/A';
+
+        const defaultOptions = {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+
+        const formatOptions = { ...defaultOptions, ...options };
+
+        try {
+            return new Date(date).toLocaleDateString('en-US', formatOptions);
+        } catch (e) {
+            return 'Invalid Date';
+        }
+    },
+
+    // Debounce function calls
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    },
+
+    // Throttle function calls
+    throttle(func, limit) {
+        let inThrottle;
+        return function() {
+            const args = arguments;
+            const context = this;
+            if (!inThrottle) {
+                func.apply(context, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    }
+};
+
+// Network utilities
+const NetworkUtils = {
+    // Generic API call wrapper
+    async apiCall(endpoint, options = {}) {
+        const defaultOptions = {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            timeout: 30000
+        };
+
+        const config = { ...defaultOptions, ...options };
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), config.timeout);
+
+            const response = await fetch(endpoint, {
+                ...config,
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            SecurityUtils.logSecurityIncident('api_call_error', {
+                endpoint,
+                error: error.message
+            });
+            throw error;
+        }
+    },
+
+    // Check network connectivity
+    isOnline() {
+        return navigator.onLine;
+    },
+
+    // Wait for network connectivity
+    waitForOnline() {
+        return new Promise((resolve) => {
+            if (this.isOnline()) {
+                resolve();
+            } else {
+                const handler = () => {
+                    window.removeEventListener('online', handler);
+                    resolve();
+                };
+                window.addEventListener('online', handler);
+            }
+        });
+    }
+};
+
+// Local storage utilities (with error handling)
+const StorageUtils = {
+    set(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+            return true;
+        } catch (e) {
+            console.warn('Failed to save to localStorage:', e);
+            return false;
+        }
+    },
+
+    get(key, defaultValue = null) {
+        try {
+            const item = localStorage.getItem(key);
+            return item ? JSON.parse(item) : defaultValue;
+        } catch (e) {
+            console.warn('Failed to read from localStorage:', e);
+            return defaultValue;
+        }
+    },
+
+    remove(key) {
+        try {
+            localStorage.removeItem(key);
+            return true;
+        } catch (e) {
+            console.warn('Failed to remove from localStorage:', e);
+            return false;
+        }
+    },
+
+    clear() {
+        try {
+            localStorage.clear();
+            return true;
+        } catch (e) {
+            console.warn('Failed to clear localStorage:', e);
+            return false;
+        }
+    }
+};
+
+// Performance monitoring
+const PerformanceUtils = {
+    marks: {},
+
+    startMark(name) {
+        this.marks[name] = performance.now();
+    },
+
+    endMark(name) {
+        if (this.marks[name]) {
+            const duration = performance.now() - this.marks[name];
+            console.log(`⏱️ ${name}: ${duration.toFixed(2)}ms`);
+            delete this.marks[name];
+            return duration;
+        }
+        return 0;
+    },
+
+    measurePageLoad() {
+        if (performance.timing) {
+            const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+            console.log(`📊 Page load time: ${loadTime}ms`);
+            return loadTime;
+        }
+        return 0;
+    }
+};
+
+// Error handling and reporting
+const ErrorHandler = {
+    logError(error, context = '') {
+        const errorInfo = {
+            message: error.message || 'Unknown error',
+            stack: error.stack || 'No stack trace',
+            context: context,
+            timestamp: new Date().toISOString(),
+            url: window.location.href,
+            userAgent: navigator.userAgent
+        };
+
+        console.error('🚨 Application Error:', errorInfo);
+
+        // Send to error tracking service if available
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'exception', {
+                'description': errorInfo.message,
+                'fatal': false
+            });
+        }
+
+        // Show user-friendly error message
+        UIHelpers.showToast('An error occurred. Please try again.', 'error');
+    },
+
+    // Global error handler
+    setupGlobalErrorHandling() {
+        window.addEventListener('error', (event) => {
+            this.logError(event.error || new Error(event.message), 'Global Error');
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            this.logError(event.reason || new Error('Unhandled Promise Rejection'), 'Promise Rejection');
+        });
+    }
+};
+
+// Initialize global error handling
+ErrorHandler.setupGlobalErrorHandling();
+
+// Export utilities globally
+window.SecurityUtils = SecurityUtils;
+window.PermissionSystem = PermissionSystem;
+window.UIHelpers = UIHelpers;
+window.FormValidation = FormValidation;
+window.DataUtils = DataUtils;
+window.NetworkUtils = NetworkUtils;
+window.StorageUtils = StorageUtils;
+window.PerformanceUtils = PerformanceUtils;
+window.ErrorHandler = ErrorHandler;
+
+// Start performance monitoring
+PerformanceUtils.startMark('app_initialization');
+
+console.log('✅ Auth Guard Utilities Loaded');
+console.log('🔧 Available utilities:', Object.keys({
+    SecurityUtils,
+    PermissionSystem,
+    UIHelpers,
+    FormValidation,
+    DataUtils,
+    NetworkUtils,
+    StorageUtils,
+    PerformanceUtils,
+    ErrorHandler
+}));

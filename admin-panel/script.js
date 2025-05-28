@@ -1,31 +1,911 @@
-import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// Firebase Configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyA0ENNDjS9E2Ph054G_3RZC3sR9J1uQ3Cs",
+    authDomain: "igplcrm.firebaseapp.com",
+    projectId: "igplcrm",
+    storageBucket: "igplcrm.firebasestorage.app",
+    messagingSenderId: "688904879234",
+    appId: "1:688904879234:web:3dfae5fcd879ae9a74889b"
+};
 
-// 2. Initialize Firebase (call this early in your app)
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: FirebaseOptions(
-      apiKey: "AIzaSyA0ENNDjS9E2Ph054G_3RZC3sR9J1uQ3Cs",
-      authDomain: "igplcrm.firebaseapp.com",
-      projectId: "igplcrm",
-      storageBucket: "igplcrm.appspot.com",
-      messagingSenderId: "688904879234",
-      appId: "1:688904879234:web:3dfae5fcd879ae9a74889b",
-    ),
-  );
-  runApp(MyApp());
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// Global Variables
+let currentUser = null;
+let allLeads = [];
+let allUsers = [];
+let allMasters = [];
+let selectedMasterId = null;
+let selectedUserId = null;
+let currentView = 'masters';
+let currentViewStack = [];
+
+// Enhanced Auth Guard
+class AuthGuard {
+    constructor() {
+        this.currentUser = null;
+        this.userRole = null;
+        this.permissions = {
+            admin: ['all'],
+            master: ['leads:own', 'leads:team', 'users:team', 'reports:read', 'team:manage'],
+            user: ['leads:assigned', 'leads:created', 'profile:edit']
+        };
+    }
+
+    async init() {
+        return new Promise((resolve) => {
+            auth.onAuthStateChanged(async (user) => {
+                console.log('🔄 Auth state changed:', user ? user.email : 'No user');
+
+                if (user) {
+                    try {
+                        await this.loadUserData(user);
+                        resolve(true);
+                    } catch (error) {
+                        console.error('❌ Error loading user data:', error);
+                        await this.signOut();
+                        resolve(false);
+                    }
+                } else {
+                    this.currentUser = null;
+                    this.userRole = null;
+                    resolve(false);
+                }
+            });
+        });
+    }
+
+    async loadUserData(user) {
+        try {
+            const userDoc = await db.collection('users').doc(user.uid).get();
+
+            if (!userDoc.exists) {
+                console.log('👤 User profile not found, creating basic profile...');
+                const newUserData = {
+                    name: user.displayName || user.email.split('@')[0],
+                    email: user.email,
+                    role: 'user',
+                    status: 'active',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    linkedMaster: null
+                };
+
+                await db.collection('users').doc(user.uid).set(newUserData);
+
+                this.currentUser = {
+                    uid: user.uid,
+                    email: user.email,
+                    ...newUserData
+                };
+                this.userRole = 'user';
+            } else {
+                const userData = userDoc.data();
+
+                if (!userData.role || !['admin', 'master', 'user'].includes(userData.role)) {
+                    throw new Error('Invalid user role');
+                }
+
+                if (userData.status === 'inactive') {
+                    throw new Error('Account has been deactivated');
+                }
+
+                this.currentUser = {
+                    uid: user.uid,
+                    email: user.email,
+                    ...userData
+                };
+                this.userRole = userData.role;
+            }
+
+            console.log('✅ User loaded:', this.currentUser.name || this.currentUser.email, `(${this.userRole})`);
+
+            await this.updateLastLogin();
+            this.updateUserInfoUI();
+
+        } catch (error) {
+            console.error('❌ Failed to load user data:', error);
+            throw error;
+        }
+    }
+
+    async updateLastLogin() {
+        try {
+            await db.collection('users').doc(this.currentUser.uid).update({
+                lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (error) {
+            console.warn('⚠️ Could not update last login:', error);
+        }
+    }
+
+    isAuthenticated() {
+        return this.currentUser !== null;
+    }
+
+    hasRole(role) {
+        return this.userRole === role;
+    }
+
+    hasAnyRole(roles) {
+        return roles.includes(this.userRole);
+    }
+
+    getCurrentUser() {
+        return this.currentUser;
+    }
+
+    getCurrentRole() {
+        return this.userRole;
+    }
+
+    updateUserInfoUI() {
+        const userNameEl = document.getElementById('user-name');
+        const userEmailEl = document.getElementById('user-email');
+        const userRoleEl = document.getElementById('user-role');
+
+        if (userNameEl) userNameEl.textContent = this.currentUser?.name || 'User';
+        if (userEmailEl) userEmailEl.textContent = this.currentUser?.email || '';
+        if (userRoleEl) userRoleEl.textContent = (this.userRole || 'USER').toUpperCase();
+
+        this.applyRoleBasedUI();
+    }
+
+    applyRoleBasedUI() {
+        if (!this.isAuthenticated()) return;
+
+        console.log('🎨 Applying role-based UI for role:', this.userRole);
+
+        const elementsToHide = {
+            user: [
+                '.admin-only',
+                '.master-only',
+                '[data-role="admin"]',
+                '[data-role="master"]'
+            ],
+            master: [
+                '.admin-only',
+                '[data-role="admin"]'
+            ],
+            admin: []
+        };
+
+        const hideSelectors = elementsToHide[this.userRole] || [];
+
+        hideSelectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(el => {
+                el.style.display = 'none';
+            });
+        });
+
+        const showSelectors = [
+            `.${this.userRole}-only`,
+            '.authenticated-only'
+        ];
+
+        showSelectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(el => {
+                el.style.display = el.dataset.originalDisplay || 'block';
+            });
+        });
+
+        const roleElements = document.querySelectorAll('[data-role]');
+        roleElements.forEach(el => {
+            const allowedRoles = el.dataset.role.split(',');
+            if (allowedRoles.includes(this.userRole)) {
+                el.style.display = el.tagName.toLowerCase() === 'button' ? 'flex' : 'block';
+            } else {
+                el.style.display = 'none';
+            }
+        });
+
+        const roleTexts = document.querySelectorAll(`.${this.userRole}-only`);
+        roleTexts.forEach(el => {
+            el.style.display = 'inline';
+        });
+    }
+
+    async signOut() {
+        try {
+            await auth.signOut();
+            this.currentUser = null;
+            this.userRole = null;
+            this.redirectToLogin();
+        } catch (error) {
+            console.error('❌ Sign out error:', error);
+        }
+    }
+
+    redirectToLogin() {
+        const loginPage = document.getElementById('login-page');
+        const dashboardPage = document.getElementById('dashboard-page');
+
+        if (loginPage) loginPage.style.display = 'flex';
+        if (dashboardPage) dashboardPage.style.display = 'none';
+
+        document.body.style.background = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
+    }
+
+    showDashboard() {
+        const loginPage = document.getElementById('login-page');
+        const dashboardPage = document.getElementById('dashboard-page');
+
+        if (loginPage) loginPage.style.display = 'none';
+        if (dashboardPage) dashboardPage.style.display = 'flex';
+
+        document.body.style.background = '#f7f8fc';
+        this.applyRoleBasedUI();
+    }
+
+    showAccessDenied(message = 'Access denied') {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'access-denied-message';
+        errorDiv.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #fef2f2;
+                border: 1px solid #fecaca;
+                color: #dc2626;
+                padding: 16px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                z-index: 10000;
+                max-width: 300px;
+            ">
+                <strong>🚫 Access Denied</strong><br>
+                ${message}
+            </div>
+        `;
+
+        document.body.appendChild(errorDiv);
+
+        setTimeout(() => {
+            if (errorDiv.parentNode) {
+                errorDiv.parentNode.removeChild(errorDiv);
+            }
+        }, 5000);
+    }
 }
 
-// 3. Get Firestore instance
-final FirebaseFirestore db = FirebaseFirestore.instance;
+// Create global auth guard instance
+const authGuard = new AuthGuard();
 
+// DOM Elements
+const loadingScreen = document.getElementById('loading-screen');
+const loginPage = document.getElementById('login-page');
+const dashboardPage = document.getElementById('dashboard-page');
+const loginForm = document.getElementById('login-form');
+const loginBtn = document.getElementById('login-btn');
+let isLoading = false;
 
-const leadsSnapshot = await db.collection('leads')
+// Initialize App
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('🚀 Admin Panel Initializing...');
+
+    setTimeout(() => {
+        if (loadingScreen) {
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+            }, 500);
+        }
+    }, 1500);
+
+    setupEventListeners();
+
+    try {
+        const isAuthenticated = await authGuard.init();
+        console.log('🔐 Authentication result:', isAuthenticated);
+
+        if (isAuthenticated) {
+            console.log('✅ User is authenticated, showing dashboard');
+            authGuard.showDashboard();
+            await loadDashboardData();
+        } else {
+            console.log('❌ User not authenticated, showing login');
+            authGuard.redirectToLogin();
+        }
+    } catch (error) {
+        console.error('❌ Initialization error:', error);
+        authGuard.redirectToLogin();
+    }
+});
+
+// Event Listeners Setup
+function setupEventListeners() {
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
+
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const section = this.getAttribute('data-section');
+            console.log('📋 Navigation clicked:', section);
+
+            showSection(section);
+
+            navItems.forEach(nav => nav.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to logout?')) {
+                await authGuard.signOut();
+            }
+        });
+    }
+
+    const togglePassword = document.getElementById('toggle-password');
+    const passwordInput = document.getElementById('password');
+    if (togglePassword && passwordInput) {
+        togglePassword.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+
+            const eyeIcon = this.querySelector('svg');
+            if (type === 'text') {
+                eyeIcon.innerHTML = `
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                `;
+            } else {
+                eyeIcon.innerHTML = `
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                `;
+            }
+        });
+    }
+}
+
+// Login Handler
+async function handleLogin(e) {
+    e.preventDefault();
+
+    if (isLoading) return;
+
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!email || !password) {
+        showError('Please fill in all fields');
+        return;
+    }
+
+    setLoginLoading(true);
+    hideError();
+
+    try {
+        console.log('🔐 Attempting login for:', email);
+
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        console.log('✅ Login successful:', userCredential.user.email);
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        if (authGuard.isAuthenticated()) {
+            authGuard.showDashboard();
+            await loadDashboardData();
+        }
+
+    } catch (error) {
+        console.error('❌ Login error:', error);
+
+        let errorMsg = 'Login failed. Please try again.';
+
+        switch (error.code) {
+            case 'auth/user-not-found':
+                errorMsg = '❌ No account found with this email address.';
+                break;
+            case 'auth/wrong-password':
+                errorMsg = '❌ Incorrect password. Please try again.';
+                break;
+            case 'auth/invalid-email':
+                errorMsg = '❌ Please enter a valid email address.';
+                break;
+            case 'auth/too-many-requests':
+                errorMsg = '⏳ Too many failed attempts. Please try again later.';
+                break;
+            case 'auth/network-request-failed':
+                errorMsg = '🌐 Network error. Please check your connection.';
+                break;
+            case 'auth/user-disabled':
+                errorMsg = '🚫 This account has been disabled.';
+                break;
+            default:
+                errorMsg = '❌ Login failed: ' + (error.message || 'Please try again.');
+        }
+
+        showError(errorMsg);
+    } finally {
+        setLoginLoading(false);
+    }
+}
+
+// Show Section
+function showSection(sectionName) {
+    console.log('📋 Showing section:', sectionName);
+
+    const contentSections = document.querySelectorAll('.content-section');
+    contentSections.forEach(section => {
+        section.classList.remove('active');
+        section.style.display = 'none';
+    });
+
+    const targetSection = document.getElementById(`${sectionName}-section`);
+    if (targetSection) {
+        targetSection.classList.add('active');
+        targetSection.style.display = 'block';
+
+        currentViewStack = [];
+        selectedMasterId = null;
+        selectedUserId = null;
+
+        switch (sectionName) {
+            case 'overview':
+                loadDashboardData();
+                break;
+            case 'leads':
+                if (authGuard.hasRole('user')) {
+                    loadUserLeadsDirectly();
+                } else {
+                    currentView = 'masters';
+                    loadMastersView();
+                }
+                break;
+            case 'users':
+                loadUsersSection();
+                break;
+            default:
+                console.log('ℹ️ Section not implemented:', sectionName);
+        }
+    } else {
+        console.error('❌ Section not found:', `${sectionName}-section`);
+    }
+}
+
+// Load Dashboard Data
+async function loadDashboardData() {
+    if (!authGuard.isAuthenticated()) return;
+
+    console.log('📊 Loading dashboard data...');
+
+    try {
+        await Promise.all([
+            loadOverviewStats(),
+            loadRecentActivity()
+        ]);
+
+        console.log('✅ Dashboard data loaded');
+    } catch (error) {
+        console.error('❌ Error loading dashboard data:', error);
+    }
+}
+
+// Load Overview Stats
+async function loadOverviewStats() {
+    try {
+        const role = authGuard.getCurrentRole();
+        const currentUserId = authGuard.getCurrentUser()?.uid;
+
+        let leadsQuery = db.collection('leads');
+        let usersQuery = db.collection('users');
+
+        if (role === 'user' && currentUserId) {
+            leadsQuery = leadsQuery.where('assignedTo', '==', currentUserId);
+        } else if (role === 'master' && currentUserId) {
+            const teamMembersSnapshot = await db.collection('users')
+                .where('linkedMaster', '==', currentUserId)
+                .get();
+
+            const teamMemberIds = teamMembersSnapshot.docs.map(doc => doc.id);
+            teamMemberIds.push(currentUserId);
+
+            if (teamMemberIds.length > 0) {
+                leadsQuery = leadsQuery.where('assignedTo', 'in', teamMemberIds);
+                usersQuery = usersQuery.where('linkedMaster', '==', currentUserId);
+            }
+        }
+
+        const [leadsSnapshot, usersSnapshot] = await Promise.all([
+            leadsQuery.get(),
+            authGuard.hasAnyRole(['admin', 'master']) ? usersQuery.get() : Promise.resolve({ docs: [] })
+        ]);
+
+        const leads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const totalLeads = leads.length;
+        const totalUsers = authGuard.hasAnyRole(['admin', 'master']) ? users.length : 0;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const newLeadsToday = leads.filter(lead => {
+            const createdAt = lead.createdAt ? new Date(lead.createdAt.seconds * 1000) : new Date(0);
+            return createdAt >= today;
+        }).length;
+
+        const bookedLeads = leads.filter(lead =>
+            lead.status && ['booked', 'closed'].includes(lead.status.toLowerCase())
+        ).length;
+        const conversionRate = totalLeads > 0 ? Math.round((bookedLeads / totalLeads) * 100) : 0;
+
+        updateStatCard('total-leads', totalLeads);
+        updateStatCard('total-users', totalUsers);
+        updateStatCard('new-leads-today', newLeadsToday);
+        updateStatCard('conversion-rate', `${conversionRate}%`);
+
+        allLeads = leads;
+        allUsers = users;
+
+    } catch (error) {
+        console.error('❌ Error loading overview stats:', error);
+        updateStatCard('total-leads', '-');
+        updateStatCard('total-users', '-');
+        updateStatCard('new-leads-today', '-');
+        updateStatCard('conversion-rate', '-%');
+    }
+}
+
+// Load Recent Activity
+async function loadRecentActivity() {
+    try {
+        const activityList = document.getElementById('activity-list');
+        if (!activityList) return;
+
+        const recentLeads = allLeads
+            .sort((a, b) => {
+                const dateA = new Date(a.createdAt ? a.createdAt.seconds * 1000 : 0);
+                const dateB = new Date(b.createdAt ? b.createdAt.seconds * 1000 : 0);
+                return dateB - dateA;
+            })
+            .slice(0, 5);
+
+        if (recentLeads.length === 0) {
+            activityList.innerHTML = `
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="6" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                    </div>
+                    <div class="activity-content">
+                        <p>No recent activity</p>
+                        <span class="activity-time">Start by adding some leads</span>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        activityList.innerHTML = recentLeads.map(lead => {
+            const createdAt = new Date(lead.createdAt ? lead.createdAt.seconds * 1000 : 0);
+            const timeAgo = getTimeAgo(createdAt);
+
+            return `
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                    </div>
+                    <div class="activity-content">
+                        <p>New lead: <strong>${sanitizeText(lead.name || 'Unnamed Lead')}</strong></p>
+                        <span class="activity-time">${timeAgo}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('❌ Error loading recent activity:', error);
+    }
+}
+
+// Load Masters View
+async function loadMastersView() {
+    console.log('👑 Loading masters view...');
+
+    const leadsSection = document.getElementById('leads-section');
+    if (!leadsSection) return;
+
+    leadsSection.innerHTML = `
+        <div class="section-header">
+            <h2>Masters & Teams</h2>
+            <p>View all masters and their team members</p>
+        </div>
+
+        <div class="breadcrumb">
+            <span class="breadcrumb-item active">Masters</span>
+        </div>
+
+        <div class="masters-grid" id="masters-container">
+            <div class="loading-card">Loading masters...</div>
+        </div>
+    `;
+
+    await loadMastersData();
+}
+
+// Load Masters Data
+async function loadMastersData() {
+    try {
+        const mastersContainer = document.getElementById('masters-container');
+        if (!mastersContainer) return;
+
+        const usersSnapshot = await db.collection('users').get();
+        const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const masters = users.filter(user => user.role === 'master');
+        allMasters = masters;
+        allUsers = users;
+
+        if (masters.length === 0) {
+            mastersContainer.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </div>
+                    <h3>No Masters Found</h3>
+                    <p>There are no masters in the system yet.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const mastersWithStats = masters.map(master => {
+            const teamMembers = users.filter(user => user.linkedMaster === master.id);
+            return {
+                ...master,
+                teamCount: teamMembers.length,
+                teamMembers: teamMembers
+            };
+        });
+
+        mastersContainer.innerHTML = mastersWithStats.map(master => `
+            <div class="master-card" onclick="selectMaster('${master.id}')">
+                <div class="master-header">
+                    <div class="master-avatar">
+                        ${(master.name || master.email || 'M').charAt(0).toUpperCase()}
+                    </div>
+                    <div class="master-info">
+                        <h3>${sanitizeText(master.name || 'Unnamed Master')}</h3>
+                        <p>${sanitizeText(master.email)}</p>
+                        <span class="master-badge">Master</span>
+                    </div>
+                </div>
+                <div class="master-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">${master.teamCount}</span>
+                        <span class="stat-label">Team Members</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">${master.status === 'active' ? 'Active' : 'Inactive'}</span>
+                        <span class="stat-label">Status</span>
+                    </div>
+                </div>
+                <div class="master-footer">
+                    <span class="view-team">Click to view team →</span>
+                </div>
+            </div>
+        `).join('');
+
+    } catch (error) {
+        console.error('❌ Error loading masters:', error);
+        const mastersContainer = document.getElementById('masters-container');
+        if (mastersContainer) {
+            mastersContainer.innerHTML = '<div class="loading-card">Error loading masters</div>';
+        }
+    }
+}
+
+// Select Master and Show Their Team
+async function selectMaster(masterId) {
+    console.log('👤 Selecting master:', masterId);
+
+    selectedMasterId = masterId;
+    currentView = 'users';
+    currentViewStack.push({ type: 'master', id: masterId });
+
+    const master = allMasters.find(m => m.id === masterId);
+    if (!master) return;
+
+    const leadsSection = document.getElementById('leads-section');
+    leadsSection.innerHTML = `
+        <div class="section-header">
+            <h2>Team Members - ${sanitizeText(master.name || 'Unnamed Master')}</h2>
+            <p>Manage team members under this master</p>
+        </div>
+
+        <div class="breadcrumb">
+            <span class="breadcrumb-item" onclick="loadMastersView()">Masters</span>
+            <span class="breadcrumb-separator">→</span>
+            <span class="breadcrumb-item active">${sanitizeText(master.name || 'Master')}'s Team</span>
+        </div>
+
+        <div class="users-grid" id="users-container">
+            <div class="loading-card">Loading team members...</div>
+        </div>
+    `;
+
+    await loadMasterTeam(masterId);
+}
+
+// Load Master's Team
+async function loadMasterTeam(masterId) {
+    try {
+        const usersContainer = document.getElementById('users-container');
+        if (!usersContainer) return;
+
+        const teamMembers = allUsers.filter(user => user.linkedMaster === masterId);
+
+        if (teamMembers.length === 0) {
+            usersContainer.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                        </svg>
+                    </div>
+                    <h3>No Team Members</h3>
+                    <p>This master doesn't have any team members yet.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const leadsSnapshot = await db.collection('leads').get();
+        const leads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const teamWithStats = teamMembers.map(user => {
+            const userLeads = leads.filter(lead =>
+                lead.assignedTo === user.id || lead.createdBy === user.id
+            );
+            return {
+                ...user,
+                leadsCount: userLeads.length,
+                leads: userLeads
+            };
+        });
+
+        usersContainer.innerHTML = teamWithStats.map(user => `
+            <div class="user-card" onclick="selectUser('${user.id}')">
+                <div class="user-header">
+                    <div class="user-avatar">
+                        ${(user.name || user.email || 'U').charAt(0).toUpperCase()}
+                    </div>
+                    <div class="user-info">
+                        <h3>${sanitizeText(user.name || 'Unnamed User')}</h3>
+                        <p>${sanitizeText(user.email)}</p>
+                        <span class="user-badge">User</span>
+                    </div>
+                </div>
+                <div class="user-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">${user.leadsCount}</span>
+                        <span class="stat-label">Total Leads</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">${user.status === 'active' ? 'Active' : 'Inactive'}</span>
+                        <span class="stat-label">Status</span>
+                    </div>
+                </div>
+                <div class="user-footer">
+                    <span class="view-leads">Click to view leads →</span>
+                </div>
+            </div>
+        `).join('');
+
+    } catch (error) {
+        console.error('❌ Error loading master team:', error);
+    }
+}
+
+// Select User and Show Their Leads
+async function selectUser(userId) {
+    console.log('📋 Selecting user:', userId);
+
+    selectedUserId = userId;
+    currentView = 'leads';
+    currentViewStack.push({ type: 'user', id: userId });
+
+    const user = allUsers.find(u => u.id === userId);
+    const master = allMasters.find(m => m.id === selectedMasterId);
+
+    if (!user) return;
+
+    const leadsSection = document.getElementById('leads-section');
+    leadsSection.innerHTML = `
+        <div class="section-header">
+            <h2>Leads - ${sanitizeText(user.name || 'Unnamed User')}</h2>
+            <p>View and manage leads for this user</p>
+        </div>
+
+        <div class="breadcrumb">
+            <span class="breadcrumb-item" onclick="loadMastersView()">Masters</span>
+            <span class="breadcrumb-separator">→</span>
+            <span class="breadcrumb-item" onclick="selectMaster('${selectedMasterId}')">${sanitizeText(master?.name || 'Master')}'s Team</span>
+            <span class="breadcrumb-separator">→</span>
+            <span class="breadcrumb-item active">${sanitizeText(user.name || 'User')}'s Leads</span>
+        </div>
+
+        <div class="data-table-container">
+            <div class="table-header">
+                <div class="search-box">
+                    <input type="text" id="leads-search" placeholder="Search leads..." onkeyup="filterUserLeads(this.value)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                </div>
+                <button class="refresh-btn" onclick="selectUser('${userId}')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23,4 23,10 17,10"/>
+                        <polyline points="1,20 1,14 7,14"/>
+                        <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10"/>
+                        <path d="M3.51,15a9,9,0,0,0,14.85,3.36L23,14"/>
+                    </svg>
+                    Refresh
+                </button>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Source</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-leads-table-body">
+                        <tr>
+                            <td colspan="7" class="loading-row">Loading leads...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+    await loadUserLeads(userId);
+}
+
+// Load User's Leads
+async function loadUserLeads(userId) {
+    try {
+        const tableBody = document.getElementById('user-leads-table-body');
+        if (!tableBody) return;
+
+        const leadsSnapshot = await db.collection('leads')
             .where('assignedTo', '==', userId)
             .orderBy('createdAt', 'desc')
             .get();
-            
+
         const leads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         if (leads.length === 0) {
@@ -33,7 +913,6 @@ const leadsSnapshot = await db.collection('leads')
             return;
         }
 
-        // Store leads for filtering
         window.currentUserLeads = leads;
 
         tableBody.innerHTML = leads.map(lead => {
@@ -64,6 +943,68 @@ const leadsSnapshot = await db.collection('leads')
             tableBody.innerHTML = '<tr><td colspan="7" class="loading-row">Error loading leads. Please refresh.</td></tr>';
         }
     }
+}
+
+// Load User Leads Directly (for regular users)
+async function loadUserLeadsDirectly() {
+    console.log('📋 Loading user leads directly...');
+
+    const leadsSection = document.getElementById('leads-section');
+    if (!leadsSection) return;
+
+    const currentUserId = authGuard.getCurrentUser()?.uid;
+    const currentUserName = authGuard.getCurrentUser()?.name || 'My';
+
+    leadsSection.innerHTML = `
+        <div class="section-header">
+            <h2>${currentUserName} Leads</h2>
+            <p>View and manage your assigned leads</p>
+        </div>
+
+        <div class="data-table-container">
+            <div class="table-header">
+                <div class="search-box">
+                    <input type="text" id="leads-search" placeholder="Search leads..." onkeyup="filterUserLeads(this.value)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                </div>
+                <button class="refresh-btn" onclick="loadUserLeadsDirectly()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23,4 23,10 17,10"/>
+                        <polyline points="1,20 1,14 7,14"/>
+                        <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10"/>
+                        <path d="M3.51,15a9,9,0,0,0,14.85,3.36L23,14"/>
+                    </svg>
+                    Refresh
+                </button>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Source</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-leads-table-body">
+                        <tr>
+                            <td colspan="7" class="loading-row">Loading your leads...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+    await loadUserLeads(currentUserId);
 }
 
 // Filter User Leads
@@ -113,22 +1054,21 @@ function filterUserLeads(searchTerm) {
 
 // Enhanced Lead Actions
 function viewLead(leadId) {
-    const lead = allLeads.find(l => l.id === leadId) || 
+    const lead = allLeads.find(l => l.id === leadId) ||
                  (window.currentUserLeads && window.currentUserLeads.find(l => l.id === leadId));
-    
+
     if (!lead) {
         alert('Lead not found');
         return;
     }
 
-    // Create detailed lead view modal
     showLeadModal(lead, 'view');
 }
 
 function editLead(leadId) {
-    const lead = allLeads.find(l => l.id === leadId) || 
+    const lead = allLeads.find(l => l.id === leadId) ||
                  (window.currentUserLeads && window.currentUserLeads.find(l => l.id === leadId));
-    
+
     if (!lead) {
         alert('Lead not found');
         return;
@@ -138,9 +1078,9 @@ function editLead(leadId) {
 }
 
 function deleteLead(leadId) {
-    const lead = allLeads.find(l => l.id === leadId) || 
+    const lead = allLeads.find(l => l.id === leadId) ||
                  (window.currentUserLeads && window.currentUserLeads.find(l => l.id === leadId));
-    
+
     if (!lead) {
         alert('Lead not found');
         return;
@@ -156,13 +1096,11 @@ function showLeadModal(lead, mode = 'view') {
     const isEditMode = mode === 'edit';
     const createdAt = new Date(lead.createdAt ? lead.createdAt.seconds * 1000 : 0);
 
-    // Remove existing modal
     const existingModal = document.getElementById('lead-modal');
     if (existingModal) {
         existingModal.remove();
     }
 
-    // Create modal
     const modal = document.createElement('div');
     modal.id = 'lead-modal';
     modal.className = 'modal';
@@ -361,21 +1299,20 @@ async function saveLeadChanges(leadId) {
             updatedBy: authGuard.getCurrentUser()?.uid
         };
 
-        // Validate required fields
         if (!formData.name || !formData.phone || !formData.status) {
             alert('Please fill in all required fields (Name, Phone, Status)');
             return;
         }
 
-        // Update in Firestore
         await db.collection('leads').doc(leadId).update(formData);
 
         alert('Lead updated successfully!');
         closeLeadModal();
 
-        // Refresh current view
         if (selectedUserId) {
             selectUser(selectedUserId);
+        } else if (authGuard.hasRole('user')) {
+            loadUserLeadsDirectly();
         }
 
     } catch (error) {
@@ -390,9 +1327,10 @@ async function deleteLeadFromDatabase(leadId) {
         await db.collection('leads').doc(leadId).delete();
         alert('Lead deleted successfully!');
 
-        // Refresh current view
         if (selectedUserId) {
             selectUser(selectedUserId);
+        } else if (authGuard.hasRole('user')) {
+            loadUserLeadsDirectly();
         }
 
     } catch (error) {
@@ -404,7 +1342,7 @@ async function deleteLeadFromDatabase(leadId) {
 // Load Users Section (for admin user management)
 async function loadUsersSection() {
     console.log('👥 Loading users section...');
-    
+
     const usersSection = document.getElementById('users-section');
     if (!usersSection) return;
 
@@ -474,9 +1412,7 @@ async function loadAllUsers() {
             return;
         }
 
-        // Store for filtering
         window.allSystemUsers = users;
-
         renderUsersTable(users);
 
     } catch (error) {
@@ -553,17 +1489,19 @@ function updateStatCard(elementId, value) {
 
 function setLoginLoading(loading) {
     isLoading = loading;
-    const btnText = loginBtn.querySelector('.btn-text');
-    const btnSpinner = loginBtn.querySelector('.btn-spinner');
+    const btnText = loginBtn?.querySelector('.btn-text');
+    const btnSpinner = loginBtn?.querySelector('.btn-spinner');
 
-    loginBtn.disabled = loading;
+    if (loginBtn) {
+        loginBtn.disabled = loading;
 
-    if (loading) {
-        btnText.style.display = 'none';
-        btnSpinner.style.display = 'block';
-    } else {
-        btnText.style.display = 'block';
-        btnSpinner.style.display = 'none';
+        if (loading) {
+            if (btnText) btnText.style.display = 'none';
+            if (btnSpinner) btnSpinner.style.display = 'block';
+        } else {
+            if (btnText) btnText.style.display = 'block';
+            if (btnSpinner) btnSpinner.style.display = 'none';
+        }
     }
 }
 
@@ -590,7 +1528,7 @@ function sanitizeText(text) {
 
 function formatDate(date) {
     if (!date || isNaN(date)) return 'N/A';
-    
+
     const options = {
         year: 'numeric',
         month: 'short',
@@ -598,13 +1536,13 @@ function formatDate(date) {
         hour: '2-digit',
         minute: '2-digit'
     };
-    
+
     return date.toLocaleDateString('en-US', options);
 }
 
 function getTimeAgo(date) {
     if (!date || isNaN(date)) return 'Unknown';
-    
+
     const now = new Date();
     const diffInSeconds = Math.floor((now - date) / 1000);
 
@@ -642,6 +1580,136 @@ function getStatusText(status) {
     return statusMap[status] || status || 'New Lead';
 }
 
+// Activity logging function
+async function logActivity(action, details = {}) {
+    if (!authGuard.isAuthenticated()) return;
+
+    try {
+        await db.collection('activity_logs').add({
+            userId: authGuard.getCurrentUser().uid,
+            userEmail: authGuard.getCurrentUser().email,
+            action: action,
+            details: details,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            userAgent: navigator.userAgent
+        });
+    } catch (error) {
+        console.warn('⚠️ Could not log activity:', error);
+    }
+}
+
+// Enhanced error handling for Firebase operations
+function handleFirebaseError(error, operation = 'operation') {
+    console.error(`❌ Firebase ${operation} error:`, error);
+
+    let userMessage = `Failed to ${operation}. Please try again.`;
+
+    switch (error.code) {
+        case 'permission-denied':
+            userMessage = 'You do not have permission to perform this action.';
+            break;
+        case 'not-found':
+            userMessage = 'The requested data was not found.';
+            break;
+        case 'network-request-failed':
+            userMessage = 'Network error. Please check your connection.';
+            break;
+        case 'quota-exceeded':
+            userMessage = 'Service temporarily unavailable. Please try again later.';
+            break;
+    }
+
+    alert(userMessage);
+    return false;
+}
+
+// Enhanced lead creation function
+async function createNewLead(leadData) {
+    try {
+        if (!leadData.name || !leadData.phone) {
+            throw new Error('Name and phone are required');
+        }
+
+        const sanitizedData = {
+            name: sanitizeText(leadData.name),
+            phone: sanitizeText(leadData.phone),
+            email: sanitizeText(leadData.email || ''),
+            altPhone: sanitizeText(leadData.altPhone || ''),
+            status: leadData.status || 'newLead',
+            source: leadData.source || '',
+            propertyType: leadData.propertyType || '',
+            budget: leadData.budget || '',
+            location: sanitizeText(leadData.location || ''),
+            requirements: sanitizeText(leadData.requirements || ''),
+            assignedTo: leadData.assignedTo || authGuard.getCurrentUser().uid,
+            priority: leadData.priority || 'medium',
+            createdBy: authGuard.getCurrentUser().uid,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedBy: authGuard.getCurrentUser().uid
+        };
+
+        const leadRef = await db.collection('leads').add(sanitizedData);
+
+        await logActivity('create_lead', {
+            leadId: leadRef.id,
+            leadName: sanitizedData.name,
+            leadPhone: sanitizedData.phone
+        });
+
+        return { success: true, leadId: leadRef.id };
+
+    } catch (error) {
+        handleFirebaseError(error, 'create lead');
+        return { success: false, error: error.message };
+    }
+}
+
+// Connection status monitoring
+function monitorConnection() {
+    const showConnectionStatus = (online) => {
+        const existingNotice = document.querySelector('.connection-notice');
+        if (existingNotice) {
+            existingNotice.remove();
+        }
+
+        if (!online) {
+            const notice = document.createElement('div');
+            notice.className = 'connection-notice';
+            notice.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                background: #f59e0b;
+                color: white;
+                text-align: center;
+                padding: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                z-index: 10000;
+            `;
+            notice.innerHTML = '🌐 You are offline. Some features may not work properly.';
+            document.body.appendChild(notice);
+        }
+    };
+
+    window.addEventListener('online', () => {
+        showConnectionStatus(true);
+        console.log('🌐 Connection restored');
+    });
+
+    window.addEventListener('offline', () => {
+        showConnectionStatus(false);
+        console.log('🌐 Connection lost');
+    });
+
+    showConnectionStatus(navigator.onLine);
+}
+
+// Initialize connection monitoring
+monitorConnection();
+
 // Global functions for onclick handlers
 window.loadMastersView = loadMastersView;
 window.selectMaster = selectMaster;
@@ -656,10 +1724,28 @@ window.saveLeadChanges = saveLeadChanges;
 window.filterUserLeads = filterUserLeads;
 window.filterUsers = filterUsers;
 window.loadUsersSection = loadUsersSection;
+window.loadUserLeadsDirectly = loadUserLeadsDirectly;
+window.createNewLead = createNewLead;
+window.logActivity = logActivity;
+
+// Make auth guard globally available
+window.authGuard = authGuard;
 
 console.log('✅ Enhanced Admin Panel Script Loaded - Master Hierarchy Ready');
+console.log('🔧 Available functions:', Object.keys(window).filter(key =>
+    typeof window[key] === 'function' && (
+        key.startsWith('load') ||
+        key.startsWith('select') ||
+        key.startsWith('view') ||
+        key.startsWith('edit') ||
+        key.startsWith('delete') ||
+        key.startsWith('filter') ||
+        key.startsWith('close') ||
+        key.startsWith('save')
+    )
+));
 
-// Debug info
+// Debug info for development
 window.adminDebug = {
     authGuard,
     currentUser: () => authGuard.getCurrentUser(),
@@ -669,807 +1755,38 @@ window.adminDebug = {
     allUsers: () => allUsers,
     allMasters: () => allMasters,
     currentView: () => currentView,
-    selectedMasterId: () => selectedMast// Firebase Configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyA0ENNDjS9E2Ph054G_3RZC3sR9J1uQ3Cs",
-    authDomain: "igplcrm.firebaseapp.com",
-    projectId: "igplcrm",
-    storageBucket: "igplcrm.firebasestorage.app",
-    messagingSenderId: "688904879234",
-    appId: "1:688904879234:web:3dfae5fcd879ae9a74889b"
+    selectedMasterId: () => selectedMasterId,
+    selectedUserId: () => selectedUserId,
+    testConnection: () => navigator.onLine,
+    resetData: () => {
+        allLeads = [];
+        allUsers = [];
+        allMasters = [];
+        console.log('🔄 Data arrays reset');
+    }
 };
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-// Global Variables
-let currentUser = null;
-let allLeads = [];
-let allUsers = [];
-let allMasters = [];
-let selectedMasterId = null;
-let selectedUserId = null;
-let currentView = 'masters'; // masters -> users -> leads
-let currentViewStack = []; // Navigation breadcrumb
-
-// Enhanced Auth Guard
-class AuthGuard {
-    constructor() {
-        this.currentUser = null;
-        this.userRole = null;
-    }
-
-    async init() {
-        return new Promise((resolve) => {
-            auth.onAuthStateChanged(async (user) => {
-                console.log('Auth state changed:', user ? user.email : 'No user');
-                
-                if (user) {
-                    try {
-                        await this.loadUserData(user);
-                        resolve(true);
-                    } catch (error) {
-                        console.error('Error loading user data:', error);
-                        resolve(false);
-                    }
-                } else {
-                    this.currentUser = null;
-                    this.userRole = null;
-                    resolve(false);
-                }
-            });
-        });
-    }
-
-    async loadUserData(user) {
-        try {
-            const userDoc = await db.collection('users').doc(user.uid).get();
-
-            if (!userDoc.exists) {
-                console.log('User profile not found, creating basic profile');
-                await db.collection('users').doc(user.uid).set({
-                    name: user.displayName || user.email.split('@')[0],
-                    email: user.email,
-                    role: 'admin', // Default to admin for testing
-                    status: 'active',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                
-                this.currentUser = {
-                    uid: user.uid,
-                    email: user.email,
-                    name: user.displayName || user.email.split('@')[0],
-                    role: 'admin',
-                    status: 'active'
-                };
-                this.userRole = 'admin';
-            } else {
-                const userData = userDoc.data();
-                
-                if (userData.status === 'inactive') {
-                    throw new Error('Account has been deactivated');
-                }
-
-                this.currentUser = {
-                    uid: user.uid,
-                    email: user.email,
-                    ...userData
-                };
-                this.userRole = userData.role || 'user';
-            }
-
-            console.log('✅ User loaded:', this.currentUser.name || this.currentUser.email, `(${this.userRole})`);
-            this.updateUserInfoUI();
-
-        } catch (error) {
-            console.error('❌ Failed to load user data:', error);
-            throw error;
-        }
-    }
-
-    isAuthenticated() {
-        return this.currentUser !== null;
-    }
-
-    hasRole(role) {
-        return this.userRole === role;
-    }
-
-    hasAnyRole(roles) {
-        return roles.includes(this.userRole);
-    }
-
-    getCurrentUser() {
-        return this.currentUser;
-    }
-
-    getCurrentRole() {
-        return this.userRole;
-    }
-
-    updateUserInfoUI() {
-        const userNameEl = document.getElementById('user-name');
-        const userEmailEl = document.getElementById('user-email');
-        const userRoleEl = document.getElementById('user-role');
-
-        if (userNameEl) userNameEl.textContent = this.currentUser?.name || 'User';
-        if (userEmailEl) userEmailEl.textContent = this.currentUser?.email || '';
-        if (userRoleEl) userRoleEl.textContent = (this.userRole || 'USER').toUpperCase();
-
-        this.applyRoleBasedUI();
-    }
-
-    applyRoleBasedUI() {
-        if (!this.isAuthenticated()) return;
-
-        console.log('🎨 Applying role-based UI for role:', this.userRole);
-
-        // Show role-specific elements
-        const showSelectors = [
-            `.${this.userRole}-only`,
-            '.authenticated-only'
-        ];
-
-        showSelectors.forEach(selector => {
-            const elements = document.querySelectorAll(selector);
-            elements.forEach(el => {
-                el.style.display = 'block';
-            });
-        });
-
-        // Show role-specific text
-        const roleTexts = document.querySelectorAll(`.${this.userRole}-only`);
-        roleTexts.forEach(el => {
-            el.style.display = 'inline';
-        });
-    }
-
-    async signOut() {
-        try {
-            await auth.signOut();
-            this.currentUser = null;
-            this.userRole = null;
-            this.redirectToLogin();
-        } catch (error) {
-            console.error('❌ Sign out error:', error);
-        }
-    }
-
-    redirectToLogin() {
-        document.getElementById('login-page').style.display = 'flex';
-        document.getElementById('dashboard-page').style.display = 'none';
-        document.body.style.background = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
-    }
-
-    showDashboard() {
-        document.getElementById('login-page').style.display = 'none';
-        document.getElementById('dashboard-page').style.display = 'flex';
-        document.body.style.background = '#f7f8fc';
-        this.applyRoleBasedUI();
-    }
+// Performance monitoring
+if (window.PerformanceUtils) {
+    PerformanceUtils.endMark('app_initialization');
 }
 
-// Create global auth guard instance
-const authGuard = new AuthGuard();
-
-// DOM Elements
-const loadingScreen = document.getElementById('loading-screen');
-const loginPage = document.getElementById('login-page');
-const dashboardPage = document.getElementById('dashboard-page');
-const loginForm = document.getElementById('login-form');
-const loginBtn = document.getElementById('login-btn');
-let isLoading = false;
-
-// Initialize App
-document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 Admin Panel Initializing...');
-
-    setTimeout(() => {
-        if (loadingScreen) {
-            loadingScreen.style.opacity = '0';
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-            }, 500);
-        }
-    }, 1000);
-
-    setupEventListeners();
-
-    try {
-        const isAuthenticated = await authGuard.init();
-        console.log('Authentication result:', isAuthenticated);
-        
-        if (isAuthenticated) {
-            console.log('User is authenticated, showing dashboard');
-            authGuard.showDashboard();
-            await loadDashboardData();
-        } else {
-            console.log('User not authenticated, showing login');
-            authGuard.redirectToLogin();
-        }
-    } catch (error) {
-        console.error('❌ Initialization error:', error);
-        authGuard.redirectToLogin();
-    }
-});
-
-// Event Listeners Setup
-function setupEventListeners() {
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
-    }
-
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            const section = this.getAttribute('data-section');
-            console.log('Navigation clicked:', section);
-            
-            showSection(section);
-            
-            navItems.forEach(nav => nav.classList.remove('active'));
-            this.classList.add('active');
-        });
-    });
-
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-            if (confirm('Are you sure you want to logout?')) {
-                await authGuard.signOut();
-            }
-        });
-    }
-
-    const togglePassword = document.getElementById('toggle-password');
-    const passwordInput = document.getElementById('password');
-    if (togglePassword && passwordInput) {
-        togglePassword.addEventListener('click', function() {
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-            
-            const eyeIcon = this.querySelector('svg');
-            if (type === 'text') {
-                eyeIcon.innerHTML = `
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                    <line x1="1" y1="1" x2="23" y2="23"/>
-                `;
-            } else {
-                eyeIcon.innerHTML = `
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                `;
-            }
-        });
-    }
-}
-
-// Login Handler
-async function handleLogin(e) {
-    e.preventDefault();
-
-    if (isLoading) return;
-
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-
-    if (!email || !password) {
-        showError('Please fill in all fields');
-        return;
-    }
-
-    setLoginLoading(true);
-    hideError();
-
-    try {
-        console.log('🔐 Attempting login for:', email);
-
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        console.log('✅ Login successful:', userCredential.user.email);
-
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        if (authGuard.isAuthenticated()) {
-            authGuard.showDashboard();
-            await loadDashboardData();
-        }
-
-    } catch (error) {
-        console.error('❌ Login error:', error);
-
-        let errorMsg = 'Login failed. Please try again.';
-
-        switch (error.code) {
-            case 'auth/user-not-found':
-                errorMsg = '❌ No account found with this email address.';
-                break;
-            case 'auth/wrong-password':
-                errorMsg = '❌ Incorrect password. Please try again.';
-                break;
-            case 'auth/invalid-email':
-                errorMsg = '❌ Please enter a valid email address.';
-                break;
-            case 'auth/too-many-requests':
-                errorMsg = '⏳ Too many failed attempts. Please try again later.';
-                break;
-            case 'auth/network-request-failed':
-                errorMsg = '🌐 Network error. Please check your connection.';
-                break;
-            case 'auth/user-disabled':
-                errorMsg = '🚫 This account has been disabled.';
-                break;
-            default:
-                errorMsg = '❌ Login failed: ' + (error.message || 'Please try again.');
-        }
-
-        showError(errorMsg);
-    } finally {
-        setLoginLoading(false);
-    }
-}
-
-// Show Section
-function showSection(sectionName) {
-    console.log('📋 Showing section:', sectionName);
-
-    const contentSections = document.querySelectorAll('.content-section');
-    contentSections.forEach(section => {
-        section.classList.remove('active');
-        section.style.display = 'none';
-    });
-
-    const targetSection = document.getElementById(`${sectionName}-section`);
-    if (targetSection) {
-        targetSection.classList.add('active');
-        targetSection.style.display = 'block';
-
-        // Reset navigation stack for new sections
-        currentViewStack = [];
-        selectedMasterId = null;
-        selectedUserId = null;
-
-        switch (sectionName) {
-            case 'overview':
-                loadDashboardData();
-                break;
-            case 'leads':
-                currentView = 'masters';
-                loadMastersView();
-                break;
-            case 'users':
-                loadUsersSection();
-                break;
-            default:
-                console.log('Section not implemented:', sectionName);
-        }
+// Final initialization check
+setTimeout(() => {
+    if (authGuard.isAuthenticated()) {
+        console.log('✅ Application fully initialized');
+        console.log('👤 Current user:', authGuard.getCurrentUser()?.email);
+        console.log('🔐 Current role:', authGuard.getCurrentRole());
     } else {
-        console.error('Section not found:', `${sectionName}-section`);
+        console.log('ℹ️ Application initialized - waiting for authentication');
     }
+}, 2000);
+
+// Export for module compatibility
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        authGuard,
+        loadDashboardData,
+        showSection
+    };
 }
-
-// Load Dashboard Data
-async function loadDashboardData() {
-    if (!authGuard.isAuthenticated()) return;
-
-    console.log('📊 Loading dashboard data...');
-
-    try {
-        await Promise.all([
-            loadOverviewStats(),
-            loadRecentActivity()
-        ]);
-
-        console.log('✅ Dashboard data loaded');
-    } catch (error) {
-        console.error('❌ Error loading dashboard data:', error);
-    }
-}
-
-// Load Overview Stats
-async function loadOverviewStats() {
-    try {
-        const role = authGuard.getCurrentRole();
-        const currentUserId = authGuard.getCurrentUser()?.uid;
-
-        let leadsQuery = db.collection('leads');
-        let usersQuery = db.collection('users');
-
-        if (role === 'user' && currentUserId) {
-            leadsQuery = leadsQuery.where('assignedTo', '==', currentUserId);
-        }
-
-        const [leadsSnapshot, usersSnapshot] = await Promise.all([
-            leadsQuery.get(),
-            authGuard.hasAnyRole(['admin', 'master']) ? usersQuery.get() : Promise.resolve({ docs: [] })
-        ]);
-
-        const leads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        const totalLeads = leads.length;
-        const totalUsers = authGuard.hasAnyRole(['admin', 'master']) ? users.length : 0;
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const newLeadsToday = leads.filter(lead => {
-            const createdAt = lead.createdAt ? new Date(lead.createdAt.seconds * 1000) : new Date(0);
-            return createdAt >= today;
-        }).length;
-
-        const bookedLeads = leads.filter(lead =>
-            lead.status && ['booked', 'closed'].includes(lead.status.toLowerCase())
-        ).length;
-        const conversionRate = totalLeads > 0 ? Math.round((bookedLeads / totalLeads) * 100) : 0;
-
-        updateStatCard('total-leads', totalLeads);
-        updateStatCard('total-users', totalUsers);
-        updateStatCard('new-leads-today', newLeadsToday);
-        updateStatCard('conversion-rate', `${conversionRate}%`);
-
-        allLeads = leads;
-        allUsers = users;
-
-    } catch (error) {
-        console.error('❌ Error loading overview stats:', error);
-        updateStatCard('total-leads', '-');
-        updateStatCard('total-users', '-');
-        updateStatCard('new-leads-today', '-');
-        updateStatCard('conversion-rate', '-%');
-    }
-}
-
-// Load Recent Activity
-async function loadRecentActivity() {
-    try {
-        const activityList = document.getElementById('activity-list');
-        if (!activityList) return;
-
-        const recentLeads = allLeads
-            .sort((a, b) => {
-                const dateA = new Date(a.createdAt ? a.createdAt.seconds * 1000 : 0);
-                const dateB = new Date(b.createdAt ? b.createdAt.seconds * 1000 : 0);
-                return dateB - dateA;
-            })
-            .slice(0, 5);
-
-        if (recentLeads.length === 0) {
-            activityList.innerHTML = `
-                <div class="activity-item">
-                    <div class="activity-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="12" y1="6" x2="12" y2="12"/>
-                            <line x1="12" y1="16" x2="12.01" y2="16"/>
-                        </svg>
-                    </div>
-                    <div class="activity-content">
-                        <p>No recent activity</p>
-                        <span class="activity-time">Start by adding some leads</span>
-                    </div>
-                </div>
-            `;
-            return;
-        }
-
-        activityList.innerHTML = recentLeads.map(lead => {
-            const createdAt = new Date(lead.createdAt ? lead.createdAt.seconds * 1000 : 0);
-            const timeAgo = getTimeAgo(createdAt);
-
-            return `
-                <div class="activity-item">
-                    <div class="activity-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                            <circle cx="9" cy="7" r="4"/>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                        </svg>
-                    </div>
-                    <div class="activity-content">
-                        <p>New lead: <strong>${sanitizeText(lead.name || 'Unnamed Lead')}</strong></p>
-                        <span class="activity-time">${timeAgo}</span>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-    } catch (error) {
-        console.error('❌ Error loading recent activity:', error);
-    }
-}
-
-// Load Masters View (Main Leads Section)
-async function loadMastersView() {
-    console.log('👑 Loading masters view...');
-    
-    const leadsSection = document.getElementById('leads-section');
-    if (!leadsSection) return;
-
-    leadsSection.innerHTML = `
-        <div class="section-header">
-            <h2>Masters & Teams</h2>
-            <p>View all masters and their team members</p>
-        </div>
-
-        <div class="breadcrumb">
-            <span class="breadcrumb-item active">Masters</span>
-        </div>
-
-        <div class="masters-grid" id="masters-container">
-            <div class="loading-card">Loading masters...</div>
-        </div>
-    `;
-
-    await loadMastersData();
-}
-
-// Load Masters Data
-async function loadMastersData() {
-    try {
-        const mastersContainer = document.getElementById('masters-container');
-        if (!mastersContainer) return;
-
-        // Get all users and separate masters
-        const usersSnapshot = await db.collection('users').get();
-        const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        // Filter masters
-        const masters = users.filter(user => user.role === 'master');
-        allMasters = masters;
-        allUsers = users;
-
-        if (masters.length === 0) {
-            mastersContainer.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                    </div>
-                    <h3>No Masters Found</h3>
-                    <p>There are no masters in the system yet.</p>
-                </div>
-            `;
-            return;
-        }
-
-        // Calculate team stats for each master
-        const mastersWithStats = masters.map(master => {
-            const teamMembers = users.filter(user => user.linkedMaster === master.id);
-            return {
-                ...master,
-                teamCount: teamMembers.length,
-                teamMembers: teamMembers
-            };
-        });
-
-        // Render masters grid
-        mastersContainer.innerHTML = mastersWithStats.map(master => `
-            <div class="master-card" onclick="selectMaster('${master.id}')">
-                <div class="master-header">
-                    <div class="master-avatar">
-                        ${(master.name || master.email || 'M').charAt(0).toUpperCase()}
-                    </div>
-                    <div class="master-info">
-                        <h3>${sanitizeText(master.name || 'Unnamed Master')}</h3>
-                        <p>${sanitizeText(master.email)}</p>
-                        <span class="master-badge">Master</span>
-                    </div>
-                </div>
-                <div class="master-stats">
-                    <div class="stat-item">
-                        <span class="stat-number">${master.teamCount}</span>
-                        <span class="stat-label">Team Members</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number">${master.status === 'active' ? 'Active' : 'Inactive'}</span>
-                        <span class="stat-label">Status</span>
-                    </div>
-                </div>
-                <div class="master-footer">
-                    <span class="view-team">Click to view team →</span>
-                </div>
-            </div>
-        `).join('');
-
-    } catch (error) {
-        console.error('❌ Error loading masters:', error);
-        const mastersContainer = document.getElementById('masters-container');
-        if (mastersContainer) {
-            mastersContainer.innerHTML = '<div class="loading-card">Error loading masters</div>';
-        }
-    }
-}
-
-// Select Master and Show Their Team
-async function selectMaster(masterId) {
-    console.log('👤 Selecting master:', masterId);
-    
-    selectedMasterId = masterId;
-    currentView = 'users';
-    currentViewStack.push({ type: 'master', id: masterId });
-    
-    const master = allMasters.find(m => m.id === masterId);
-    if (!master) return;
-
-    const leadsSection = document.getElementById('leads-section');
-    leadsSection.innerHTML = `
-        <div class="section-header">
-            <h2>Team Members - ${sanitizeText(master.name || 'Unnamed Master')}</h2>
-            <p>Manage team members under this master</p>
-        </div>
-
-        <div class="breadcrumb">
-            <span class="breadcrumb-item" onclick="loadMastersView()">Masters</span>
-            <span class="breadcrumb-separator">→</span>
-            <span class="breadcrumb-item active">${sanitizeText(master.name || 'Master')}'s Team</span>
-        </div>
-
-        <div class="users-grid" id="users-container">
-            <div class="loading-card">Loading team members...</div>
-        </div>
-    `;
-
-    await loadMasterTeam(masterId);
-}
-
-// Load Master's Team
-async function loadMasterTeam(masterId) {
-    try {
-        const usersContainer = document.getElementById('users-container');
-        if (!usersContainer) return;
-
-        // Get team members for this master
-        const teamMembers = allUsers.filter(user => user.linkedMaster === masterId);
-
-        if (teamMembers.length === 0) {
-            usersContainer.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                            <circle cx="9" cy="7" r="4"/>
-                        </svg>
-                    </div>
-                    <h3>No Team Members</h3>
-                    <p>This master doesn't have any team members yet.</p>
-                </div>
-            `;
-            return;
-        }
-
-        // Get leads for each team member
-        const leadsSnapshot = await db.collection('leads').get();
-        const leads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        const teamWithStats = teamMembers.map(user => {
-            const userLeads = leads.filter(lead => 
-                lead.assignedTo === user.id || lead.createdBy === user.id
-            );
-            return {
-                ...user,
-                leadsCount: userLeads.length,
-                leads: userLeads
-            };
-        });
-
-        // Render team members
-        usersContainer.innerHTML = teamWithStats.map(user => `
-            <div class="user-card" onclick="selectUser('${user.id}')">
-                <div class="user-header">
-                    <div class="user-avatar">
-                        ${(user.name || user.email || 'U').charAt(0).toUpperCase()}
-                    </div>
-                    <div class="user-info">
-                        <h3>${sanitizeText(user.name || 'Unnamed User')}</h3>
-                        <p>${sanitizeText(user.email)}</p>
-                        <span class="user-badge">User</span>
-                    </div>
-                </div>
-                <div class="user-stats">
-                    <div class="stat-item">
-                        <span class="stat-number">${user.leadsCount}</span>
-                        <span class="stat-label">Total Leads</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number">${user.status === 'active' ? 'Active' : 'Inactive'}</span>
-                        <span class="stat-label">Status</span>
-                    </div>
-                </div>
-                <div class="user-footer">
-                    <span class="view-leads">Click to view leads →</span>
-                </div>
-            </div>
-        `).join('');
-
-    } catch (error) {
-        console.error('❌ Error loading master team:', error);
-    }
-}
-
-// Select User and Show Their Leads
-async function selectUser(userId) {
-    console.log('📋 Selecting user:', userId);
-    
-    selectedUserId = userId;
-    currentView = 'leads';
-    currentViewStack.push({ type: 'user', id: userId });
-    
-    const user = allUsers.find(u => u.id === userId);
-    const master = allMasters.find(m => m.id === selectedMasterId);
-    
-    if (!user) return;
-
-    const leadsSection = document.getElementById('leads-section');
-    leadsSection.innerHTML = `
-        <div class="section-header">
-            <h2>Leads - ${sanitizeText(user.name || 'Unnamed User')}</h2>
-            <p>View and manage leads for this user</p>
-        </div>
-
-        <div class="breadcrumb">
-            <span class="breadcrumb-item" onclick="loadMastersView()">Masters</span>
-            <span class="breadcrumb-separator">→</span>
-            <span class="breadcrumb-item" onclick="selectMaster('${selectedMasterId}')">${sanitizeText(master?.name || 'Master')}'s Team</span>
-            <span class="breadcrumb-separator">→</span>
-            <span class="breadcrumb-item active">${sanitizeText(user.name || 'User')}'s Leads</span>
-        </div>
-
-        <div class="data-table-container">
-            <div class="table-header">
-                <div class="search-box">
-                    <input type="text" id="leads-search" placeholder="Search leads..." onkeyup="filterUserLeads(this.value)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"/>
-                        <path d="M21 21l-4.35-4.35"/>
-                    </svg>
-                </div>
-                <button class="refresh-btn" onclick="selectUser('${userId}')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="23,4 23,10 17,10"/>
-                        <polyline points="1,20 1,14 7,14"/>
-                        <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10"/>
-                        <path d="M3.51,15a9,9,0,0,0,14.85,3.36L23,14"/>
-                    </svg>
-                    Refresh
-                </button>
-            </div>
-
-            <div class="table-wrapper">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Phone</th>
-                            <th>Email</th>
-                            <th>Status</th>
-                            <th>Source</th>
-                            <th>Created</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="user-leads-table-body">
-                        <tr>
-                            <td colspan="7" class="loading-row">Loading leads...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
-
-    await loadUserLeads(userId);
-}
-
-// Load User's Leads
-async function loadUserLeads(userId) {
-    try {
-        const tableBody = document.getElementById('user-leads-table-body');
-        if (!tableBody) return;
-
-        const leadsSnapshot = await db.collection('leads')
-            .where('assignedTo', '==', userId)
