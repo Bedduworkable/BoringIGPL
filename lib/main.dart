@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
+import 'screens/master_selection_screen.dart';
+import 'screens/master_invitations_screen.dart';
 import 'screens/lead_detail_screen.dart';
 import 'providers/auth_provider.dart';
 import 'providers/leads_provider.dart';
 import 'services/notification_service.dart';
-import 'screens/lead_detail_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -107,7 +108,65 @@ class _MyAppState extends ConsumerState<MyApp> {
       home: authState.when(
         data: (user) {
           print("🔐 Auth state: ${user != null ? 'Logged in' : 'Not logged in'}");
-          return user != null ? const DashboardScreen() : const LoginScreen();
+
+          if (user == null) {
+            return const LoginScreen();
+          }
+
+          // Check user's current state and navigate accordingly
+          return ref.watch(currentUserProvider).when(
+            data: (userData) {
+              if (userData == null) {
+                return const LoginScreen();
+              }
+
+              print("👤 User role: ${userData.role}, Status: ${userData.status}");
+
+              // Role-based navigation
+              switch (userData.role) {
+                case 'admin':
+                // Admin goes directly to dashboard
+                  return const DashboardScreen();
+
+                case 'master':
+                // Master goes to dashboard (they can manage their team)
+                  return const DashboardScreen();
+
+                case 'user':
+                // Check if user is linked to a master
+                  if (userData.isLinkedToMaster) {
+                    // User is linked, go to dashboard
+                    return const DashboardScreen();
+                  } else {
+                    // User needs to select a master
+                    return const MasterSelectionScreen();
+                  }
+
+                default:
+                // Unknown role, show login
+                  return const LoginScreen();
+              }
+            },
+            loading: () {
+              print("⏳ User data loading...");
+              return const Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text('Loading user data...'),
+                    ],
+                  ),
+                ),
+              );
+            },
+            error: (error, stack) {
+              print("❌ User data error: $error");
+              return const LoginScreen();
+            },
+          );
         },
         loading: () {
           print("⏳ Auth state: Loading...");
@@ -130,6 +189,54 @@ class _MyAppState extends ConsumerState<MyApp> {
         },
       ),
       debugShowCheckedModeBanner: false,
+
+      // Define app routes for navigation
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/dashboard': (context) => const DashboardScreen(),
+        '/master-selection': (context) => const MasterSelectionScreen(),
+        '/master-invitations': (context) => const MasterInvitationsScreen(),
+      },
+    );
+  }
+}
+
+// Helper widget for navigation based on user role
+class RoleBasedNavigator extends ConsumerWidget {
+  const RoleBasedNavigator({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ref.watch(currentUserProvider).when(
+      data: (userData) {
+        if (userData == null) {
+          return const LoginScreen();
+        }
+
+        switch (userData.role) {
+          case 'admin':
+            return const DashboardScreen();
+          case 'master':
+            return const DashboardScreen();
+          case 'user':
+            return userData.isLinkedToMaster
+                ? const DashboardScreen()
+                : const MasterSelectionScreen();
+          default:
+            return const LoginScreen();
+        }
+      },
+      loading: () => const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Loading...'),
+          ],
+        ),
+      ),
+      error: (_, __) => const LoginScreen(),
     );
   }
 }

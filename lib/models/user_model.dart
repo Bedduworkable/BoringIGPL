@@ -4,15 +4,23 @@ class UserModel {
   final String uid;
   final String name;
   final String email;
-  final String role;
-  final String status;
+  final String role; // 'admin', 'master', 'user'
+  final String status; // 'active', 'inactive', 'pending'
+  final String? masterUID; // Only for users - links them to their master
+  final List<String> pendingInvites; // Master UIDs user has sent invites to
+  final DateTime createdAt;
+  final DateTime? linkedAt; // When user was linked to master
 
   UserModel({
     required this.uid,
     required this.name,
     required this.email,
-    this.role = 'employee',  // Default role for new users
-    this.status = 'active',  // Default status for new users
+    this.role = 'user',  // Default role is user
+    this.status = 'pending',  // Default status pending until linked to master
+    this.masterUID,
+    this.pendingInvites = const [],
+    required this.createdAt,
+    this.linkedAt,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map, String uid) {
@@ -20,8 +28,12 @@ class UserModel {
       uid: uid,
       name: map['name'] ?? '',
       email: map['email'] ?? '',
-      role: map['role'] ?? 'employee',    // Default to employee if missing
-      status: map['status'] ?? 'active',  // Default to active if missing
+      role: map['role'] ?? 'user',
+      status: map['status'] ?? 'pending',
+      masterUID: map['masterUID'],
+      pendingInvites: List<String>.from(map['pendingInvites'] ?? []),
+      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      linkedAt: (map['linkedAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -31,7 +43,10 @@ class UserModel {
       'email': email,
       'role': role,
       'status': status,
-      'createdAt': FieldValue.serverTimestamp(),
+      'masterUID': masterUID,
+      'pendingInvites': pendingInvites,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'linkedAt': linkedAt != null ? Timestamp.fromDate(linkedAt!) : null,
     };
   }
 
@@ -41,6 +56,10 @@ class UserModel {
     String? email,
     String? role,
     String? status,
+    String? masterUID,
+    List<String>? pendingInvites,
+    DateTime? createdAt,
+    DateTime? linkedAt,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -48,6 +67,18 @@ class UserModel {
       email: email ?? this.email,
       role: role ?? this.role,
       status: status ?? this.status,
+      masterUID: masterUID ?? this.masterUID,
+      pendingInvites: pendingInvites ?? this.pendingInvites,
+      createdAt: createdAt ?? this.createdAt,
+      linkedAt: linkedAt ?? this.linkedAt,
     );
   }
+
+  // Helper methods
+  bool get isAdmin => role == 'admin';
+  bool get isMaster => role == 'master';
+  bool get isUser => role == 'user';
+  bool get isLinkedToMaster => masterUID != null && masterUID!.isNotEmpty;
+  bool get isPendingMasterLink => isUser && !isLinkedToMaster;
+  bool get isActive => status == 'active';
 }

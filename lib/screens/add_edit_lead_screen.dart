@@ -24,6 +24,7 @@ class _AddEditLeadScreenState extends ConsumerState<AddEditLeadScreen> {
   String _selectedSource = 'Website';
   LeadStatus _selectedStatus = LeadStatus.newLead;
   bool _isLoading = false;
+  String? _selectedAssignedUser; // For role-based assignment
 
   final List<String> _propertyTypes = [
     'Apartment',
@@ -71,6 +72,8 @@ class _AddEditLeadScreenState extends ConsumerState<AddEditLeadScreen> {
     super.dispose();
   }
 
+  // REPLACE YOUR ENTIRE _saveLead() METHOD WITH THIS:
+
   Future<void> _saveLead() async {
     if (!_formKey.currentState!.validate()) return;
     if (_isLoading) return;
@@ -83,11 +86,16 @@ class _AddEditLeadScreenState extends ConsumerState<AddEditLeadScreen> {
       // Get current user with better error handling
       final authState = ref.read(authProvider);
       String? currentUserId;
+      String? currentUserRole;
+      String? currentUserMasterUID;
 
       await authState.when(
         data: (user) async {
           if (user != null) {
-            currentUserId = user.uid;
+            final userData = await ref.read(currentUserProvider.future);
+            currentUserId = userData?.uid;
+            currentUserRole = userData?.role;
+            currentUserMasterUID = userData?.masterUID;
           }
         },
         loading: () async {},
@@ -96,6 +104,17 @@ class _AddEditLeadScreenState extends ConsumerState<AddEditLeadScreen> {
 
       if (currentUserId == null) {
         throw 'Please login again to continue';
+      }
+
+      // Determine assignedTo based on role and input
+      String assignedTo = currentUserId!; // Default to current user
+
+      // If user selected someone else to assign to (masters/admins can do this)
+      if (_selectedAssignedUser != null && _selectedAssignedUser != currentUserId) {
+        // Check if current user has permission to assign to others
+        if (currentUserRole == 'admin' || currentUserRole == 'master') {
+          assignedTo = _selectedAssignedUser!;
+        }
       }
 
       final leadData = LeadModel(
@@ -108,13 +127,16 @@ class _AddEditLeadScreenState extends ConsumerState<AddEditLeadScreen> {
         source: _selectedSource,
         status: _selectedStatus,
         createdBy: widget.lead?.createdBy ?? currentUserId!,
-        assignedTo: widget.lead?.assignedTo ?? currentUserId!,
+        assignedTo: assignedTo,
+        masterUID: null, // This will be set by FirestoreService
+        visibilityScope: 'user', // This will be determined by FirestoreService
         remarks: widget.lead?.remarks ?? [],
         reminders: widget.lead?.reminders ?? [],
         createdAt: widget.lead?.createdAt ?? DateTime.now(),
+        assignedAt: assignedTo != widget.lead?.assignedTo ? DateTime.now() : widget.lead?.assignedAt,
       );
 
-      print("💾 Saving lead: ${leadData.name}");
+      print("💾 Saving lead: ${leadData.name} assigned to: $assignedTo");
 
       if (widget.lead != null) {
         await ref.read(leadsNotifierProvider.notifier)
@@ -227,8 +249,7 @@ class _AddEditLeadScreenState extends ConsumerState<AddEditLeadScreen> {
             ),
 
             const SizedBox(height: 24),
-
-            // Form Content
+// Form Content
             Expanded(
               child: Form(
                 key: _formKey,
@@ -378,9 +399,47 @@ class _AddEditLeadScreenState extends ConsumerState<AddEditLeadScreen> {
                                 });
                               },
                             ),
+                            // Assignment Dropdown (Only for Admin and Master roles)
+                            Consumer(
+                              builder: (context, ref, child) {
+                                final currentUser = ref.watch(currentUserProvider);
+
+                                return currentUser.when(
+                                  data: (userData) {
+                                    if (userData?.role != 'admin' && userData?.role != 'master') {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Column(
+                                      children: [
+                                        const SizedBox(height: 16),
+                                        _ModernDropdown<String>(
+                                          value: _selectedAssignedUser ?? userData!.uid,
+                                          label: 'Assign To',
+                                          icon: Icons.person_outline,
+                                          items: _getAssignableUsers(userData),
+                                          itemBuilder: (userId) => _getUserDisplayName(userId),
+                                          onChanged: (value) {
+                                            setState(() {
+                                              _selectedAssignedUser = value;
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                  loading: () => const SizedBox.shrink(),
+                                  error: (_, __) => const SizedBox.shrink(),
+                                );
+                              },
+                            ),
                           ],
                         ),
                       ),
+                    ],
+                  ),
+                ),
+              ),
+            )
 
                       const SizedBox(height: 24),
 

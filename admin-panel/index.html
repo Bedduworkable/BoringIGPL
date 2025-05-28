@@ -6,8 +6,6 @@
     <title>Real Estate CRM - Admin Panel</title>
     <link rel="stylesheet" href="styles.css">
 
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://*.firebaseapp.com https://*.googleapis.com https://api.ipify.org;">
-
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -37,25 +35,25 @@
         <form id="login-form" class="login-form">
             <div class="input-group">
                 <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" required placeholder="Enter your admin email" autocomplete="email">
+                <input type="email" id="email" name="email" required placeholder="Enter your email" autocomplete="email">
                 <span class="input-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                            <polyline points="22,6 12,13 2,6"/>
-                        </svg>
-                    </span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                </span>
             </div>
 
             <div class="input-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required placeholder="Enter your password" autocomplete="current-password">
                 <span class="input-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                            <circle cx="12" cy="16" r="1"/>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                        </svg>
-                    </span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <circle cx="12" cy="16" r="1"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                </span>
                 <button type="button" id="toggle-password" class="toggle-password">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -121,9 +119,8 @@
                 Leads
             </button>
 
-            <!-- Users menu - only for admin and cp -->
-            <!-- Users menu - only for admin and cp -->
-            <button class="nav-item" data-section="users" data-role="admin,cp">
+            <!-- Users menu - only for admin and master -->
+            <button class="nav-item admin-only master-only" data-section="users">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
@@ -131,8 +128,19 @@
                 Users
             </button>
 
-            <!-- Reports menu - only for admin and cp -->
-            <button class="nav-item admin-only cp-only" data-section="reports" style="display: none;">
+            <!-- Team Management - only for masters -->
+            <button class="nav-item master-only" data-section="team" style="display: none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                Team Management
+            </button>
+
+            <!-- Reports menu - only for admin and master -->
+            <button class="nav-item admin-only master-only" data-section="reports" style="display: none;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                     <polyline points="14,2 14,8 20,8"/>
@@ -167,9 +175,9 @@
             <div class="section-header">
                 <h2>Dashboard Overview</h2>
                 <p class="role-specific-text">
-                    <span class="admin-only">Welcome to your Real Estate CRM Admin Panel - Full Access</span>
-                    <span class="cp-only">Welcome to your Real Estate CRM - Channel Partner Dashboard</span>
-                    <span class="employee-only">Welcome to your Real Estate CRM - Employee Dashboard</span>
+                    <span class="admin-only">Welcome to your Real Estate CRM Admin Panel - Full System Access</span>
+                    <span class="master-only">Welcome to your Real Estate CRM - Master Dashboard with Team Management</span>
+                    <span class="user-only">Welcome to your Real Estate CRM - User Dashboard</span>
                 </p>
             </div>
 
@@ -187,14 +195,14 @@
                         <h3 id="total-leads">0</h3>
                         <p>
                             <span class="admin-only">Total Leads</span>
-                            <span class="cp-only">Team Leads</span>
-                            <span class="employee-only">My Leads</span>
+                            <span class="master-only">Team Leads</span>
+                            <span class="user-only">My Leads</span>
                         </p>
                     </div>
                 </div>
 
-                <!-- Users stat - only for admin and cp -->
-                <div class="stat-card admin-only cp-only" style="display: none;">
+                <!-- Users stat - only for admin and master -->
+                <div class="stat-card admin-only master-only" style="display: none;">
                     <div class="stat-icon green">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -205,7 +213,7 @@
                         <h3 id="total-users">0</h3>
                         <p>
                             <span class="admin-only">Total Users</span>
-                            <span class="cp-only">Team Members</span>
+                            <span class="master-only">Team Members</span>
                         </p>
                     </div>
                 </div>
@@ -261,230 +269,41 @@
 
         <!-- Leads Section -->
         <section id="leads-section" class="content-section">
+            <!-- Content will be dynamically loaded -->
+        </section>
+
+        <!-- Users Section -->
+        <section id="users-section" class="content-section">
+            <!-- Content will be dynamically loaded -->
+        </section>
+
+        <!-- Team Management Section - Master only -->
+        <section id="team-section" class="content-section master-only" style="display: none;">
             <div class="section-header">
-                <h2>Leads Management</h2>
-                <p>
-                    <span class="admin-only">View and manage all leads in the system</span>
-                    <span class="cp-only">View and manage leads from your team</span>
-                    <span class="employee-only">View and manage your assigned leads</span>
-                </p>
+                <h2>Team Management</h2>
+                <p>Manage your team members and invitations</p>
             </div>
-
-            <!-- User List View (Default) -->
-            <div id="user-list-view">
-                <div class="table-header">
-                    <div class="search-box">
-                        <input type="text" id="user-search" placeholder="Search users...">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="M21 21l-4.35-4.35"/>
-                        </svg>
-                    </div>
-                    <div style="display: flex; gap: 8px;">
-                        <button class="refresh-btn" onclick="loadUsersList()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="23,4 23,10 17,10"/>
-                                <polyline points="1,20 1,14 7,14"/>
-                                <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10"/>
-                                <path d="M3.51,15a9,9,0,0,0,14.85,3.36L23,14"/>
-                            </svg>
-                            Refresh
-                        </button>
-                        <!-- View All button - only for admin and cp -->
-                        <button class="view-all-btn admin-only cp-only" onclick="showAllLeads()" style="display: none;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                <circle cx="12" cy="12" r="3"/>
-                            </svg>
-                            View All Leads
-                        </button>
-                    </div>
+            <div class="coming-soon">
+                <div class="coming-soon-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
                 </div>
-
-                <div id="users-list" class="user-list">
-                    <div class="user-card">
-                        <div class="user-header">
-                            <div class="user-avatar">L</div>
-                            <div class="user-details">
-                                <h4>Loading users...</h4>
-                                <p>Please wait</p>
-                            </div>
-                        </div>
-                        <div class="user-stats">
-                            <span>Total Leads: <span class="highlight">-</span></span>
-                            <span>This Month: <span class="highlight">-</span></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Selected User Leads View -->
-            <div id="user-leads-view" class="data-table-container" style="display: none;">
-                <div class="table-header">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <button class="btn btn-secondary" onclick="backToUsersList()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="15,18 9,12 15,6"/>
-                            </svg>
-                            Back to Users
-                        </button>
-                        <div>
-                            <h3 id="selected-user-name" style="margin: 0; font-size: 16px; color: #111827;">User's Leads</h3>
-                            <p style="margin: 0; font-size: 12px; color: #6b7280;">Showing leads for selected user</p>
-                        </div>
-                    </div>
-                    <div class="search-box">
-                        <input type="text" id="user-leads-search" placeholder="Search leads...">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="21 21l-4.35-4.35"/>
-                        </svg>
-                    </div>
-                </div>
-
-                <div class="table-wrapper">
-                    <table id="user-leads-table" class="data-table">
-                        <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Phone</th>
-                            <th>Email</th>
-                            <th>Status</th>
-                            <th>Source</th>
-                            <th>Created</th>
-                            <th>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td colspan="7" class="loading-row">Select a user to view their leads</td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- All Leads View - Admin and CP only -->
-            <div id="all-leads-view" class="data-table-container admin-only cp-only" style="display: none;">
-                <div class="table-header">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <button class="btn btn-secondary" onclick="backToUsersList()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="15,18 9,12 15,6"/>
-                            </svg>
-                            Back to Users
-                        </button>
-                        <div>
-                            <h3 style="margin: 0; font-size: 16px; color: #111827;">All Leads</h3>
-                            <p style="margin: 0; font-size: 12px; color: #6b7280;">
-                                <span class="admin-only">Showing all leads in the system</span>
-                                <span class="cp-only">Showing all team leads</span>
-                            </p>
-                        </div>
-                    </div>
-                    <div class="search-box">
-                        <input type="text" id="all-leads-search" placeholder="Search all leads...">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="21 21l-4.35-4.35"/>
-                        </svg>
-                    </div>
-                </div>
-
-                <div class="table-wrapper">
-                    <table id="all-leads-table" class="data-table">
-                        <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Phone</th>
-                            <th>Email</th>
-                            <th>Status</th>
-                            <th>Source</th>
-                            <th>Assigned To</th>
-                            <th>Created</th>
-                            <th>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td colspan="8" class="loading-row">Loading all leads...</td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <h3>Team Management Coming Soon</h3>
+                <p>Advanced team management features are being developed.</p>
             </div>
         </section>
 
-        <!-- Users Section - Admin and CP only -->
-        <!-- Users Section - Admin and CP only -->
-        <section id="users-section" class="content-section" data-role="admin,cp">
-            <div class="section-header">
-                <h2>User Management</h2>
-                <p>
-                    <span class="admin-only">Manage all system users and their permissions</span>
-                    <span class="cp-only">Manage your team members</span>
-                </p>
-            </div>
-
-            <div class="data-table-container">
-                <div class="table-header">
-                    <div class="search-box">
-                        <input type="text" id="users-search" placeholder="Search users...">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="21 21l-4.35-4.35"/>
-                        </svg>
-                    </div>
-                    <div style="display: flex; gap: 8px;">
-                        <button class="refresh-btn" onclick="loadUsers()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="23,4 23,10 17,10"/>
-                                <polyline points="1,20 1,14 7,14"/>
-                                <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10"/>
-                                <path d="M3.51,15a9,9,0,0,0,14.85,3.36L23,14"/>
-                            </svg>
-                            Refresh
-                        </button>
-                        <!-- Add User button - Admin only -->
-                        <button class="btn btn-primary" onclick="addUser()" data-role="admin">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="12" y1="5" x2="12" y2="19"/>
-                                <line x1="5" y1="12" x2="19" y2="12"/>
-                            </svg>
-                            Add User
-                        </button>
-                    </div>
-                </div>
-
-                <div class="table-wrapper">
-                    <table id="users-table" class="data-table">
-                        <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Status</th>
-                            <th>Last Login</th>
-                            <th>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td colspan="6" class="loading-row">Loading users...</td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- Reports Section - Admin and CP only -->
-        <section id="reports-section" class="content-section admin-only cp-only" style="display: none;">
+        <!-- Reports Section - Admin and Master only -->
+        <section id="reports-section" class="content-section admin-only master-only" style="display: none;">
             <div class="section-header">
                 <h2>Reports & Analytics</h2>
                 <p>
                     <span class="admin-only">System-wide reports and analytics</span>
-                    <span class="cp-only">Team performance reports and analytics</span>
+                    <span class="master-only">Team performance reports and analytics</span>
                 </p>
             </div>
 
@@ -505,21 +324,205 @@
     </main>
 </div>
 
-<!-- Security Notice (Hidden - for developers) -->
-<div id="security-notice" style="display: none;">
-    <div class="security-banner">
-        🔒 This application uses advanced security measures including role-based access control,
-        input sanitization, and activity logging. Unauthorized access attempts are monitored and logged.
-    </div>
-</div>
+<!-- Add the complete script -->
+<script src="script.js" type="module"></script>
 
-<!-- Scripts in correct order -->
-<script src="auth-guard.js"></script>
-<script src="sanitizer.js"></script>
-<script src="script.js"></script>
+<!-- Add these styles for table components -->
+<style>
+    .data-table-container {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
 
-<!-- CSP Meta Tag for additional security -->
+    .table-header {
+        padding: 20px;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f9fafb;
+    }
 
+    .search-box {
+        position: relative;
+        width: 280px;
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: 10px 16px 10px 40px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 14px;
+        background: white;
+        transition: all 0.2s ease;
+    }
+
+    .search-box input:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .search-box svg {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+    }
+
+    .refresh-btn {
+        background: #6366f1;
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .refresh-btn:hover {
+        background: #4f46e5;
+        transform: translateY(-1px);
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table th {
+        background: #f9fafb;
+        padding: 16px;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+        border-bottom: 2px solid #e5e7eb;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+    }
+
+    .data-table td {
+        padding: 16px;
+        border-bottom: 1px solid #f3f4f6;
+        color: #6b7280;
+        font-size: 14px;
+        vertical-align: middle;
+    }
+
+    .data-table tr:hover {
+        background: #f9fafb;
+    }
+
+    .loading-row {
+        text-align: center;
+        color: #9ca3af;
+        font-style: italic;
+        padding: 32px;
+    }
+
+    .status-badge {
+        padding: 4px 10px;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 500;
+        text-transform: capitalize;
+    }
+
+    .status-newlead,
+    .status-new { background: #dbeafe; color: #1d4ed8; }
+    .status-contacted { background: #e0e7ff; color: #3730a3; }
+    .status-interested { background: #dcfce7; color: #166534; }
+    .status-followup { background: #fef3c7; color: #92400e; }
+    .status-visit { background: #e0e7ff; color: #3730a3; }
+    .status-booked { background: #d1fae5; color: #065f46; }
+    .status-closed { background: #d1fae5; color: #065f46; }
+    .status-dropped { background: #fee2e2; color: #991b1b; }
+    .status-notinterested { background: #fee2e2; color: #991b1b; }
+    .status-active { background: #d1fae5; color: #065f46; }
+    .status-inactive { background: #fee2e2; color: #991b1b; }
+    .status-admin { background: #fee2e2; color: #991b1b; }
+    .status-master { background: #dbeafe; color: #1d4ed8; }
+    .status-user { background: #d1fae5; color: #065f46; }
+
+    .action-btn {
+        background: none;
+        border: 1px solid #d1d5db;
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 12px;
+        font-weight: 500;
+        margin-right: 6px;
+    }
+
+    .action-btn:hover {
+        background: #f3f4f6;
+        transform: translateY(-1px);
+    }
+
+    .action-btn.view {
+        border-color: #3b82f6;
+        color: #3b82f6;
+    }
+    .action-btn.view:hover {
+        background: #eff6ff;
+    }
+
+    .coming-soon {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 80px 20px;
+        text-align: center;
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .coming-soon-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        margin-bottom: 24px;
+    }
+
+    .coming-soon h3 {
+        font-size: 20px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 8px;
+    }
+
+    .coming-soon p {
+        color: #6b7280;
+        font-size: 14px;
+        max-width: 400px;
+    }
+</style>
 
 </body>
 </html>

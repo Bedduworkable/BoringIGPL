@@ -5,8 +5,8 @@ class AuthGuard {
         this.userRole = null;
         this.permissions = {
             admin: ['all'],
-            cp: ['leads:own', 'leads:team', 'users:team', 'reports:read'],
-            employee: ['leads:assigned', 'leads:created', 'profile:edit']
+            master: ['leads:own', 'leads:team', 'users:team', 'reports:read', 'team:manage'],
+            user: ['leads:assigned', 'leads:created', 'profile:edit']
         };
     }
 
@@ -43,8 +43,8 @@ class AuthGuard {
 
             const userData = userDoc.data();
 
-            // Validate user has valid role
-            if (!userData.role || !['admin', 'cp', 'employee'].includes(userData.role)) {
+            // Validate user has valid role - updated to include master instead of cp
+            if (!userData.role || !['admin', 'master', 'user'].includes(userData.role)) {
                 throw new Error('Invalid user role');
             }
 
@@ -122,20 +122,19 @@ class AuthGuard {
             return true;
         }
 
-        // CP can access leads from their team members
-        if (this.userRole === 'cp') {
-            // This would need additional logic to check team relationships
+        // Master can access leads from their linked users
+        if (this.userRole === 'master') {
             return this.isTeamLead(lead);
         }
 
         return false;
     }
 
-    // Check if lead belongs to CP's team
+    // Check if lead belongs to Master's team
     isTeamLead(lead) {
-        // Placeholder - implement based on your team structure
-        // You might store linkedCP field in user documents
-        return false;
+        // Check if the lead is assigned to someone in this master's team
+        // This would need to check the linkedMaster field in user documents
+        return this.isTeamMemberByUserId(lead.assignedTo) || this.isTeamMemberByUserId(lead.createdBy);
     }
 
     // Check if user can access specific user data
@@ -148,8 +147,8 @@ class AuthGuard {
         // Users can access their own data
         if (userId === this.currentUser.uid) return true;
 
-        // CP can access their team members
-        if (this.userRole === 'cp') {
+        // Master can access their team members
+        if (this.userRole === 'master') {
             return this.isTeamMember(userId);
         }
 
@@ -158,8 +157,15 @@ class AuthGuard {
 
     // Check if user is team member
     isTeamMember(userId) {
-        // Placeholder - implement based on your team structure
-        return false;
+        // This would need to check if the user has linkedMaster pointing to current master
+        // For now, we'll implement a placeholder that can be enhanced
+        return false; // Implement based on your team structure
+    }
+
+    // Check if user is team member by user ID
+    isTeamMemberByUserId(userId) {
+        // Similar to isTeamMember but for checking leads
+        return false; // Implement based on your team structure
     }
 
     // Require authentication - redirect to login if not authenticated
@@ -194,21 +200,20 @@ class AuthGuard {
     }
 
     // Show/hide UI elements based on role
-    // Show/hide UI elements based on role
     applyRoleBasedUI() {
         if (!this.isAuthenticated()) return;
 
         console.log('🎨 Applying role-based UI for role:', this.userRole);
 
-        // Hide elements based on role
+        // Hide elements based on role - updated to use master instead of cp
         const elementsToHide = {
-            employee: [
+            user: [
                 '.admin-only',
-                '.cp-only',
+                '.master-only',
                 '[data-role="admin"]',
-                '[data-role="cp"]'
+                '[data-role="master"]'
             ],
-            cp: [
+            master: [
                 '.admin-only',
                 '[data-role="admin"]'
             ],
@@ -226,7 +231,6 @@ class AuthGuard {
             });
         });
 
-        // Show role-specific elements
         // Show role-specific elements
         const showSelectors = [
             `.${this.userRole}-only`,
