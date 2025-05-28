@@ -1,597 +1,12 @@
-<!-- Dashboard Page -->
-<div id="dashboard-page" class="page dashboard-page" style="display: none;">
-    <nav class="navbar">
-        <div class="nav-brand">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 9.5L12 4l9 5.5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-11z"/>
-                <polyline points="9,22 9,12 15,12 15,22"/>
-            </svg>
-            <span>Real Estate CRM</span>
-        </div>
-
-        <div class="nav-menu">
-            <button class="nav-item active" data-section="overview">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="7" height="7"/>
-                    <rect x="14" y="3" width="7" height="7"/>
-                    <rect x="14" y="14" width="7" height="7"/>
-                    <rect x="3" y="14" width="7" height="7"/>
-                </svg>
-                Dashboard
-            </button>
-
-            <button class="nav-item" data-section="leads">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-                Leads
-            </button>
-
-            <button class="nav-item" data-section="users">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                </svg>
-                Users
-            </button>
-        </div>
-
-        <div class="nav-user">
-            <div class="user-info">
-                <span id="user-name">Admin User</span>
-                <span id="user-email">admin@example.com</span>
-            </div>
-            <button id="logout-btn" class="logout-btn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                    <polyline points="16,17 21,12 16,7"/>
-                    <line x1="21" y1="12" x2="9" y2="12"/>
-                </svg>
-                Logout
-            </button>
-        </div>
-    </nav>
-
-    <main class="main-content">
-        <!-- Overview Section -->
-        <section id="overview-section" class="content-section active">
-            <div class="section-header">
-                <h2>Dashboard Overview</h2>
-                <p>Welcome to your Real Estate CRM Admin Panel</p>
-            </div>
-
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon blue">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                            <circle cx="9" cy="7" r="4"/>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <h3 id="total-leads">0</h3>
-                        <p>Total Leads</p>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon green">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <h3 id="total-users">0</h3>
-                        <p>Active Users</p>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon purple">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 9.5L12 4l9 5.5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-11z"/>
-                            <polyline points="9,22 9,12 15,12 15,22"/>
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <h3 id="new-leads-today">0</h3>
-                        <p>New Leads Today</p>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon orange">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="18" y1="20" x2="18" y2="10"/>
-                            <line x1="12" y1="20" x2="12" y2="4"/>
-                            <line x1="6" y1="20" x2="6" y2="14"/>
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <h3 id="conversion-rate">0%</h3>
-                        <p>Conversion Rate</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="recent-activity">
-                <h3>Recent Activity</h3>
-                <div id="activity-list" class="activity-list">
-                    <div class="activity-item">
-                        <div class="activity-icon">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                            </svg>
-                        </div>
-                        <div class="activity-content">
-                            <p>Loading recent activity...</p>
-                            <span class="activity-time">Now</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Leads Section -->
-        <section id="leads-section" class="content-section">
-            <div class="section-header">
-                <h2>Leads Management</h2>
-                <p>View and manage leads by user</p>
-            </div>
-
-            <!-- User List View (Default) -->
-            <div id="user-list-view">
-                <div class="table-header">
-                    <div class="search-box">
-                        <input type="text" id="user-search" placeholder="Search users...">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="21 21l-4.35-4.35"/>
-                        </svg>
-                    </div>
-                    <div style="display: flex; gap: 8px;">
-                        <button class="refresh-btn" onclick="loadUsersList()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="23,4 23,10 17,10"/>
-                                <polyline points="1,20 1,14 7,14"/>
-                                <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10"/>
-                                <path d="M3.51,15a9,9,0,0,0,14.85,3.36L23,14"/>
-                            </svg>
-                            Refresh
-                        </button>
-                        <button class="view-all-btn" onclick="showAllLeads()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                <circle cx="12" cy="12" r="3"/>
-                            </svg>
-                            View All Leads
-                        </button>
-                    </div>
-                </div>
-
-                <div id="users-list" class="user-list">
-                    <div class="user-card">
-                        <div class="user-header">
-                            <div class="user-avatar">L</div>
-                            <div class="user-details">
-                                <h4>Loading users...</h4>
-                                <p>Please wait</p>
-                            </div>
-                        </div>
-                        <div class="user-stats">
-                            <span>Total Leads: <span class="highlight">-</span></span>
-                            <span>This Month: <span class="highlight">-</span></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Selected User Leads View -->
-            <div id="user-leads-view" class="data-table-container" style="display: none;">
-                <div class="table-header">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <button class="btn btn-secondary" onclick="backToUsersList()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="15,18 9,12 15,6"/>
-                            </svg>
-                            Back to Users
-                        </button>
-                        <div>
-                            <h3 id="selected-user-name" style="margin: 0; font-size: 16px; color: #111827;">User's Leads</h3>
-                            <p style="margin: 0; font-size: 12px; color: #6b7280;">Showing leads for selected user</p>
-                        </div>
-                    </div>
-                    <div class="search-box">
-                        <input type="text" id="user-leads-search" placeholder="Search leads...">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="21 21l-4.35-4.35"/>
-                        </svg>
-                    </div>
-                </div>
-
-                <div class="table-wrapper">
-                    <table id="user-leads-table" class="data-table">
-                        <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Phone</th>
-                            <th>Email</th>
-                            <th>Status</th>
-                            <th>Source</th>
-                            <th>Created</th>
-                            <th>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td colspan="7" class="loading-row">Select a user to view their leads</td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- All Leads View -->
-            <div id="all-leads-view" class="data-table-container" style="display: none;">
-                <div class="table-header">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <button class="btn btn-secondary" onclick="backToUsersList()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="15,18 9,12 15,6"/>
-                            </svg>
-                            Back to Users
-                        </button>
-                        <div>
-                            <h3 style="margin: 0; font-size: 16px; color: #111827;">All Leads</h3>
-                            <p style="margin: 0; font-size: 12px; color: #6b7280;">Showing all leads in the system</p>
-                        </div>
-                    </div>
-                    <div class="search-box">
-                        <input type="text" id="all-leads-search" placeholder="Search all leads...">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="21 21l-4.35-4.35"/>
-                        </svg>
-                    </div>
-                </div>
-
-                <div class="table-wrapper">
-                    <table id="all-leads-table" class="data-table">
-                        <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Phone</th>
-                            <th>Email</th>
-                            <th>Status</th>
-                            <th>Source</th>
-                            <th>Assigned To</th>
-                            <th>Created</th>
-                            <th>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td colspan="8" class="loading-row">Loading all leads...</td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- Edit Lead Section -->
-        <section id="edit-lead-section" class="content-section">
-            <div class="edit-header">
-                <div class="header-content">
-                    <div class="header-info">
-                        <h1 id="edit-title">Edit Lead</h1>
-                        <p id="edit-subtitle">Update lead information and manage follow-ups</p>
-                    </div>
-                    <div class="header-actions">
-                        <button class="btn btn-secondary" onclick="cancelEditLead()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="15,18 9,12 15,6"/>
-                            </svg>
-                            Cancel
-                        </button>
-                        <button class="btn btn-primary" onclick="saveEditedLead()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                                <polyline points="17,21 17,13 7,13 7,21"/>
-                                <polyline points="7,3 7,8 15,8"/>
-                            </svg>
-                            Save Changes
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="edit-container">
-                <form id="edit-lead-form" class="edit-form">
-                    <!-- Personal Information Section -->
-                    <div class="form-section">
-                        <div class="section-header">
-                            <div class="section-icon">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                    <circle cx="12" cy="7" r="4"/>
-                                </svg>
-                            </div>
-                            <div class="section-info">
-                                <h2>Personal Information</h2>
-                                <p>Basic contact details and personal information</p>
-                            </div>
-                        </div>
-
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="edit-lead-name">Full Name *</label>
-                                <input type="text" id="edit-lead-name" name="name" required placeholder="Enter full name">
-                            </div>
-
-                            <div class="form-group">
-                                <label for="edit-lead-phone">Phone Number *</label>
-                                <input type="tel" id="edit-lead-phone" name="phone" required placeholder="Enter phone number">
-                            </div>
-
-                            <div class="form-group">
-                                <label for="edit-lead-email">Email Address</label>
-                                <input type="email" id="edit-lead-email" name="email" placeholder="Enter email address">
-                            </div>
-
-                            <div class="form-group">
-                                <label for="edit-lead-alt-phone">Alternative Phone</label>
-                                <input type="tel" id="edit-lead-alt-phone" name="altPhone" placeholder="Alternative contact number">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Lead Information Section -->
-                    <div class="form-section">
-                        <div class="section-header">
-                            <div class="section-icon">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M3 9.5L12 4l9 5.5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-11z"/>
-                                    <polyline points="9,22 9,12 15,12 15,22"/>
-                                </svg>
-                            </div>
-                            <div class="section-info">
-                                <h2>Lead Information</h2>
-                                <p>Property requirements and lead status details</p>
-                            </div>
-                        </div>
-
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="edit-lead-status">Lead Status *</label>
-                                <select id="edit-lead-status" name="status" required>
-                                    <option value="">Select status</option>
-                                    <option value="newLead">New Lead</option>
-                                    <option value="contacted">Contacted</option>
-                                    <option value="interested">Interested</option>
-                                    <option value="followup">Follow Up</option>
-                                    <option value="visit">Visit Scheduled</option>
-                                    <option value="booked">Booked</option>
-                                    <option value="closed">Closed</option>
-                                    <option value="notinterested">Not Interested</option>
-                                    <option value="dropped">Dropped</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="edit-lead-source">Lead Source</label>
-                                <select id="edit-lead-source" name="source">
-                                    <option value="">Select source</option>
-                                    <option value="website">Website</option>
-                                    <option value="facebook">Facebook</option>
-                                    <option value="instagram">Instagram</option>
-                                    <option value="google">Google Ads</option>
-                                    <option value="referral">Referral</option>
-                                    <option value="walk-in">Walk-in</option>
-                                    <option value="cold-call">Cold Call</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="edit-lead-property-type">Property Type</label>
-                                <select id="edit-lead-property-type" name="propertyType">
-                                    <option value="">Select property type</option>
-                                    <option value="apartment">Apartment</option>
-                                    <option value="villa">Villa</option>
-                                    <option value="house">House</option>
-                                    <option value="plot">Plot</option>
-                                    <option value="commercial">Commercial</option>
-                                    <option value="office">Office Space</option>
-                                    <option value="warehouse">Warehouse</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="edit-lead-budget">Budget Range</label>
-                                <select id="edit-lead-budget" name="budget">
-                                    <option value="">Select budget range</option>
-                                    <option value="under-50L">Under ₹50 Lakh</option>
-                                    <option value="50L-1Cr">₹50 Lakh - ₹1 Crore</option>
-                                    <option value="1Cr-2Cr">₹1 Crore - ₹2 Crore</option>
-                                    <option value="2Cr-5Cr">₹2 Crore - ₹5 Crore</option>
-                                    <option value="above-5Cr">Above ₹5 Crore</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group full-width">
-                                <label for="edit-lead-location">Preferred Location</label>
-                                <input type="text" id="edit-lead-location" name="location" placeholder="Enter preferred location/area">
-                            </div>
-
-                            <div class="form-group full-width">
-                                <label for="edit-lead-requirements">Specific Requirements</label>
-                                <textarea id="edit-lead-requirements" name="requirements" rows="3" placeholder="Any specific requirements or preferences..."></textarea>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Assignment Section -->
-                    <div class="form-section">
-                        <div class="section-header">
-                            <div class="section-icon">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                    <circle cx="9" cy="7" r="4"/>
-                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                                </svg>
-                            </div>
-                            <div class="section-info">
-                                <h2>Assignment & Tracking</h2>
-                                <p>Lead assignment and follow-up information</p>
-                            </div>
-                        </div>
-
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="edit-lead-assigned-to">Assigned To</label>
-                                <select id="edit-lead-assigned-to" name="assignedTo">
-                                    <option value="">Select team member</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="edit-lead-priority">Priority Level</label>
-                                <select id="edit-lead-priority" name="priority">
-                                    <option value="">Select priority</option>
-                                    <option value="high">High Priority</option>
-                                    <option value="medium">Medium Priority</option>
-                                    <option value="low">Low Priority</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="edit-lead-next-followup">Next Follow-up Date</label>
-                                <input type="datetime-local" id="edit-lead-next-followup" name="nextFollowup">
-                            </div>
-
-                            <div class="form-group">
-                                <label for="edit-lead-expected-closure">Expected Closure Date</label>
-                                <input type="date" id="edit-lead-expected-closure" name="expectedClosure">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Remarks Section -->
-                    <div class="form-section">
-                        <div class="section-header">
-                            <div class="section-icon">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                    <polyline points="14,2 14,8 20,8"/>
-                                    <line x1="16" y1="13" x2="8" y2="13"/>
-                                    <line x1="16" y1="17" x2="8" y2="17"/>
-                                    <polyline points="10,9 9,9 8,9"/>
-                                </svg>
-                            </div>
-                            <div class="section-info">
-                                <h2>Remarks & Notes</h2>
-                                <p>Add internal notes and communication history</p>
-                            </div>
-                        </div>
-
-                        <div class="remarks-section">
-                            <div class="add-remark">
-                                <div class="form-group">
-                                    <label for="new-remark">Add New Remark</label>
-                                    <textarea id="new-remark" name="newRemark" rows="3" placeholder="Enter your remark or note here..."></textarea>
-                                </div>
-                                <button type="button" class="btn btn-outline" onclick="addEditRemark()">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="12" y1="5" x2="12" y2="19"/>
-                                        <line x1="5" y1="12" x2="19" y2="12"/>
-                                    </svg>
-                                    Add Remark
-                                </button>
-                            </div>
-
-                            <div class="existing-remarks">
-                                <h4>Previous Remarks</h4>
-                                <div id="edit-remarks-list" class="remarks-list">
-                                    <div class="no-remarks">
-                                        <p>No remarks added yet</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </section>
-
-        <!-- Users Section -->
-        <section id="users-section" class="content-section">
-            <div class="section-header">
-                <h2>User Management</h2>
-                <p>Manage system users and their permissions</p>
-            </div>
-
-            <div class="data-table-container">
-                <div class="table-header">
-                    <div class="search-box">
-                        <input type="text" id="users-search" placeholder="Search users...">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="21 21l-4.35-4.35"/>
-                        </svg>
-                    </div>
-                    <button class="refresh-btn" onclick="loadUsers()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="23,4 23,10 17,10"/>
-                            <polyline points="1,20 1,14 7,14"/>
-                            <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10"/>
-                            <path d="M3.51,15a9,9,0,0,0,14.85,3.36L23,14"/>
-                        </svg>
-                        Refresh
-                    </button>
-                </div>
-
-                <div class="table-wrapper">
-                    <table id="users-table" class="data-table">
-                        <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Status</th>
-                            <th>Last Login</th>
-                            <th>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td colspan="6" class="loading-row">Loading users...</td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-    </main>
-</div><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Real Estate CRM - Admin Panel</title>
     <link rel="stylesheet" href="styles.css">
+
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://*.firebaseapp.com https://*.googleapis.com https://api.ipify.org;">
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -622,7 +37,7 @@
         <form id="login-form" class="login-form">
             <div class="input-group">
                 <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" required placeholder="Enter your admin email">
+                <input type="email" id="email" name="email" required placeholder="Enter your admin email" autocomplete="email">
                 <span class="input-icon">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
@@ -633,7 +48,7 @@
 
             <div class="input-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required placeholder="Enter your password">
+                <input type="password" id="password" name="password" required placeholder="Enter your password" autocomplete="current-password">
                 <span class="input-icon">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
@@ -706,19 +121,34 @@
                 Leads
             </button>
 
-            <button class="nav-item" data-section="users">
+            <!-- Users menu - only for admin and cp -->
+            <!-- Users menu - only for admin and cp -->
+            <button class="nav-item" data-section="users" data-role="admin,cp">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
                 </svg>
                 Users
             </button>
+
+            <!-- Reports menu - only for admin and cp -->
+            <button class="nav-item admin-only cp-only" data-section="reports" style="display: none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10,9 9,9 8,9"/>
+                </svg>
+                Reports
+            </button>
         </div>
 
         <div class="nav-user">
             <div class="user-info">
-                <span id="user-name">Admin User</span>
-                <span id="user-email">admin@example.com</span>
+                <span id="user-name">User</span>
+                <span id="user-email">user@example.com</span>
+                <span id="user-role" class="user-role">ROLE</span>
             </div>
             <button id="logout-btn" class="logout-btn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -736,7 +166,11 @@
         <section id="overview-section" class="content-section active">
             <div class="section-header">
                 <h2>Dashboard Overview</h2>
-                <p>Welcome to your Real Estate CRM Admin Panel</p>
+                <p class="role-specific-text">
+                    <span class="admin-only">Welcome to your Real Estate CRM Admin Panel - Full Access</span>
+                    <span class="cp-only">Welcome to your Real Estate CRM - Channel Partner Dashboard</span>
+                    <span class="employee-only">Welcome to your Real Estate CRM - Employee Dashboard</span>
+                </p>
             </div>
 
             <div class="stats-grid">
@@ -751,11 +185,16 @@
                     </div>
                     <div class="stat-content">
                         <h3 id="total-leads">0</h3>
-                        <p>Total Leads</p>
+                        <p>
+                            <span class="admin-only">Total Leads</span>
+                            <span class="cp-only">Team Leads</span>
+                            <span class="employee-only">My Leads</span>
+                        </p>
                     </div>
                 </div>
 
-                <div class="stat-card">
+                <!-- Users stat - only for admin and cp -->
+                <div class="stat-card admin-only cp-only" style="display: none;">
                     <div class="stat-icon green">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -764,7 +203,10 @@
                     </div>
                     <div class="stat-content">
                         <h3 id="total-users">0</h3>
-                        <p>Active Users</p>
+                        <p>
+                            <span class="admin-only">Total Users</span>
+                            <span class="cp-only">Team Members</span>
+                        </p>
                     </div>
                 </div>
 
@@ -821,7 +263,11 @@
         <section id="leads-section" class="content-section">
             <div class="section-header">
                 <h2>Leads Management</h2>
-                <p>View and manage leads by user</p>
+                <p>
+                    <span class="admin-only">View and manage all leads in the system</span>
+                    <span class="cp-only">View and manage leads from your team</span>
+                    <span class="employee-only">View and manage your assigned leads</span>
+                </p>
             </div>
 
             <!-- User List View (Default) -->
@@ -831,7 +277,7 @@
                         <input type="text" id="user-search" placeholder="Search users...">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="8"/>
-                            <path d="21 21l-4.35-4.35"/>
+                            <path d="M21 21l-4.35-4.35"/>
                         </svg>
                     </div>
                     <div style="display: flex; gap: 8px;">
@@ -844,7 +290,8 @@
                             </svg>
                             Refresh
                         </button>
-                        <button class="view-all-btn" onclick="showAllLeads()">
+                        <!-- View All button - only for admin and cp -->
+                        <button class="view-all-btn admin-only cp-only" onclick="showAllLeads()" style="display: none;">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                                 <circle cx="12" cy="12" r="3"/>
@@ -917,8 +364,8 @@
                 </div>
             </div>
 
-            <!-- All Leads View -->
-            <div id="all-leads-view" class="data-table-container" style="display: none;">
+            <!-- All Leads View - Admin and CP only -->
+            <div id="all-leads-view" class="data-table-container admin-only cp-only" style="display: none;">
                 <div class="table-header">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <button class="btn btn-secondary" onclick="backToUsersList()">
@@ -929,7 +376,10 @@
                         </button>
                         <div>
                             <h3 style="margin: 0; font-size: 16px; color: #111827;">All Leads</h3>
-                            <p style="margin: 0; font-size: 12px; color: #6b7280;">Showing all leads in the system</p>
+                            <p style="margin: 0; font-size: 12px; color: #6b7280;">
+                                <span class="admin-only">Showing all leads in the system</span>
+                                <span class="cp-only">Showing all team leads</span>
+                            </p>
                         </div>
                     </div>
                     <div class="search-box">
@@ -965,11 +415,15 @@
             </div>
         </section>
 
-        <!-- Users Section -->
-        <section id="users-section" class="content-section">
+        <!-- Users Section - Admin and CP only -->
+        <!-- Users Section - Admin and CP only -->
+        <section id="users-section" class="content-section" data-role="admin,cp">
             <div class="section-header">
                 <h2>User Management</h2>
-                <p>Manage system users and their permissions</p>
+                <p>
+                    <span class="admin-only">Manage all system users and their permissions</span>
+                    <span class="cp-only">Manage your team members</span>
+                </p>
             </div>
 
             <div class="data-table-container">
@@ -981,15 +435,25 @@
                             <path d="21 21l-4.35-4.35"/>
                         </svg>
                     </div>
-                    <button class="refresh-btn" onclick="loadUsers()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="23,4 23,10 17,10"/>
-                            <polyline points="1,20 1,14 7,14"/>
-                            <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10"/>
-                            <path d="M3.51,15a9,9,0,0,0,14.85,3.36L23,14"/>
-                        </svg>
-                        Refresh
-                    </button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="refresh-btn" onclick="loadUsers()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23,4 23,10 17,10"/>
+                                <polyline points="1,20 1,14 7,14"/>
+                                <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10"/>
+                                <path d="M3.51,15a9,9,0,0,0,14.85,3.36L23,14"/>
+                            </svg>
+                            Refresh
+                        </button>
+                        <!-- Add User button - Admin only -->
+                        <button class="btn btn-primary" onclick="addUser()" data-role="admin">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            Add User
+                        </button>
+                    </div>
                 </div>
 
                 <div class="table-wrapper">
@@ -1013,169 +477,49 @@
                 </div>
             </div>
         </section>
+
+        <!-- Reports Section - Admin and CP only -->
+        <section id="reports-section" class="content-section admin-only cp-only" style="display: none;">
+            <div class="section-header">
+                <h2>Reports & Analytics</h2>
+                <p>
+                    <span class="admin-only">System-wide reports and analytics</span>
+                    <span class="cp-only">Team performance reports and analytics</span>
+                </p>
+            </div>
+
+            <div class="coming-soon">
+                <div class="coming-soon-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10,9 9,9 8,9"/>
+                    </svg>
+                </div>
+                <h3>Reports Coming Soon</h3>
+                <p>Advanced reporting and analytics features are being developed.</p>
+            </div>
+        </section>
     </main>
 </div>
 
-<!-- Lead Detail Modal -->
-<div id="lead-detail-modal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2 id="lead-detail-title">Lead Details</h2>
-            <button class="modal-close" onclick="closeLeadModal()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-            </button>
-        </div>
-
-        <div class="modal-body">
-            <div class="lead-detail-grid">
-                <!-- Personal Information -->
-                <div class="detail-section">
-                    <div class="section-title">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                        Personal Information
-                    </div>
-                    <div class="detail-content">
-                        <div class="detail-item">
-                            <label>Full Name</label>
-                            <span id="detail-name">-</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>Phone Number</label>
-                            <span id="detail-phone">-</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>Email Address</label>
-                            <span id="detail-email">-</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Lead Information -->
-                <div class="detail-section">
-                    <div class="section-title">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 9.5L12 4l9 5.5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-11z"/>
-                            <polyline points="9,22 9,12 15,12 15,22"/>
-                        </svg>
-                        Lead Information
-                    </div>
-                    <div class="detail-content">
-                        <div class="detail-item">
-                            <label>Status</label>
-                            <span id="detail-status" class="status-badge">-</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>Source</label>
-                            <span id="detail-source">-</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>Budget</label>
-                            <span id="detail-budget">-</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>Property Type</label>
-                            <span id="detail-property-type">-</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>Location</label>
-                            <span id="detail-location">-</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Assignment Information -->
-                <div class="detail-section">
-                    <div class="section-title">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                            <circle cx="9" cy="7" r="4"/>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                        </svg>
-                        Assignment & Tracking
-                    </div>
-                    <div class="detail-content">
-                        <div class="detail-item">
-                            <label>Assigned To</label>
-                            <span id="detail-assigned-to">-</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>Created By</label>
-                            <span id="detail-created-by">-</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>Created Date</label>
-                            <span id="detail-created-date">-</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Remarks Section -->
-                <div class="detail-section full-width">
-                    <div class="section-title">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14,2 14,8 20,8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                            <polyline points="10,9 9,9 8,9"/>
-                        </svg>
-                        Remarks & Notes
-                    </div>
-                    <div class="detail-content">
-                        <div id="detail-remarks" class="remarks-list">
-                            <p class="no-data">No remarks added yet</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Reminders Section -->
-                <div class="detail-section full-width">
-                    <div class="section-title">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <polyline points="12,6 12,12 16,14"/>
-                        </svg>
-                        Reminders & Follow-ups
-                    </div>
-                    <div class="detail-content">
-                        <div id="detail-reminders" class="reminders-list">
-                            <p class="no-data">No reminders set</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeLeadModal()">Close</button>
-            <button class="btn btn-primary" onclick="editLeadFromModal()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                </svg>
-                Edit Lead
-            </button>
-            <button class="btn btn-danger" onclick="deleteLeadFromModal()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3,6 5,6 21,6"/>
-                    <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
-                    <line x1="10" y1="11" x2="10" y2="17"/>
-                    <line x1="14" y1="11" x2="14" y2="17"/>
-                </svg>
-                Delete Lead
-            </button>
-        </div>
+<!-- Security Notice (Hidden - for developers) -->
+<div id="security-notice" style="display: none;">
+    <div class="security-banner">
+        🔒 This application uses advanced security measures including role-based access control,
+        input sanitization, and activity logging. Unauthorized access attempts are monitored and logged.
     </div>
 </div>
 
-<!-- Scripts -->
+<!-- Scripts in correct order -->
+<script src="auth-guard.js"></script>
+<script src="sanitizer.js"></script>
 <script src="script.js"></script>
+
+<!-- CSP Meta Tag for additional security -->
+
+
 </body>
 </html>

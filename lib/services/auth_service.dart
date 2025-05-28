@@ -56,11 +56,13 @@ class AuthService {
           uid: credential.user!.uid,
           name: name,
           email: email,
+          role: 'employee',    // Add default role
+          status: 'active',    // Add default status
         );
 
         print("📄 Creating Firestore document with data: ${user.toMap()}");
 
-        // Add explicit error handling for Firestore write
+// Add explicit error handling for Firestore write
         try {
           await _firestore
               .collection('users')
@@ -94,6 +96,8 @@ class AuthService {
               uid: currentUser.uid,
               name: name,
               email: email,
+              role: 'employee',    // Add default role
+              status: 'active',    // Add default status
             );
 
             await _firestore
