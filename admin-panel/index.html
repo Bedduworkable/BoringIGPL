@@ -5,21 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Real Estate CRM - Premium Enterprise Dashboard</title>
 
-    <!-- Security Headers -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' https://www.gstatic.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 
-    <!-- Your existing styles.css -->
     <link rel="stylesheet" href="styles.css">
 
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-    <!-- Premium Professional Styles -->
     <style>
         /* Premium Professional Design System */
         :root {
@@ -621,18 +616,15 @@
     </style>
 </head>
 <body>
-<!-- Security Badge -->
 <div class="security-badge" id="security-badge" style="display: none;">
     Enterprise Security Active
 </div>
 
-<!-- Enhanced Loading Screen -->
 <div id="loading-screen" class="loading-screen">
     <div class="loading-spinner"></div>
     <p>Loading Premium CRM...</p>
 </div>
 
-<!-- Premium Login Page -->
 <div id="login-page" class="page login-page">
     <div class="login-container">
         <div class="login-header">
@@ -687,9 +679,7 @@
     </div>
 </div>
 
-<!-- Premium Dashboard Page -->
 <div id="dashboard-page" class="page dashboard-page" style="display: none;">
-    <!-- Enhanced Navigation -->
     <nav class="navbar">
         <div class="nav-brand">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -764,14 +754,12 @@
     </nav>
 
     <main class="main-content">
-        <!-- Premium Overview Section -->
         <section id="overview-section" class="content-section active">
             <div class="section-header">
                 <h2>Premium Dashboard</h2>
                 <p>Enterprise real estate CRM with advanced security and analytics</p>
             </div>
 
-            <!-- Premium Metrics Grid -->
             <div class="premium-metrics-grid">
                 <div class="premium-metric-card fade-in-up">
                     <div class="metric-header">
@@ -851,7 +839,6 @@
                 </div>
             </div>
 
-            <!-- Premium Activity Section -->
             <div class="premium-activity-section">
                 <div class="activity-header">
                     <h3>Recent Activity</h3>
@@ -876,7 +863,6 @@
                 </div>
             </div>
 
-            <!-- Premium Recent Leads Table -->
             <div class="data-table-container">
                 <div class="table-header">
                     <h3>Recent Leads</h3>
@@ -888,7 +874,7 @@
                             </svg>
                             <input type="text" placeholder="Search leads..." id="leads-search">
                         </div>
-                        <button class="refresh-btn" onclick="loadDashboardData()">
+                        <button class="refresh-btn" onclick="crmApp.loadDashboardData()">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="23,4 23,10 17,10"/>
                                 <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10"/>
@@ -920,7 +906,6 @@
             </div>
         </section>
 
-        <!-- Other sections remain the same with premium styling -->
         <section id="leads-section" class="content-section">
             <div class="section-header">
                 <h2>Lead Management</h2>
@@ -992,9 +977,7 @@
     </main>
 </div>
 
-<!-- Firebase Configuration -->
 <script>
-    // Firebase Configuration - Replace with your actual config
     const firebaseConfig = {
         apiKey: "AIzaSyA0ENNDjS9E2Ph054G_3RZC3sR9J1uQ3Cs",
         authDomain: "igplcrm.firebaseapp.com",
@@ -1003,514 +986,13 @@
         messagingSenderId: "688904879234",
         appId: "1:688904879234:web:3dfae5fcd879ae9a74889b"
     };
-
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+    // firebase.initializeApp and global auth/db declarations are now handled by firebase-utils.js
 </script>
 
-<!-- Premium Secure CRM Logic -->
-<script>
-    // ===================================
-    // PREMIUM SECURE CRM WITH FIREBASE INTEGRATION
-    // ===================================
-
-    // Security Configuration
-    const SECURITY_CONFIG = {
-        maxLoginAttempts: 5,
-        lockoutDuration: 15 * 60 * 1000, // 15 minutes
-        sessionTimeout: 30 * 60 * 1000, // 30 minutes
-        enableSecurityLogging: true,
-        encryptLocalStorage: true
-    };
-
-    // Global variables
-    let currentUser = null;
-    let currentUserRole = null;
-    let isLoading = false;
-    let securityMonitor = null;
-    let sessionTimer = null;
-    let loginAttempts = 0;
-
-    // DOM elements
-    const loadingScreen = document.getElementById('loading-screen');
-    const loginPage = document.getElementById('login-page');
-    const dashboardPage = document.getElementById('dashboard-page');
-    const loginForm = document.getElementById('login-form');
-    const loginBtn = document.getElementById('login-btn');
-    const securityBadge = document.getElementById('security-badge');
-
-    // ===================================
-    // SECURITY FUNCTIONS
-    // ===================================
-
-    function initializeSecurity() {
-        console.log('🛡️ Initializing enterprise security...');
-
-        // Show security badge
-        if (securityBadge) {
-            securityBadge.style.display = 'flex';
-            setTimeout(() => {
-                securityBadge.style.opacity = '0';
-                setTimeout(() => securityBadge.style.display = 'none', 300);
-            }, 5000);
-        }
-
-        // Setup security monitoring
-        setupSecurityMonitoring();
-
-        // Setup session management
-        setupSessionManagement();
-
-        // Check for suspicious activity
-        detectSuspiciousActivity();
-    }
-
-    function setupSecurityMonitoring() {
-        // Monitor for developer tools
-        let devtools = false;
-        const threshold = 160;
-
-        setInterval(() => {
-            if (window.outerHeight - window.innerHeight > threshold ||
-                window.outerWidth - window.innerWidth > threshold) {
-                if (!devtools) {
-                    devtools = true;
-                    logSecurityEvent('devtools_detected', {
-                        timestamp: new Date().toISOString(),
-                        userAgent: navigator.userAgent
-                    });
-                }
-            } else {
-                devtools = false;
-            }
-        }, 1000);
-
-        // Monitor for rapid clicks (potential bot)
-        let clickCount = 0;
-        let clickTimer = null;
-
-        document.addEventListener('click', () => {
-            clickCount++;
-
-            if (clickTimer) clearTimeout(clickTimer);
-
-            clickTimer = setTimeout(() => {
-                if (clickCount > 50) {
-                    logSecurityEvent('rapid_clicking', {
-                        clicks: clickCount,
-                        timeWindow: '10 seconds'
-                    });
-                }
-                clickCount = 0;
-            }, 10000);
-        });
-    }
-
-    function setupSessionManagement() {
-        // Track user activity
-        let lastActivity = Date.now();
-        const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-
-        activityEvents.forEach(event => {
-            document.addEventListener(event, () => {
-                lastActivity = Date.now();
-            }, true);
-        });
-
-        // Check session timeout
-        sessionTimer = setInterval(() => {
-            if (currentUser && Date.now() - lastActivity > SECURITY_CONFIG.sessionTimeout) {
-                logSecurityEvent('session_timeout', {
-                    lastActivity: new Date(lastActivity).toISOString()
-                });
-                handleSessionTimeout();
-            }
-        }, 60000); // Check every minute
-    }
-
-    function detectSuspiciousActivity() {
-        // Check for suspicious login patterns
-        const suspiciousPatterns = [
-            'sqlmap', 'nmap', 'nikto', 'burp', 'scanner'
-        ];
-
-        const userAgent = navigator.userAgent.toLowerCase();
-        if (suspiciousPatterns.some(pattern => userAgent.includes(pattern))) {
-            logSecurityEvent('suspicious_user_agent', {
-                userAgent: navigator.userAgent,
-                ip: 'detected'
-            });
-        }
-    }
-
-    function logSecurityEvent(event, details) {
-        if (!SECURITY_CONFIG.enableSecurityLogging) return;
-
-        console.warn(`🚨 Security Event: ${event}`, details);
-
-        try {
-            // Log to Firestore security collection
-            if (currentUser) {
-                db.collection('security_logs').add({
-                    event: event,
-                    details: details,
-                    userId: currentUser.uid,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    userAgent: navigator.userAgent,
-                    url: window.location.href
-                });
-            }
-        } catch (error) {
-            console.error('Failed to log security event:', error);
-        }
-    }
-
-    function handleSessionTimeout() {
-        showPremiumAlert('Your session has expired for security reasons. Please login again.', 'warning');
-
-        setTimeout(() => {
-            handleLogout();
-        }, 3000);
-    }
-
-    // ===================================
-    // ENHANCED FIREBASE INTEGRATION
-    // ===================================
-
-    function initializeApp() {
-        console.log('🚀 Premium CRM Initializing...');
-
-        // Initialize security first
-        initializeSecurity();
-
-        // Setup event listeners
-        setupEventListeners();
-
-        // Check authentication state
-        auth.onAuthStateChanged(async (user) => {
-            console.log('🔄 Auth state changed:', user ? user.email : 'No user');
-
-            hideLoadingScreen();
-
-            if (user) {
-                try {
-                    await loadUserData(user);
-                    showDashboard();
-                    await loadDashboardData();
-                    resetLoginAttempts();
-                } catch (error) {
-                    console.error('❌ Auth error:', error);
-                    logSecurityEvent('auth_error', { error: error.message });
-                    showLogin();
-                }
-            } else {
-                showLogin();
-                clearUserData();
-            }
-        });
-    }
-
-    function setupEventListeners() {
-        // Login form
-        if (loginForm) {
-            loginForm.addEventListener('submit', handleSecureLogin);
-        }
-
-        // Password toggle
-        const togglePassword = document.getElementById('toggle-password');
-        const passwordInput = document.getElementById('password');
-        if (togglePassword && passwordInput) {
-            togglePassword.addEventListener('click', function() {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-
-                const icon = this.querySelector('svg');
-                if (type === 'text') {
-                    icon.innerHTML = `
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                        <line x1="1" y1="1" x2="23" y2="23"/>
-                    `;
-                } else {
-                    icon.innerHTML = `
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                    `;
-                }
-            });
-        }
-
-        // Navigation with security logging
-        const navItems = document.querySelectorAll('.nav-item');
-        navItems.forEach(item => {
-            item.addEventListener('click', function(e) {
-                e.preventDefault();
-                const section = this.getAttribute('data-section');
-
-                logSecurityEvent('navigation', { section: section });
-
-                // Update active nav item
-                navItems.forEach(nav => nav.classList.remove('active'));
-                this.classList.add('active');
-
-                // Show section
-                showSection(section);
-            });
-        });
-
-        // Secure logout
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', handleSecureLogout);
-        }
-
-        // Enhanced search with security
-        const searchInput = document.getElementById('leads-search');
-        if (searchInput) {
-            searchInput.addEventListener('input', function(e) {
-                const searchTerm = sanitizeInput(e.target.value);
-                searchLeads(searchTerm);
-
-                // Log potential SQL injection attempts
-                if (detectSQLInjection(e.target.value)) {
-                    logSecurityEvent('sql_injection_attempt', {
-                        searchTerm: e.target.value,
-                        sanitized: searchTerm
-                    });
-                }
-            });
-        }
-
-        // Filter buttons with security
-        const filterButtons = document.querySelectorAll('.premium-filter-btn');
-        filterButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                filterButtons.forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-
-                const filter = sanitizeInput(this.getAttribute('data-filter'));
-                logSecurityEvent('filter_applied', { filter: filter });
-                filterActivity(filter);
-            });
-        });
-    }
-
-    // Enhanced login with security
-    async function handleSecureLogin(e) {
-        e.preventDefault();
-
-        if (isLoading) return;
-
-        // Check if account is locked
-        if (isAccountLocked()) {
-            const timeLeft = Math.ceil((getAccountLockTime() - Date.now()) / 60000);
-            showPremiumAlert(`Account locked due to multiple failed attempts. Try again in ${timeLeft} minutes.`, 'error');
-            return;
-        }
-
-        const email = sanitizeInput(document.getElementById('email').value.trim());
-        const password = document.getElementById('password').value;
-
-        if (!email || !password) {
-            showPremiumAlert('Please fill in all fields', 'error');
-            return;
-        }
-
-        // Enhanced validation
-        if (!validateEmail(email)) {
-            showPremiumAlert('Please enter a valid email address', 'error');
-            return;
-        }
-
-        if (password.length < 6) {
-            showPremiumAlert('Password must be at least 6 characters', 'error');
-            return;
-        }
-
-        setLoginLoading(true);
-
-        try {
-            console.log('🔐 Attempting secure login for:', email);
-            logSecurityEvent('login_attempt', { email: email });
-
-            const userCredential = await auth.signInWithEmailAndPassword(email, password);
-            console.log('✅ Secure login successful:', userCredential.user.email);
-
-            logSecurityEvent('login_success', {
-                email: userCredential.user.email,
-                loginTime: new Date().toISOString()
-            });
-
-        } catch (error) {
-            console.error('❌ Login error:', error);
-
-            loginAttempts++;
-            logSecurityEvent('login_failed', {
-                email: email,
-                error: error.code,
-                attempts: loginAttempts
-            });
-
-            if (loginAttempts >= SECURITY_CONFIG.maxLoginAttempts) {
-                lockAccount();
-                showPremiumAlert('Account locked due to multiple failed attempts. Please try again later.', 'error');
-            } else {
-                let errorMsg = getSecureErrorMessage(error);
-                showPremiumAlert(errorMsg, 'error');
-            }
-        } finally {
-            setLoginLoading(false);
-        }
-    }
-
-    async function handleSecureLogout() {
-        try {
-            logSecurityEvent('logout_initiated', {
-                sessionDuration: Date.now() - (currentUser?.loginTime || Date.now())
-            });
-
-            await auth.signOut();
-            console.log('✅ Secure logout successful');
-
-            logSecurityEvent('logout_success', {
-                logoutTime: new Date().toISOString()
-            });
-
-        } catch (error) {
-            console.error('❌ Logout error:', error);
-            logSecurityEvent('logout_error', { error: error.message });
-        }
-    }
-
-    // Fixed Firebase data loading
-    async function loadUserData(user) {
-        try {
-            const userDoc = await db.collection('users').doc(user.uid).get();
-
-            if (!userDoc.exists) {
-                console.log('👤 Creating user profile...');
-                const newUserData = {
-                    name: user.displayName || user.email.split('@')[0],
-                    email: user.email,
-                    role: 'user',
-                    status: 'active',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                };
-
-                await db.collection('users').doc(user.uid).set(newUserData);
-                currentUser = { uid: user.uid, email: user.email, ...newUserData, loginTime: Date.now() };
-                currentUserRole = 'user';
-            } else {
-                const userData = userDoc.data();
-
-                if (userData.status === 'inactive') {
-                    throw new Error('Account has been deactivated');
-                }
-
-                // Update last login
-                await db.collection('users').doc(user.uid).update({
-                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                });
-
-                currentUser = { uid: user.uid, email: user.email, ...userData, loginTime: Date.now() };
-                currentUserRole = userData.role || 'user';
-            }
-
-            console.log('✅ User loaded:', currentUser.name || currentUser.email, `(${currentUserRole})`);
-
-            // Update UI
-            updateUserInfoUI();
-            applyRoleBasedUI();
-
-        } catch (error) {
-            console.error('❌ User data loading failed:', error);
-            throw error;
-        }
-    }
-
-    function updateUserInfoUI() {
-        const userNameEl = document.getElementById('user-name');
-        const userEmailEl = document.getElementById('user-email');
-        const userRoleEl = document.getElementById('user-role');
-
-        if (userNameEl) userNameEl.textContent = currentUser.name || 'User';
-        if (userEmailEl) userEmailEl.textContent = currentUser.email || '';
-        if (userRoleEl) userRoleEl.textContent = (currentUserRole || 'USER').toUpperCase();
-    }
-
-    function applyRoleBasedUI() {
-        console.log('🎨 Applying premium role-based UI for:', currentUserRole);
-
-        // Hide all role-specific elements first
-        const adminElements = document.querySelectorAll('.admin-only');
-        const masterElements = document.querySelectorAll('.master-only');
-
-        adminElements.forEach(el => {
-            el.style.display = 'none';
-            el.classList.remove('show');
-        });
-        masterElements.forEach(el => {
-            el.style.display = 'none';
-            el.classList.remove('show');
-        });
-
-        // Show elements based on role with animation
-        if (currentUserRole === 'admin') {
-            adminElements.forEach(el => {
-                el.style.display = 'flex';
-                setTimeout(() => el.classList.add('show'), 100);
-            });
-            masterElements.forEach(el => {
-                el.style.display = 'flex';
-                setTimeout(() => el.classList.add('show'), 100);
-            });
-        } else if (currentUserRole === 'master') {
-            masterElements.forEach(el => {
-                el.style.display = 'flex';
-                setTimeout(() => el.classList.add('show'), 100);
-            });
-        }
-    }
-
-    // Fixed dashboard data loading
-    async function loadDashboardData() {
-        console.log('📊 Loading premium dashboard data from Firebase...');
-
-        if (!currentUser) {
-            console.log('❌ No current user');
-            return;
-        }
-
-        try {
-            logSecurityEvent('dashboard_access', {
-                userId: currentUser.uid,
-                role: currentUserRole
-            });
-
-            // Load data based on role
-            let leads = [];
-
-            if (currentUserRole === 'admin') {
-                leads = await getAllLeadsSecurely();
-            } else if (currentUserRole === 'master') {
-                leads = await getMasterTeamLeadsSecurely(currentUser.uid);
-            } else {
-                leads = await getUserLeadsSecurely(currentUser.uid);
-            }
-
-            console.log('📊 Loaded leads:', leads.length);
-
-            // Calculate metrics
-            const metrics = calculateMetricsSecurely(leads);
-
-            // Update UI
-            updateMetrics(metrics);
-            updateLeadsTable(leads.slice(0, 10));
-            updateActivityFeed(leads.slice(0, 5));
-
-            console.log('✅ Premium dashboard loaded successfully');
-
-        } catch (error) {
-            console.error('❌ Error loading dashboard:',
+<script src="sanitizer.js"></script>
+<script src="firebase-utils.js"></script>
+<script src="auth-guard.js"></script>
+<script src="ui-components.js"></script>
+<script src="admin-functions.js"></script>
+<script src="activity-logger.js"></script> <script src="script.js"></script> </body>
+</html>
