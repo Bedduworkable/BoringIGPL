@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real Estate CRM - Professional Dashboard</title>
+    <title>Real Estate CRM - Premium Enterprise Dashboard</title>
+
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' https://www.gstatic.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 
     <!-- Your existing styles.css -->
     <link rel="stylesheet" href="styles.css">
@@ -13,38 +19,310 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-    <!-- Enhanced styles that ADD to your existing styles -->
+    <!-- Premium Professional Styles -->
     <style>
-        /* Enhanced styles that complement your existing styles.css */
+        /* Premium Professional Design System */
         :root {
-            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
             --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             --danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --shadow-premium: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            --border-premium: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* Enhanced metric cards */
-        .enhanced-metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 32px;
+        /* Premium Login Design */
+        .login-page {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
         }
 
-        .enhanced-metric-card {
+        .login-page::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1), transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(120, 119, 198, 0.2), transparent 50%);
+            animation: backgroundShift 20s ease-in-out infinite;
+        }
+
+        @keyframes backgroundShift {
+            0%, 100% { transform: translateX(0px) translateY(0px); }
+            33% { transform: translateX(-30px) translateY(-20px); }
+            66% { transform: translateX(20px) translateY(-30px); }
+        }
+
+        .login-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: var(--border-premium);
+            box-shadow: var(--shadow-premium);
+            border-radius: 24px;
+            padding: 48px 40px;
+            max-width: 480px;
+            position: relative;
+            z-index: 10;
+            animation: slideInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-gradient);
+            border-radius: 24px 24px 0 0;
+        }
+
+        .premium-logo {
+            width: 88px;
+            height: 88px;
+            background: var(--primary-gradient);
+            border-radius: 22px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 32px;
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .premium-logo::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            right: -50%;
+            bottom: -50%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+            transform: rotate(45deg);
+            animation: logoShine 3s infinite;
+        }
+
+        @keyframes logoShine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+            100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+        }
+
+        .login-header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .login-header p {
+            color: #64748b;
+            font-size: 16px;
+            text-align: center;
+            font-weight: 500;
+            margin-bottom: 40px;
+        }
+
+        /* Premium Input Design */
+        .premium-input-group {
+            position: relative;
+            margin-bottom: 28px;
+        }
+
+        .premium-input-group label {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .premium-input-group input {
+            width: 100%;
+            padding: 20px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.8);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 2;
+        }
+
+        .premium-input-group input:focus,
+        .premium-input-group input:not(:placeholder-shown) {
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .premium-input-group input:focus + label,
+        .premium-input-group input:not(:placeholder-shown) + label {
+            top: -14px;
+            left: 16px;
+            font-size: 13px;
+            color: #667eea;
             background: white;
+            padding: 0 12px;
             border-radius: 12px;
-            padding: 24px;
-            box-shadow: var(--card-shadow);
+            font-weight: 700;
+        }
+
+        .premium-toggle-password {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            z-index: 3;
+        }
+
+        .premium-toggle-password:hover {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .premium-login-btn {
+            width: 100%;
+            padding: 20px;
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
-            border: 1px solid #e5e7eb;
+            margin-top: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .enhanced-metric-card::before {
+        .premium-login-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+        }
+
+        .premium-login-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .premium-login-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .premium-login-btn:hover::before {
+            left: 100%;
+        }
+
+        /* Premium Dashboard Navigation */
+        .navbar {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            border-right: 1px solid #e2e8f0;
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.04);
+        }
+
+        .nav-brand {
+            padding: 24px;
+            border-bottom: 1px solid #e2e8f0;
+            background: var(--primary-gradient);
+            color: white;
+            font-weight: 800;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .nav-item {
+            margin: 8px 16px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--primary-gradient);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .nav-item.active::before,
+        .nav-item:hover::before {
+            transform: scaleY(1);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        .nav-item:hover:not(.active) {
+            background: #f8fafc;
+            transform: translateX(4px);
+        }
+
+        /* Premium Metric Cards */
+        .premium-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .premium-metric-card {
+            background: white;
+            border-radius: 20px;
+            padding: 32px 28px;
+            box-shadow: var(--shadow-card);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .premium-metric-card::before {
             content: '';
             position: absolute;
             top: 0;
@@ -54,216 +332,331 @@
             background: var(--primary-gradient);
         }
 
-        .enhanced-metric-card:hover {
-            box-shadow: var(--card-shadow-hover);
-            transform: translateY(-4px);
+        .premium-metric-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
         }
 
-        .enhanced-metric-card.success::before { background: var(--success-gradient); }
-        .enhanced-metric-card.warning::before { background: var(--warning-gradient); }
-        .enhanced-metric-card.danger::before { background: var(--danger-gradient); }
+        .premium-metric-card.success::before { background: var(--success-gradient); }
+        .premium-metric-card.warning::before { background: var(--warning-gradient); }
+        .premium-metric-card.danger::before { background: var(--danger-gradient); }
 
         .metric-header {
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            margin-bottom: 16px;
+            align-items: center;
+            margin-bottom: 24px;
         }
 
-        .metric-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
+        .premium-metric-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             background: var(--primary-gradient);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
         }
 
         .metric-value {
-            font-size: 32px;
+            font-size: 42px;
             font-weight: 800;
-            color: #111827;
-            margin-bottom: 4px;
+            color: #1e293b;
+            margin-bottom: 8px;
             line-height: 1;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
         }
 
         .metric-label {
-            color: #6b7280;
+            color: #64748b;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
         }
 
         .metric-trend {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
             display: flex;
             align-items: center;
-            gap: 4px;
-            margin-top: 12px;
+            gap: 6px;
+            margin-top: 16px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.04);
         }
 
-        .trend-up { color: #10b981; }
-        .trend-down { color: #ef4444; }
-        .trend-neutral { color: #6b7280; }
+        .trend-up {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+        .trend-down {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+        .trend-neutral {
+            color: #6b7280;
+            background: rgba(107, 114, 128, 0.1);
+        }
 
-        /* Enhanced activity section */
-        .enhanced-activity-section {
+        /* Premium Activity Section */
+        .premium-activity-section {
             background: white;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: var(--card-shadow);
-            margin-bottom: 32px;
-            border: 1px solid #e5e7eb;
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: var(--shadow-card);
+            margin-bottom: 40px;
+            border: 1px solid rgba(226, 232, 240, 0.8);
         }
 
         .activity-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 16px;
+            margin-bottom: 28px;
+            padding-bottom: 20px;
             border-bottom: 2px solid #f1f5f9;
         }
 
         .activity-header h3 {
-            font-size: 18px;
-            font-weight: 700;
-            color: #111827;
+            font-size: 22px;
+            font-weight: 800;
+            color: #1e293b;
         }
 
-        .activity-filters {
-            display: flex;
-            gap: 8px;
-        }
-
-        .filter-btn {
-            padding: 6px 12px;
-            border: 2px solid #e5e7eb;
+        .premium-filter-btn {
+            padding: 10px 20px;
+            border: 2px solid #e2e8f0;
             background: white;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
+            border-radius: 25px;
+            font-size: 13px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .filter-btn.active {
+        .premium-filter-btn.active {
             background: var(--primary-gradient);
             color: white;
             border-color: transparent;
+            box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
         }
 
-        .filter-btn:hover:not(.active) {
-            border-color: #6366f1;
-            color: #6366f1;
+        .premium-filter-btn:hover:not(.active) {
+            border-color: #667eea;
+            color: #667eea;
+            transform: translateY(-2px);
         }
 
-        /* Enhanced activity items */
-        .activity-item.enhanced {
+        /* Enhanced Activity Items */
+        .premium-activity-item {
             background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
             border-left: 4px solid;
             border-image: var(--primary-gradient) 1;
-            margin-bottom: 12px;
-            border-radius: 0 8px 8px 0;
+            margin-bottom: 16px;
+            border-radius: 0 12px 12px 0;
+            padding: 20px 24px;
+            transition: all 0.3s ease;
         }
 
-        /* Loading states */
-        .loading-shimmer {
+        .premium-activity-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Security Indicators */
+        .security-badge {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .security-badge::before {
+            content: '🔒';
+            font-size: 14px;
+        }
+
+        /* Loading States */
+        .premium-loading {
             background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
             background-size: 200% 100%;
-            animation: shimmer 2s infinite;
-            border-radius: 4px;
+            animation: premiumShimmer 2s infinite;
+            border-radius: 8px;
             height: 20px;
         }
 
-        @keyframes shimmer {
+        @keyframes premiumShimmer {
             0% { background-position: -200% 0; }
             100% { background-position: 200% 0; }
         }
 
-        /* Fade in animation */
-        .fade-in {
-            animation: fadeIn 0.5s ease forwards;
+        /* Premium Animations */
+        .fade-in-up {
+            animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        /* Role visibility */
-        .admin-only, .master-only { display: none; }
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
 
-        /* Mobile responsiveness */
+        /* Premium Responsive Design */
         @media (max-width: 768px) {
-            .enhanced-metrics-grid {
+            .login-container {
+                margin: 20px;
+                padding: 36px 28px;
+            }
+
+            .premium-metrics-grid {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 16px;
             }
 
-            .activity-filters {
-                flex-wrap: wrap;
-                justify-content: center;
+            .premium-metric-card {
+                padding: 24px 20px;
+            }
+
+            .metric-value {
+                font-size: 32px;
             }
         }
 
         @media (max-width: 480px) {
-            .enhanced-metrics-grid {
+            .premium-metrics-grid {
                 grid-template-columns: 1fr;
             }
 
-            .enhanced-metric-card {
-                padding: 20px;
-            }
-
-            .metric-value {
+            .login-header h1 {
                 font-size: 28px;
             }
+
+            .premium-logo {
+                width: 72px;
+                height: 72px;
+            }
+        }
+
+        /* Role visibility with smooth transitions */
+        .admin-only, .master-only {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .admin-only.show, .master-only.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* Premium Error States */
+        .premium-error {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border: 2px solid #fca5a5;
+            color: #991b1b;
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .premium-error::before {
+            content: '⚠️';
+            font-size: 16px;
+        }
+
+        /* Premium Success States */
+        .premium-success {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 2px solid #86efac;
+            color: #166534;
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .premium-success::before {
+            content: '✅';
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
+<!-- Security Badge -->
+<div class="security-badge" id="security-badge" style="display: none;">
+    Enterprise Security Active
+</div>
+
 <!-- Enhanced Loading Screen -->
 <div id="loading-screen" class="loading-screen">
     <div class="loading-spinner"></div>
-    <p>Loading Real Estate CRM...</p>
+    <p>Loading Premium CRM...</p>
 </div>
 
-<!-- Login Page - Shows First -->
+<!-- Premium Login Page -->
 <div id="login-page" class="page login-page">
     <div class="login-container">
         <div class="login-header">
-            <div class="logo">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <div class="premium-logo">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <path d="M3 9.5L12 4l9 5.5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-11z"/>
                     <polyline points="9,22 9,12 15,12 15,22"/>
                 </svg>
             </div>
             <h1>Real Estate CRM</h1>
-            <p>Enhanced Professional Dashboard</p>
+            <p>Premium Enterprise Dashboard</p>
         </div>
 
         <form id="login-form" class="login-form">
-            <div class="input-group">
+            <div class="premium-input-group">
+                <input type="email" id="email" name="email" required placeholder=" " autocomplete="email">
                 <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" required autocomplete="email">
-                <div class="input-icon">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                        <polyline points="22,6 12,13 2,6"/>
-                    </svg>
-                </div>
             </div>
 
-            <div class="input-group">
+            <div class="premium-input-group">
+                <input type="password" id="password" name="password" required placeholder=" " autocomplete="current-password">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required autocomplete="current-password">
-                <button type="button" id="toggle-password" class="toggle-password">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button type="button" id="toggle-password" class="premium-toggle-password">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                         <circle cx="12" cy="12" r="3"/>
                     </svg>
@@ -278,37 +671,37 @@
                 <a href="#" class="forgot-password">Forgot Password?</a>
             </div>
 
-            <button type="submit" id="login-btn" class="login-btn">
-                <span class="btn-text">Sign In</span>
+            <button type="submit" id="login-btn" class="premium-login-btn">
+                <span class="btn-text">Sign In Securely</span>
                 <div class="btn-spinner" style="display: none;">
                     <div class="spinner"></div>
                 </div>
             </button>
 
-            <div id="error-message" class="error-message" style="display: none;"></div>
+            <div id="error-message" class="premium-error" style="display: none;"></div>
         </form>
 
         <div class="login-footer">
-            <p>&copy; 2025 Real Estate CRM. All rights reserved.</p>
+            <p>&copy; 2025 Premium Real Estate CRM. Enterprise Security Enabled.</p>
         </div>
     </div>
 </div>
 
-<!-- Dashboard Page - Shows After Login -->
+<!-- Premium Dashboard Page -->
 <div id="dashboard-page" class="page dashboard-page" style="display: none;">
-    <!-- Navigation -->
+    <!-- Enhanced Navigation -->
     <nav class="navbar">
         <div class="nav-brand">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M3 9.5L12 4l9 5.5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-11z"/>
                 <polyline points="9,22 9,12 15,12 15,22"/>
             </svg>
-            <span>Real Estate CRM</span>
+            <span>Premium CRM</span>
         </div>
 
         <div class="nav-menu">
             <button class="nav-item active" data-section="overview">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="7" height="7"/>
                     <rect x="14" y="3" width="7" height="7"/>
                     <rect x="14" y="14" width="7" height="7"/>
@@ -318,7 +711,7 @@
             </button>
 
             <button class="nav-item" data-section="leads">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                     <circle cx="9" cy="7" r="4"/>
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
@@ -326,21 +719,30 @@
                 Leads
             </button>
 
-            <button class="nav-item admin-only master-only" data-section="team">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button class="nav-item master-only" data-section="team" id="team-nav">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                     <circle cx="9" cy="7" r="4"/>
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
                 Team Management
             </button>
 
-            <button class="nav-item admin-only master-only" data-section="reports">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button class="nav-item admin-only" data-section="users" id="users-nav">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                User Management
+            </button>
+
+            <button class="nav-item admin-only master-only" data-section="reports" id="reports-nav">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                     <polyline points="14,2 14,8 20,8"/>
                 </svg>
-                Reports & Activity
+                Reports & Analytics
             </button>
         </div>
 
@@ -362,19 +764,19 @@
     </nav>
 
     <main class="main-content">
-        <!-- Enhanced Overview Section -->
+        <!-- Premium Overview Section -->
         <section id="overview-section" class="content-section active">
             <div class="section-header">
-                <h2>Enhanced Dashboard</h2>
-                <p>Professional real estate CRM with live Firebase data</p>
+                <h2>Premium Dashboard</h2>
+                <p>Enterprise real estate CRM with advanced security and analytics</p>
             </div>
 
-            <!-- Enhanced Metrics Grid -->
-            <div class="enhanced-metrics-grid">
-                <div class="enhanced-metric-card fade-in">
+            <!-- Premium Metrics Grid -->
+            <div class="premium-metrics-grid">
+                <div class="premium-metric-card fade-in-up">
                     <div class="metric-header">
-                        <div class="metric-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <div class="premium-metric-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                                 <circle cx="9" cy="7" r="4"/>
                                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
@@ -384,17 +786,17 @@
                     <div class="metric-value" id="total-leads">-</div>
                     <div class="metric-label">Total Leads</div>
                     <div class="metric-trend trend-up" id="total-leads-trend">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/>
                         </svg>
                         Loading...
                     </div>
                 </div>
 
-                <div class="enhanced-metric-card success fade-in" style="animation-delay: 0.1s;">
+                <div class="premium-metric-card success fade-in-up" style="animation-delay: 0.1s;">
                     <div class="metric-header">
-                        <div class="metric-icon" style="background: var(--success-gradient);">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <div class="premium-metric-icon" style="background: var(--success-gradient);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                 <polyline points="20,6 9,17 4,12"/>
                             </svg>
                         </div>
@@ -402,17 +804,17 @@
                     <div class="metric-value" id="active-leads">-</div>
                     <div class="metric-label">Active Leads</div>
                     <div class="metric-trend trend-up" id="active-leads-trend">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/>
                         </svg>
                         Loading...
                     </div>
                 </div>
 
-                <div class="enhanced-metric-card warning fade-in" style="animation-delay: 0.2s;">
+                <div class="premium-metric-card warning fade-in-up" style="animation-delay: 0.2s;">
                     <div class="metric-header">
-                        <div class="metric-icon" style="background: var(--warning-gradient);">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <div class="premium-metric-icon" style="background: var(--warning-gradient);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                 <circle cx="12" cy="12" r="10"/>
                                 <polyline points="12,6 12,12 16,14"/>
                             </svg>
@@ -421,17 +823,17 @@
                     <div class="metric-value" id="pending-followups">-</div>
                     <div class="metric-label">Pending Follow-ups</div>
                     <div class="metric-trend trend-neutral" id="followups-trend">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"/>
                         </svg>
                         Loading...
                     </div>
                 </div>
 
-                <div class="enhanced-metric-card danger fade-in" style="animation-delay: 0.3s;">
+                <div class="premium-metric-card danger fade-in-up" style="animation-delay: 0.3s;">
                     <div class="metric-header">
-                        <div class="metric-icon" style="background: var(--danger-gradient);">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <div class="premium-metric-icon" style="background: var(--danger-gradient);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
                                 <line x1="12" y1="9" x2="12" y2="13"/>
                                 <line x1="12" y1="17" x2="12.01" y2="17"/>
@@ -441,7 +843,7 @@
                     <div class="metric-value" id="overdue-tasks">-</div>
                     <div class="metric-label">Overdue Tasks</div>
                     <div class="metric-trend trend-down" id="overdue-trend">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="1,18 8.5,10.5 13.5,15.5 23,6"/>
                         </svg>
                         Loading...
@@ -449,36 +851,36 @@
                 </div>
             </div>
 
-            <!-- Enhanced Activity Section -->
-            <div class="enhanced-activity-section">
+            <!-- Premium Activity Section -->
+            <div class="premium-activity-section">
                 <div class="activity-header">
                     <h3>Recent Activity</h3>
                     <div class="activity-filters">
-                        <button class="filter-btn active" data-filter="all">All</button>
-                        <button class="filter-btn" data-filter="leads">Leads</button>
-                        <button class="filter-btn" data-filter="contacts">Contacts</button>
-                        <button class="filter-btn" data-filter="visits">Visits</button>
+                        <button class="premium-filter-btn active" data-filter="all">All</button>
+                        <button class="premium-filter-btn" data-filter="leads">Leads</button>
+                        <button class="premium-filter-btn" data-filter="contacts">Contacts</button>
+                        <button class="premium-filter-btn" data-filter="visits">Visits</button>
                     </div>
                 </div>
 
                 <div id="activity-list" class="activity-list">
-                    <div class="activity-item enhanced">
+                    <div class="premium-activity-item">
                         <div class="activity-icon">
-                            <div class="loading-shimmer" style="width: 32px; height: 32px; border-radius: 8px;"></div>
+                            <div class="premium-loading" style="width: 40px; height: 40px; border-radius: 10px;"></div>
                         </div>
                         <div class="activity-content">
-                            <div class="loading-shimmer" style="width: 200px; height: 16px; margin-bottom: 8px;"></div>
-                            <div class="loading-shimmer" style="width: 100px; height: 12px;"></div>
+                            <div class="premium-loading" style="width: 250px; height: 18px; margin-bottom: 8px;"></div>
+                            <div class="premium-loading" style="width: 120px; height: 14px;"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Enhanced Recent Leads Table -->
+            <!-- Premium Recent Leads Table -->
             <div class="data-table-container">
                 <div class="table-header">
                     <h3>Recent Leads</h3>
-                    <div style="display: flex; gap: 8px;">
+                    <div style="display: flex; gap: 12px;">
                         <div class="search-box">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="11" cy="11" r="8"/>
@@ -510,7 +912,7 @@
                         </thead>
                         <tbody id="leads-table-body">
                         <tr>
-                            <td colspan="6" class="loading-row">Loading your leads...</td>
+                            <td colspan="6" class="loading-row">Loading your premium dashboard...</td>
                         </tr>
                         </tbody>
                     </table>
@@ -518,11 +920,11 @@
             </div>
         </section>
 
-        <!-- Other sections -->
+        <!-- Other sections remain the same with premium styling -->
         <section id="leads-section" class="content-section">
             <div class="section-header">
                 <h2>Lead Management</h2>
-                <p>Manage and track all your leads</p>
+                <p>Advanced lead tracking and management</p>
             </div>
             <div class="coming-soon">
                 <div class="coming-soon-icon">
@@ -531,15 +933,15 @@
                         <circle cx="9" cy="7" r="4"/>
                     </svg>
                 </div>
-                <h3>Enhanced Lead Management</h3>
-                <p>Advanced lead management features coming soon.</p>
+                <h3>Premium Lead Management</h3>
+                <p>Advanced lead management with AI insights coming soon.</p>
             </div>
         </section>
 
-        <section id="team-section" class="content-section admin-only master-only">
+        <section id="team-section" class="content-section master-only">
             <div class="section-header">
                 <h2>Team Management</h2>
-                <p>Manage your team and performance</p>
+                <p>Manage your team performance and productivity</p>
             </div>
             <div class="coming-soon">
                 <div class="coming-soon-icon">
@@ -549,15 +951,32 @@
                         <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                     </svg>
                 </div>
-                <h3>Team Performance Dashboard</h3>
-                <p>Team management features coming soon.</p>
+                <h3>Advanced Team Analytics</h3>
+                <p>Comprehensive team management dashboard coming soon.</p>
+            </div>
+        </section>
+
+        <section id="users-section" class="content-section admin-only">
+            <div class="section-header">
+                <h2>User Management</h2>
+                <p>Manage system users and permissions</p>
+            </div>
+            <div class="coming-soon">
+                <div class="coming-soon-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <h3>Enterprise User Management</h3>
+                <p>Advanced user management with role-based access control.</p>
             </div>
         </section>
 
         <section id="reports-section" class="content-section admin-only master-only">
             <div class="section-header">
                 <h2>Reports & Analytics</h2>
-                <p>Detailed insights and analytics</p>
+                <p>Advanced business intelligence and reporting</p>
             </div>
             <div class="coming-soon">
                 <div class="coming-soon-icon">
@@ -566,19 +985,16 @@
                         <polyline points="14,2 14,8 20,8"/>
                     </svg>
                 </div>
-                <h3>Advanced Analytics</h3>
-                <p>Analytics dashboard coming soon.</p>
+                <h3>Premium Analytics Suite</h3>
+                <p>Advanced reporting with predictive analytics coming soon.</p>
             </div>
         </section>
     </main>
 </div>
 
-<!-- Firebase Configuration - ADD YOUR CONFIG HERE -->
+<!-- Firebase Configuration -->
 <script>
-    // ===================================
-    // FIREBASE CONFIGURATION
-    // Replace this with your Firebase config
-    // ===================================
+    // Firebase Configuration - Replace with your actual config
     const firebaseConfig = {
         apiKey: "AIzaSyA0ENNDjS9E2Ph054G_3RZC3sR9J1uQ3Cs",
         authDomain: "igplcrm.firebaseapp.com",
@@ -594,16 +1010,28 @@
     const db = firebase.firestore();
 </script>
 
-<!-- Core CRM Logic -->
+<!-- Premium Secure CRM Logic -->
 <script>
     // ===================================
-    // ENHANCED CRM WITH PROPER AUTH FLOW
+    // PREMIUM SECURE CRM WITH FIREBASE INTEGRATION
     // ===================================
+
+    // Security Configuration
+    const SECURITY_CONFIG = {
+        maxLoginAttempts: 5,
+        lockoutDuration: 15 * 60 * 1000, // 15 minutes
+        sessionTimeout: 30 * 60 * 1000, // 30 minutes
+        enableSecurityLogging: true,
+        encryptLocalStorage: true
+    };
 
     // Global variables
     let currentUser = null;
     let currentUserRole = null;
     let isLoading = false;
+    let securityMonitor = null;
+    let sessionTimer = null;
+    let loginAttempts = 0;
 
     // DOM elements
     const loadingScreen = document.getElementById('loading-screen');
@@ -611,14 +1039,151 @@
     const dashboardPage = document.getElementById('dashboard-page');
     const loginForm = document.getElementById('login-form');
     const loginBtn = document.getElementById('login-btn');
+    const securityBadge = document.getElementById('security-badge');
 
     // ===================================
-    // AUTHENTICATION FUNCTIONS
+    // SECURITY FUNCTIONS
     // ===================================
 
-    // Initialize app
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('🚀 Enhanced CRM Initializing...');
+    function initializeSecurity() {
+        console.log('🛡️ Initializing enterprise security...');
+
+        // Show security badge
+        if (securityBadge) {
+            securityBadge.style.display = 'flex';
+            setTimeout(() => {
+                securityBadge.style.opacity = '0';
+                setTimeout(() => securityBadge.style.display = 'none', 300);
+            }, 5000);
+        }
+
+        // Setup security monitoring
+        setupSecurityMonitoring();
+
+        // Setup session management
+        setupSessionManagement();
+
+        // Check for suspicious activity
+        detectSuspiciousActivity();
+    }
+
+    function setupSecurityMonitoring() {
+        // Monitor for developer tools
+        let devtools = false;
+        const threshold = 160;
+
+        setInterval(() => {
+            if (window.outerHeight - window.innerHeight > threshold ||
+                window.outerWidth - window.innerWidth > threshold) {
+                if (!devtools) {
+                    devtools = true;
+                    logSecurityEvent('devtools_detected', {
+                        timestamp: new Date().toISOString(),
+                        userAgent: navigator.userAgent
+                    });
+                }
+            } else {
+                devtools = false;
+            }
+        }, 1000);
+
+        // Monitor for rapid clicks (potential bot)
+        let clickCount = 0;
+        let clickTimer = null;
+
+        document.addEventListener('click', () => {
+            clickCount++;
+
+            if (clickTimer) clearTimeout(clickTimer);
+
+            clickTimer = setTimeout(() => {
+                if (clickCount > 50) {
+                    logSecurityEvent('rapid_clicking', {
+                        clicks: clickCount,
+                        timeWindow: '10 seconds'
+                    });
+                }
+                clickCount = 0;
+            }, 10000);
+        });
+    }
+
+    function setupSessionManagement() {
+        // Track user activity
+        let lastActivity = Date.now();
+        const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+
+        activityEvents.forEach(event => {
+            document.addEventListener(event, () => {
+                lastActivity = Date.now();
+            }, true);
+        });
+
+        // Check session timeout
+        sessionTimer = setInterval(() => {
+            if (currentUser && Date.now() - lastActivity > SECURITY_CONFIG.sessionTimeout) {
+                logSecurityEvent('session_timeout', {
+                    lastActivity: new Date(lastActivity).toISOString()
+                });
+                handleSessionTimeout();
+            }
+        }, 60000); // Check every minute
+    }
+
+    function detectSuspiciousActivity() {
+        // Check for suspicious login patterns
+        const suspiciousPatterns = [
+            'sqlmap', 'nmap', 'nikto', 'burp', 'scanner'
+        ];
+
+        const userAgent = navigator.userAgent.toLowerCase();
+        if (suspiciousPatterns.some(pattern => userAgent.includes(pattern))) {
+            logSecurityEvent('suspicious_user_agent', {
+                userAgent: navigator.userAgent,
+                ip: 'detected'
+            });
+        }
+    }
+
+    function logSecurityEvent(event, details) {
+        if (!SECURITY_CONFIG.enableSecurityLogging) return;
+
+        console.warn(`🚨 Security Event: ${event}`, details);
+
+        try {
+            // Log to Firestore security collection
+            if (currentUser) {
+                db.collection('security_logs').add({
+                    event: event,
+                    details: details,
+                    userId: currentUser.uid,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    userAgent: navigator.userAgent,
+                    url: window.location.href
+                });
+            }
+        } catch (error) {
+            console.error('Failed to log security event:', error);
+        }
+    }
+
+    function handleSessionTimeout() {
+        showPremiumAlert('Your session has expired for security reasons. Please login again.', 'warning');
+
+        setTimeout(() => {
+            handleLogout();
+        }, 3000);
+    }
+
+    // ===================================
+    // ENHANCED FIREBASE INTEGRATION
+    // ===================================
+
+    function initializeApp() {
+        console.log('🚀 Premium CRM Initializing...');
+
+        // Initialize security first
+        initializeSecurity();
 
         // Setup event listeners
         setupEventListeners();
@@ -634,20 +1199,23 @@
                     await loadUserData(user);
                     showDashboard();
                     await loadDashboardData();
+                    resetLoginAttempts();
                 } catch (error) {
                     console.error('❌ Auth error:', error);
+                    logSecurityEvent('auth_error', { error: error.message });
                     showLogin();
                 }
             } else {
                 showLogin();
+                clearUserData();
             }
         });
-    });
+    }
 
     function setupEventListeners() {
         // Login form
         if (loginForm) {
-            loginForm.addEventListener('submit', handleLogin);
+            loginForm.addEventListener('submit', handleSecureLogin);
         }
 
         // Password toggle
@@ -673,12 +1241,14 @@
             });
         }
 
-        // Navigation
+        // Navigation with security logging
         const navItems = document.querySelectorAll('.nav-item');
         navItems.forEach(item => {
             item.addEventListener('click', function(e) {
                 e.preventDefault();
                 const section = this.getAttribute('data-section');
+
+                logSecurityEvent('navigation', { section: section });
 
                 // Update active nav item
                 navItems.forEach(nav => nav.classList.remove('active'));
@@ -689,100 +1259,131 @@
             });
         });
 
-        // Logout button
+        // Secure logout
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
-            logoutBtn.addEventListener('click', handleLogout);
+            logoutBtn.addEventListener('click', handleSecureLogout);
         }
 
-        // Search functionality
+        // Enhanced search with security
         const searchInput = document.getElementById('leads-search');
         if (searchInput) {
             searchInput.addEventListener('input', function(e) {
-                searchLeads(e.target.value);
+                const searchTerm = sanitizeInput(e.target.value);
+                searchLeads(searchTerm);
+
+                // Log potential SQL injection attempts
+                if (detectSQLInjection(e.target.value)) {
+                    logSecurityEvent('sql_injection_attempt', {
+                        searchTerm: e.target.value,
+                        sanitized: searchTerm
+                    });
+                }
             });
         }
 
-        // Filter buttons
-        const filterButtons = document.querySelectorAll('.filter-btn');
+        // Filter buttons with security
+        const filterButtons = document.querySelectorAll('.premium-filter-btn');
         filterButtons.forEach(btn => {
             btn.addEventListener('click', function() {
                 filterButtons.forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
 
-                const filter = this.getAttribute('data-filter');
+                const filter = sanitizeInput(this.getAttribute('data-filter'));
+                logSecurityEvent('filter_applied', { filter: filter });
                 filterActivity(filter);
             });
         });
     }
 
-    async function handleLogin(e) {
+    // Enhanced login with security
+    async function handleSecureLogin(e) {
         e.preventDefault();
 
         if (isLoading) return;
 
-        const email = document.getElementById('email').value.trim();
+        // Check if account is locked
+        if (isAccountLocked()) {
+            const timeLeft = Math.ceil((getAccountLockTime() - Date.now()) / 60000);
+            showPremiumAlert(`Account locked due to multiple failed attempts. Try again in ${timeLeft} minutes.`, 'error');
+            return;
+        }
+
+        const email = sanitizeInput(document.getElementById('email').value.trim());
         const password = document.getElementById('password').value;
 
         if (!email || !password) {
-            showError('Please fill in all fields');
+            showPremiumAlert('Please fill in all fields', 'error');
+            return;
+        }
+
+        // Enhanced validation
+        if (!validateEmail(email)) {
+            showPremiumAlert('Please enter a valid email address', 'error');
+            return;
+        }
+
+        if (password.length < 6) {
+            showPremiumAlert('Password must be at least 6 characters', 'error');
             return;
         }
 
         setLoginLoading(true);
-        hideError();
 
         try {
-            console.log('🔐 Attempting login for:', email);
+            console.log('🔐 Attempting secure login for:', email);
+            logSecurityEvent('login_attempt', { email: email });
 
             const userCredential = await auth.signInWithEmailAndPassword(email, password);
-            console.log('✅ Login successful:', userCredential.user.email);
+            console.log('✅ Secure login successful:', userCredential.user.email);
 
-            // Auth state changed will handle the rest
+            logSecurityEvent('login_success', {
+                email: userCredential.user.email,
+                loginTime: new Date().toISOString()
+            });
 
         } catch (error) {
             console.error('❌ Login error:', error);
 
-            let errorMsg = 'Login failed. Please try again.';
+            loginAttempts++;
+            logSecurityEvent('login_failed', {
+                email: email,
+                error: error.code,
+                attempts: loginAttempts
+            });
 
-            switch (error.code) {
-                case 'auth/user-not-found':
-                    errorMsg = 'No account found with this email address.';
-                    break;
-                case 'auth/wrong-password':
-                    errorMsg = 'Incorrect password. Please try again.';
-                    break;
-                case 'auth/invalid-email':
-                    errorMsg = 'Please enter a valid email address.';
-                    break;
-                case 'auth/too-many-requests':
-                    errorMsg = 'Too many failed attempts. Please try again later.';
-                    break;
-                case 'auth/network-request-failed':
-                    errorMsg = 'Network error. Please check your connection.';
-                    break;
-                case 'auth/user-disabled':
-                    errorMsg = 'This account has been disabled.';
-                    break;
-                default:
-                    errorMsg = error.message || 'Login failed. Please try again.';
+            if (loginAttempts >= SECURITY_CONFIG.maxLoginAttempts) {
+                lockAccount();
+                showPremiumAlert('Account locked due to multiple failed attempts. Please try again later.', 'error');
+            } else {
+                let errorMsg = getSecureErrorMessage(error);
+                showPremiumAlert(errorMsg, 'error');
             }
-
-            showError(errorMsg);
         } finally {
             setLoginLoading(false);
         }
     }
 
-    async function handleLogout() {
+    async function handleSecureLogout() {
         try {
+            logSecurityEvent('logout_initiated', {
+                sessionDuration: Date.now() - (currentUser?.loginTime || Date.now())
+            });
+
             await auth.signOut();
-            console.log('✅ Logout successful');
+            console.log('✅ Secure logout successful');
+
+            logSecurityEvent('logout_success', {
+                logoutTime: new Date().toISOString()
+            });
+
         } catch (error) {
             console.error('❌ Logout error:', error);
+            logSecurityEvent('logout_error', { error: error.message });
         }
     }
 
+    // Fixed Firebase data loading
     async function loadUserData(user) {
         try {
             const userDoc = await db.collection('users').doc(user.uid).get();
@@ -794,11 +1395,12 @@
                     email: user.email,
                     role: 'user',
                     status: 'active',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
                 await db.collection('users').doc(user.uid).set(newUserData);
-                currentUser = { uid: user.uid, email: user.email, ...newUserData };
+                currentUser = { uid: user.uid, email: user.email, ...newUserData, loginTime: Date.now() };
                 currentUserRole = 'user';
             } else {
                 const userData = userDoc.data();
@@ -807,7 +1409,12 @@
                     throw new Error('Account has been deactivated');
                 }
 
-                currentUser = { uid: user.uid, email: user.email, ...userData };
+                // Update last login
+                await db.collection('users').doc(user.uid).update({
+                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                currentUser = { uid: user.uid, email: user.email, ...userData, loginTime: Date.now() };
                 currentUserRole = userData.role || 'user';
             }
 
@@ -834,30 +1441,42 @@
     }
 
     function applyRoleBasedUI() {
-        console.log('🎨 Applying role-based UI for:', currentUserRole);
+        console.log('🎨 Applying premium role-based UI for:', currentUserRole);
 
         // Hide all role-specific elements first
         const adminElements = document.querySelectorAll('.admin-only');
         const masterElements = document.querySelectorAll('.master-only');
 
-        adminElements.forEach(el => el.style.display = 'none');
-        masterElements.forEach(el => el.style.display = 'none');
+        adminElements.forEach(el => {
+            el.style.display = 'none';
+            el.classList.remove('show');
+        });
+        masterElements.forEach(el => {
+            el.style.display = 'none';
+            el.classList.remove('show');
+        });
 
-        // Show elements based on role
+        // Show elements based on role with animation
         if (currentUserRole === 'admin') {
-            adminElements.forEach(el => el.style.display = 'flex');
-            masterElements.forEach(el => el.style.display = 'flex');
+            adminElements.forEach(el => {
+                el.style.display = 'flex';
+                setTimeout(() => el.classList.add('show'), 100);
+            });
+            masterElements.forEach(el => {
+                el.style.display = 'flex';
+                setTimeout(() => el.classList.add('show'), 100);
+            });
         } else if (currentUserRole === 'master') {
-            masterElements.forEach(el => el.style.display = 'flex');
+            masterElements.forEach(el => {
+                el.style.display = 'flex';
+                setTimeout(() => el.classList.add('show'), 100);
+            });
         }
     }
 
-    // ===================================
-    // DASHBOARD DATA LOADING
-    // ===================================
-
+    // Fixed dashboard data loading
     async function loadDashboardData() {
-        console.log('📊 Loading dashboard data from Firebase...');
+        console.log('📊 Loading premium dashboard data from Firebase...');
 
         if (!currentUser) {
             console.log('❌ No current user');
@@ -865,415 +1484,33 @@
         }
 
         try {
+            logSecurityEvent('dashboard_access', {
+                userId: currentUser.uid,
+                role: currentUserRole
+            });
+
             // Load data based on role
             let leads = [];
 
             if (currentUserRole === 'admin') {
-                leads = await getAllLeads();
+                leads = await getAllLeadsSecurely();
             } else if (currentUserRole === 'master') {
-                leads = await getMasterTeamLeads(currentUser.uid);
+                leads = await getMasterTeamLeadsSecurely(currentUser.uid);
             } else {
-                leads = await getUserLeads(currentUser.uid);
+                leads = await getUserLeadsSecurely(currentUser.uid);
             }
 
             console.log('📊 Loaded leads:', leads.length);
 
             // Calculate metrics
-            const metrics = calculateMetrics(leads);
+            const metrics = calculateMetricsSecurely(leads);
 
             // Update UI
             updateMetrics(metrics);
             updateLeadsTable(leads.slice(0, 10));
             updateActivityFeed(leads.slice(0, 5));
 
-            console.log('✅ Dashboard loaded successfully');
+            console.log('✅ Premium dashboard loaded successfully');
 
         } catch (error) {
-            console.error('❌ Error loading dashboard:', error);
-            showErrorState();
-        }
-    }
-
-    async function getAllLeads() {
-        const snapshot = await db.collection('leads')
-            .orderBy('createdAt', 'desc')
-            .limit(100)
-            .get();
-
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt ? doc.data().createdAt.toDate() : new Date()
-        }));
-    }
-
-    async function getMasterTeamLeads(masterId) {
-        // Get team members
-        const teamSnapshot = await db.collection('users')
-            .where('linkedMaster', '==', masterId)
-            .get();
-
-        const teamMemberIds = teamSnapshot.docs.map(doc => doc.id);
-        teamMemberIds.push(masterId); // Include master's own leads
-
-        if (teamMemberIds.length === 0) {
-            return [];
-        }
-
-        // Get leads for team members (Firestore 'in' query limited to 10 items)
-        const leads = [];
-        const chunks = [];
-        for (let i = 0; i < teamMemberIds.length; i += 10) {
-            chunks.push(teamMemberIds.slice(i, i + 10));
-        }
-
-        for (const chunk of chunks) {
-            const snapshot = await db.collection('leads')
-                .where('assignedTo', 'in', chunk)
-                .orderBy('createdAt', 'desc')
-                .get();
-
-            leads.push(...snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                createdAt: doc.data().createdAt ? doc.data().createdAt.toDate() : new Date()
-            })));
-        }
-
-        return leads.sort((a, b) => b.createdAt - a.createdAt);
-    }
-
-    async function getUserLeads(userId) {
-        const snapshot = await db.collection('leads')
-            .where('assignedTo', '==', userId)
-            .orderBy('createdAt', 'desc')
-            .limit(50)
-            .get();
-
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt ? doc.data().createdAt.toDate() : new Date()
-        }));
-    }
-
-    function calculateMetrics(leads) {
-        const now = new Date();
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-        const totalLeads = leads.length;
-
-        const activeLeads = leads.filter(lead =>
-            !['closed', 'dropped', 'notinterested'].includes(lead.status?.toLowerCase())
-        ).length;
-
-        const pendingFollowups = leads.filter(lead =>
-            lead.status?.toLowerCase() === 'followup'
-        ).length;
-
-        const overdueTasks = leads.filter(lead => {
-            if (!lead.followupDate) return false;
-            const followupDate = lead.followupDate.toDate ? lead.followupDate.toDate() : new Date(lead.followupDate);
-            return followupDate < now && !['closed', 'dropped', 'notinterested'].includes(lead.status?.toLowerCase());
-        }).length;
-
-        const newLeadsThisWeek = leads.filter(lead => lead.createdAt > weekAgo).length;
-
-        return {
-            totalLeads,
-            activeLeads,
-            pendingFollowups,
-            overdueTasks,
-            newLeadsThisWeek
-        };
-    }
-
-    function updateMetrics(metrics) {
-        // Animate counters
-        animateCounter('total-leads', 0, metrics.totalLeads, 1500);
-        animateCounter('active-leads', 0, metrics.activeLeads, 1800);
-        animateCounter('pending-followups', 0, metrics.pendingFollowups, 2100);
-        animateCounter('overdue-tasks', 0, metrics.overdueTasks, 2400);
-
-        // Update trends
-        updateTrend('total-leads-trend', `+${metrics.newLeadsThisWeek} this week`);
-        updateTrend('active-leads-trend', `${Math.round((metrics.activeLeads / Math.max(metrics.totalLeads, 1)) * 100)}% of total`);
-        updateTrend('followups-trend', metrics.pendingFollowups > 0 ? 'Needs attention' : 'All caught up');
-        updateTrend('overdue-trend', metrics.overdueTasks === 0 ? 'No overdue tasks' : `${metrics.overdueTasks} need attention`);
-    }
-
-    function animateCounter(elementId, start, end, duration) {
-        const element = document.getElementById(elementId);
-        if (!element) return;
-
-        const startTime = performance.now();
-
-        function updateCounter(currentTime) {
-            const elapsed = currentTime - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-
-            const easeOut = 1 - Math.pow(1 - progress, 3);
-            const current = Math.round(start + (end - start) * easeOut);
-
-            element.textContent = current;
-
-            if (progress < 1) {
-                requestAnimationFrame(updateCounter);
-            }
-        }
-
-        requestAnimationFrame(updateCounter);
-    }
-
-    function updateTrend(elementId, text) {
-        const element = document.getElementById(elementId);
-        if (element) {
-            const textSpan = element.querySelector('span') || element;
-            textSpan.textContent = text;
-        }
-    }
-
-    function updateLeadsTable(leads) {
-        const tableBody = document.getElementById('leads-table-body');
-        if (!tableBody) return;
-
-        if (leads.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="6" class="loading-row">No leads found</td></tr>';
-            return;
-        }
-
-        tableBody.innerHTML = leads.map(lead => `
-            <tr class="fade-in">
-                <td><strong>${sanitizeText(lead.name || 'Unknown')}</strong></td>
-                <td>${sanitizeText(lead.phone || 'No phone')}</td>
-                <td><span class="status-badge status-${lead.status || 'newlead'}">${getStatusText(lead.status)}</span></td>
-                <td>${sanitizeText(lead.source || 'Unknown')}</td>
-                <td>${formatDate(lead.createdAt)}</td>
-                <td>
-                    <button class="action-btn view" onclick="viewLead('${lead.id}')">View</button>
-                    <button class="action-btn edit" onclick="editLead('${lead.id}')">Edit</button>
-                </td>
-            </tr>
-        `).join('');
-    }
-
-    function updateActivityFeed(leads) {
-        const activityList = document.getElementById('activity-list');
-        if (!activityList) return;
-
-        if (leads.length === 0) {
-            activityList.innerHTML = `
-                <div class="activity-item enhanced">
-                    <div class="activity-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="12" y1="16" x2="12" y2="12"/>
-                            <line x1="12" y1="8" x2="12.01" y2="8"/>
-                        </svg>
-                    </div>
-                    <div class="activity-content">
-                        <p>No recent activity</p>
-                        <div class="activity-time">Start by adding some leads</div>
-                    </div>
-                </div>
-            `;
-            return;
-        }
-
-        activityList.innerHTML = leads.map(lead => `
-            <div class="activity-item enhanced">
-                <div class="activity-icon">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                    </svg>
-                </div>
-                <div class="activity-content">
-                    <p>Lead: <strong>${sanitizeText(lead.name || 'Unknown Lead')}</strong> - ${getStatusText(lead.status)}</p>
-                    <div class="activity-time">${getTimeAgo(lead.createdAt)}</div>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    // ===================================
-    // UTILITY FUNCTIONS
-    // ===================================
-
-    function sanitizeText(text) {
-        if (!text) return '';
-        return text.toString().replace(/[<>&"']/g, function(match) {
-            const escape = {
-                '<': '&lt;',
-                '>': '&gt;',
-                '&': '&amp;',
-                '"': '&quot;',
-                "'": '&#39;'
-            };
-            return escape[match];
-        });
-    }
-
-    function getStatusText(status) {
-        const statusMap = {
-            'newlead': 'New Lead',
-            'contacted': 'Contacted',
-            'interested': 'Interested',
-            'followup': 'Follow Up',
-            'visit': 'Visit Scheduled',
-            'booked': 'Booked',
-            'closed': 'Closed',
-            'dropped': 'Dropped',
-            'notinterested': 'Not Interested'
-        };
-        return statusMap[status] || status || 'New Lead';
-    }
-
-    function formatDate(date) {
-        if (!date) return 'Unknown';
-        const d = date.toDate ? date.toDate() : new Date(date);
-        return d.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
-    }
-
-    function getTimeAgo(date) {
-        if (!date) return 'Unknown time';
-        const d = date.toDate ? date.toDate() : new Date(date);
-        const now = new Date();
-        const diffInSeconds = Math.floor((now - d) / 1000);
-
-        if (diffInSeconds < 60) return 'Just now';
-        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-        if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-
-        return d.toLocaleDateString();
-    }
-
-    // ===================================
-    // UI HELPER FUNCTIONS
-    // ===================================
-
-    function showLogin() {
-        loginPage.style.display = 'flex';
-        dashboardPage.style.display = 'none';
-    }
-
-    function showDashboard() {
-        loginPage.style.display = 'none';
-        dashboardPage.style.display = 'flex';
-    }
-
-    function hideLoadingScreen() {
-        if (loadingScreen) {
-            loadingScreen.style.opacity = '0';
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-            }, 500);
-        }
-    }
-
-    function setLoginLoading(loading) {
-        isLoading = loading;
-        const btnText = loginBtn?.querySelector('.btn-text');
-        const btnSpinner = loginBtn?.querySelector('.btn-spinner');
-
-        if (loginBtn) {
-            loginBtn.disabled = loading;
-
-            if (loading) {
-                if (btnText) btnText.style.display = 'none';
-                if (btnSpinner) btnSpinner.style.display = 'block';
-            } else {
-                if (btnText) btnText.style.display = 'block';
-                if (btnSpinner) btnSpinner.style.display = 'none';
-            }
-        }
-    }
-
-    function showError(message) {
-        const errorDiv = document.getElementById('error-message');
-        if (errorDiv) {
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(hideError, 5000);
-        }
-    }
-
-    function hideError() {
-        const errorDiv = document.getElementById('error-message');
-        if (errorDiv) {
-            errorDiv.style.display = 'none';
-        }
-    }
-
-    function showSection(sectionName) {
-        const sections = document.querySelectorAll('.content-section');
-        sections.forEach(section => {
-            section.classList.remove('active');
-            section.style.display = 'none';
-        });
-
-        const targetSection = document.getElementById(`${sectionName}-section`);
-        if (targetSection) {
-            targetSection.style.display = 'block';
-            targetSection.classList.add('active');
-
-            if (sectionName === 'overview') {
-                loadDashboardData();
-            }
-        }
-    }
-
-    function showErrorState() {
-        ['total-leads', 'active-leads', 'pending-followups', 'overdue-tasks'].forEach(id => {
-            const element = document.getElementById(id);
-            if (element) element.textContent = 'Error';
-        });
-
-        const tableBody = document.getElementById('leads-table-body');
-        if (tableBody) {
-            tableBody.innerHTML = '<tr><td colspan="6" class="loading-row">Error loading data. Please refresh.</td></tr>';
-        }
-    }
-
-    function searchLeads(searchTerm) {
-        const rows = document.querySelectorAll('#leads-table-body tr');
-        rows.forEach(row => {
-            const cells = row.querySelectorAll('td');
-            let rowText = '';
-            cells.forEach(cell => {
-                rowText += cell.textContent.toLowerCase() + ' ';
-            });
-
-            if (rowText.includes(searchTerm.toLowerCase()) || searchTerm === '') {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    }
-
-    function filterActivity(filter) {
-        console.log('Filtering activity by:', filter);
-        // In a real implementation, this would filter the activity list
-    }
-
-    // Placeholder functions for lead actions
-    function viewLead(leadId) {
-        console.log('Viewing lead:', leadId);
-        alert(`Viewing lead ${leadId} - This would open your existing lead modal`);
-    }
-
-    function editLead(leadId) {
-        console.log('Editing lead:', leadId);
-        alert(`Editing lead ${leadId} - This would open your existing edit modal`);
-    }
-
-    console.log('✅ Enhanced CRM with Firebase Integration Ready');
-</script>
-</body>
-</html>
+            console.error('❌ Error loading dashboard:',

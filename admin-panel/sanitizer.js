@@ -1,485 +1,783 @@
-// Input Sanitization and Validation Utilities
+/**
+ * ===================================
+ * ENHANCED DATA SANITIZER & VALIDATOR
+ * File: sanitizer.js
+ * Version: 2.0
+ * Purpose: Comprehensive input sanitization, validation, and security utilities
+ * ===================================
+ */
+
+/**
+ * Configuration constants for validation rules
+ */
+const VALIDATION_CONFIG = {
+    // Field length limits
+    MAX_LENGTHS: {
+        name: 100,
+        phone: 20,
+        email: 254,
+        address: 500,
+        requirements: 1000,
+        remarks: 1000,
+        general: 255
+    },
+
+    // Validation patterns
+    PATTERNS: {
+        email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        phone: /^[\+]?[\d\s\-\(\)]{7,20}$/,
+        name: /^[a-zA-Z\s\.\-\']{1,100}$/,
+        alphanumeric: /^[a-zA-Z0-9\s]{1,100}$/,
+        url: /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/,
+        slug: /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+    },
+
+    // Dangerous content patterns
+    SECURITY_PATTERNS: [
+        /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+        /javascript:/gi,
+        /on\w+\s*=/gi,
+        /<iframe/gi,
+        /<object/gi,
+        /<embed/gi,
+        /eval\s*\(/gi,
+        /expression\s*\(/gi,
+        /<svg[^>]*>[\s\S]*?<\/svg>/gi,
+        /data:text\/html/gi,
+        /vbscript:/gi,
+        /<!--[\s\S]*?-->/gi
+    ],
+
+    // Allowed HTML tags for rich text (if needed)
+    ALLOWED_TAGS: ['b', 'i', 'u', 'em', 'strong', 'p', 'br'],
+
+    // Valid select field options
+    LEAD_OPTIONS: {
+        status: ['newLead', 'contacted', 'interested', 'followup', 'visit', 'booked', 'closed', 'notinterested', 'dropped'],
+        source: ['website', 'facebook', 'instagram', 'google', 'referral', 'walk-in', 'cold-call', 'other'],
+        propertyType: ['apartment', 'villa', 'house', 'plot', 'commercial', 'office', 'warehouse', 'other'],
+        budget: ['under-50L', '50L-1Cr', '1Cr-2Cr', '2Cr-5Cr', 'above-5Cr'],
+        priority: ['high', 'medium', 'low']
+    },
+
+    USER_OPTIONS: {
+        role: ['admin', 'master', 'user'],
+        status: ['active', 'inactive']
+    }
+};
+
+/**
+ * Enhanced Data Sanitizer Class
+ * Provides comprehensive input sanitization and validation
+ */
 class DataSanitizer {
-    constructor() {
-        this.maxLengths = {
-            name: 100,
-            phone: 20,
-            email: 254,
-            address: 500,
-            requirements: 1000,
-            remarks: 1000
+    constructor(config = VALIDATION_CONFIG) {
+        this.config = config;
+        this.securityLog = [];
+        this.validationCache = new Map();
+
+        // Bind methods to preserve context
+        this.sanitize = this.sanitize.bind(this);
+        this.validate = this.validate.bind(this);
+        this.validateFormData = this.validateFormData.bind(this);
+    }
+
+    /**
+     * Primary sanitization method with enhanced security
+     * @param {*} input - Input to sanitize
+     * @param {string} type - Type of sanitization to apply
+     * @param {Object} options - Additional options
+     * @returns {string} Sanitized input
+     */
+    sanitize(input, type = 'text', options = {}) {
+        try {
+            if (input === null || input === undefined) {
+                return options.defaultValue || '';
+            }
+
+            // Convert to string and trim
+            let sanitized = String(input).trim();
+
+            // Apply length limits early
+            const maxLength = options.maxLength || this.config.MAX_LENGTHS[type] || this.config.MAX_LENGTHS.general;
+            if (sanitized.length > maxLength) {
+                sanitized = sanitized.slice(0, maxLength);
+                this._logSecurityEvent('length_truncation', { type, originalLength: input.length, truncatedLength: maxLength });
+            }
+
+            // Check for dangerous content first
+            if (this._containsDangerousContent(sanitized)) {
+                this._logSecurityEvent('dangerous_content_detected', { type, content: sanitized.slice(0, 100) });
+                sanitized = this._removeDangerousContent(sanitized);
+            }
+
+            // Apply type-specific sanitization
+            switch (type) {
+                case 'name':
+                    return this._sanitizeName(sanitized, options);
+                case 'email':
+                    return this._sanitizeEmail(sanitized, options);
+                case 'phone':
+                    return this._sanitizePhone(sanitized, options);
+                case 'text':
+                    return this._sanitizeText(sanitized, options);
+                case 'multiline':
+                    return this._sanitizeMultiline(sanitized, options);
+                case 'number':
+                    return this._sanitizeNumber(sanitized, options);
+                case 'url':
+                    return this._sanitizeUrl(sanitized, options);
+                case 'html':
+                    return this._sanitizeHtml(sanitized, options);
+                case 'slug':
+                    return this._sanitizeSlug(sanitized, options);
+                default:
+                    return this._sanitizeText(sanitized, options);
+            }
+        } catch (error) {
+            this._logSecurityEvent('sanitization_error', { type, error: error.message });
+            return options.defaultValue || '';
+        }
+    }
+
+    /**
+     * Enhanced validation with caching and detailed error reporting
+     * @param {*} input - Input to validate
+     * @param {string} type - Type of validation
+     * @param {boolean} required - Whether field is required
+     * @param {Object} options - Additional validation options
+     * @returns {Object} Validation result
+     */
+    validate(input, type, required = false, options = {}) {
+        try {
+            // Create cache key
+            const cacheKey = `${type}_${required}_${JSON.stringify(options)}_${input}`;
+
+            // Check cache first (for performance)
+            if (this.validationCache.has(cacheKey)) {
+                return this.validationCache.get(cacheKey);
+            }
+
+            // Basic required field check
+            const isEmpty = !input || String(input).trim() === '';
+            if (required && isEmpty) {
+                const result = {
+                    valid: false,
+                    message: options.requiredMessage || 'This field is required',
+                    code: 'REQUIRED_FIELD_EMPTY'
+                };
+                this.validationCache.set(cacheKey, result);
+                return result;
+            }
+
+            // If not required and empty, it's valid
+            if (!required && isEmpty) {
+                const result = { valid: true, message: '', code: 'VALID_EMPTY' };
+                this.validationCache.set(cacheKey, result);
+                return result;
+            }
+
+            // Sanitize first
+            const sanitized = this.sanitize(input, type, options);
+
+            // Apply type-specific validation
+            let result;
+            switch (type) {
+                case 'name':
+                    result = this._validateName(sanitized, options);
+                    break;
+                case 'email':
+                    result = this._validateEmail(sanitized, options);
+                    break;
+                case 'phone':
+                    result = this._validatePhone(sanitized, options);
+                    break;
+                case 'text':
+                    result = this._validateText(sanitized, options);
+                    break;
+                case 'multiline':
+                    result = this._validateMultiline(sanitized, options);
+                    break;
+                case 'number':
+                    result = this._validateNumber(sanitized, options);
+                    break;
+                case 'url':
+                    result = this._validateUrl(sanitized, options);
+                    break;
+                case 'select':
+                    result = this._validateSelect(sanitized, options);
+                    break;
+                default:
+                    result = this._validateText(sanitized, options);
+            }
+
+            // Cache result
+            this.validationCache.set(cacheKey, result);
+
+            // Clean cache if it gets too large
+            if (this.validationCache.size > 1000) {
+                const firstKey = this.validationCache.keys().next().value;
+                this.validationCache.delete(firstKey);
+            }
+
+            return result;
+        } catch (error) {
+            this._logSecurityEvent('validation_error', { type, error: error.message });
+            return {
+                valid: false,
+                message: 'Validation error occurred',
+                code: 'VALIDATION_ERROR'
+            };
+        }
+    }
+
+    /**
+     * Validate entire form data with comprehensive error reporting
+     * @param {Object} formData - Form data to validate
+     * @param {Object} schema - Validation schema
+     * @returns {Object} Validation results
+     */
+    validateFormData(formData, schema = {}) {
+        const errors = {};
+        const warnings = [];
+        const sanitizedData = {};
+        let isValid = true;
+
+        try {
+            for (const [fieldName, value] of Object.entries(formData)) {
+                const fieldSchema = schema[fieldName] || {};
+                const {
+                    type = 'text',
+                    required = false,
+                    options = {}
+                } = fieldSchema;
+
+                // Validate field
+                const validation = this.validate(value, type, required, options);
+
+                if (!validation.valid) {
+                    errors[fieldName] = validation.message;
+                    isValid = false;
+                } else {
+                    // Store sanitized value
+                    sanitizedData[fieldName] = this.sanitize(value, type, options);
+
+                    // Check for warnings
+                    if (validation.warning) {
+                        warnings.push({
+                            field: fieldName,
+                            message: validation.warning
+                        });
+                    }
+                }
+            }
+
+            return {
+                isValid,
+                errors,
+                warnings,
+                sanitizedData,
+                summary: {
+                    totalFields: Object.keys(formData).length,
+                    validFields: Object.keys(sanitizedData).length,
+                    errorCount: Object.keys(errors).length,
+                    warningCount: warnings.length
+                }
+            };
+        } catch (error) {
+            this._logSecurityEvent('form_validation_error', { error: error.message });
+            return {
+                isValid: false,
+                errors: { _form: 'Form validation failed' },
+                warnings: [],
+                sanitizedData: {},
+                summary: { totalFields: 0, validFields: 0, errorCount: 1, warningCount: 0 }
+            };
+        }
+    }
+
+    /**
+     * Specialized lead data sanitization and validation
+     * @param {Object} leadData - Lead data to process
+     * @returns {Object} Processed lead data
+     */
+    sanitizeLeadData(leadData) {
+        const schema = {
+            name: { type: 'name', required: true },
+            phone: { type: 'phone', required: true },
+            email: { type: 'email', required: false },
+            altPhone: { type: 'phone', required: false },
+            status: { type: 'select', options: { validValues: this.config.LEAD_OPTIONS.status } },
+            source: { type: 'select', options: { validValues: this.config.LEAD_OPTIONS.source } },
+            propertyType: { type: 'select', options: { validValues: this.config.LEAD_OPTIONS.propertyType } },
+            budget: { type: 'select', options: { validValues: this.config.LEAD_OPTIONS.budget } },
+            location: { type: 'text', required: false },
+            requirements: { type: 'multiline', required: false },
+            assignedTo: { type: 'text', required: false },
+            priority: { type: 'select', options: { validValues: this.config.LEAD_OPTIONS.priority } }
         };
 
-        this.patterns = {
-            email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-            phone: /^[\+]?[\d\s\-\(\)]{7,20}$/,
-            name: /^[a-zA-Z\s\.\-\']{1,100}$/,
-            alphanumeric: /^[a-zA-Z0-9\s]{1,100}$/
+        const result = this.validateFormData(leadData, schema);
+
+        // Remove empty values from sanitized data
+        const cleanedData = {};
+        for (const [key, value] of Object.entries(result.sanitizedData)) {
+            if (value && value !== '') {
+                cleanedData[key] = value;
+            }
+        }
+
+        return {
+            ...result,
+            sanitizedData: cleanedData
         };
     }
 
-    // Main sanitization method
-    sanitize(input, type = 'text') {
-        if (input === null || input === undefined) {
-            return '';
-        }
+    /**
+     * Specialized user data sanitization and validation
+     * @param {Object} userData - User data to process
+     * @returns {Object} Processed user data
+     */
+    sanitizeUserData(userData) {
+        const schema = {
+            name: { type: 'name', required: true },
+            email: { type: 'email', required: true },
+            role: { type: 'select', options: { validValues: this.config.USER_OPTIONS.role } },
+            status: { type: 'select', options: { validValues: this.config.USER_OPTIONS.status } },
+            linkedMaster: { type: 'text', required: false }
+        };
 
-        // Convert to string
-        let sanitized = String(input);
-
-        // Basic XSS prevention
-        sanitized = this.escapeHTML(sanitized);
-
-        // Apply type-specific sanitization
-        switch (type) {
-            case 'name':
-                sanitized = this.sanitizeName(sanitized);
-                break;
-            case 'email':
-                sanitized = this.sanitizeEmail(sanitized);
-                break;
-            case 'phone':
-                sanitized = this.sanitizePhone(sanitized);
-                break;
-            case 'text':
-                sanitized = this.sanitizeText(sanitized);
-                break;
-            case 'multiline':
-                sanitized = this.sanitizeMultiline(sanitized);
-                break;
-            case 'number':
-                sanitized = this.sanitizeNumber(sanitized);
-                break;
-            default:
-                sanitized = this.sanitizeText(sanitized);
-        }
-
-        return sanitized.trim();
+        return this.validateFormData(userData, schema);
     }
 
-    // Escape HTML characters
-    escapeHTML(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
+    // ===================================
+    // PRIVATE SANITIZATION METHODS
+    // ===================================
 
-    // Remove HTML tags completely
-    stripHTML(str) {
-        const div = document.createElement('div');
-        div.innerHTML = str;
-        return div.textContent || div.innerText || '';
-    }
-
-    // Sanitize name fields
-    sanitizeName(str) {
+    _sanitizeName(str, options = {}) {
         return str
             .replace(/[<>\"'&]/g, '') // Remove dangerous characters
-            .replace(/\s+/g, ' ') // Replace multiple spaces with single space
-            .slice(0, this.maxLengths.name);
+            .replace(/\s+/g, ' ') // Normalize spaces
+            .replace(/[^\w\s\.\-\']/g, '') // Keep only valid name characters
+            .slice(0, options.maxLength || this.config.MAX_LENGTHS.name);
     }
 
-    // Sanitize email
-    sanitizeEmail(str) {
+    _sanitizeEmail(str, options = {}) {
         return str
             .toLowerCase()
             .replace(/[<>\"'&\s]/g, '') // Remove dangerous characters and spaces
-            .slice(0, this.maxLengths.email);
+            .slice(0, options.maxLength || this.config.MAX_LENGTHS.email);
     }
 
-    // Sanitize phone numbers
-    sanitizePhone(str) {
+    _sanitizePhone(str, options = {}) {
         return str
             .replace(/[<>\"'&]/g, '') // Remove dangerous characters
             .replace(/[^\d\+\-\s\(\)]/g, '') // Keep only valid phone characters
-            .slice(0, this.maxLengths.phone);
+            .slice(0, options.maxLength || this.config.MAX_LENGTHS.phone);
     }
 
-    // Sanitize general text
-    sanitizeText(str) {
+    _sanitizeText(str, options = {}) {
         return str
             .replace(/[<>]/g, '') // Remove angle brackets
             .replace(/javascript:/gi, '') // Remove javascript: protocol
             .replace(/on\w+\s*=/gi, '') // Remove event handlers
-            .slice(0, this.maxLengths.address);
+            .slice(0, options.maxLength || this.config.MAX_LENGTHS.general);
     }
 
-    // Sanitize multiline text (textarea content)
-    sanitizeMultiline(str) {
+    _sanitizeMultiline(str, options = {}) {
         return str
             .replace(/[<>]/g, '') // Remove angle brackets
             .replace(/javascript:/gi, '') // Remove javascript: protocol
             .replace(/on\w+\s*=/gi, '') // Remove event handlers
             .replace(/\r\n/g, '\n') // Normalize line endings
-            .slice(0, this.maxLengths.requirements);
+            .slice(0, options.maxLength || this.config.MAX_LENGTHS.requirements);
     }
 
-    // Sanitize numbers
-    sanitizeNumber(str) {
+    _sanitizeNumber(str, options = {}) {
         const num = parseFloat(str);
-        return isNaN(num) ? 0 : num;
+        if (isNaN(num)) {
+            return options.defaultValue || 0;
+        }
+
+        const min = options.min || -Infinity;
+        const max = options.max || Infinity;
+
+        return Math.max(min, Math.min(max, num));
     }
 
-    // Validate input based on type
-    validate(input, type, required = false) {
-        // Check if required field is empty
-        if (required && (!input || input.trim() === '')) {
-            return { valid: false, message: 'This field is required' };
+    _sanitizeUrl(str, options = {}) {
+        // Basic URL sanitization
+        str = str.replace(/[<>\"']/g, '');
+
+        // Ensure protocol
+        if (str && !str.match(/^https?:\/\//)) {
+            str = 'https://' + str;
         }
 
-        // If not required and empty, it's valid
-        if (!required && (!input || input.trim() === '')) {
-            return { valid: true, message: '' };
-        }
-
-        const sanitized = this.sanitize(input, type);
-
-        // Type-specific validation
-        switch (type) {
-            case 'name':
-                return this.validateName(sanitized);
-            case 'email':
-                return this.validateEmail(sanitized);
-            case 'phone':
-                return this.validatePhone(sanitized);
-            case 'text':
-                return this.validateText(sanitized);
-            case 'multiline':
-                return this.validateMultiline(sanitized);
-            default:
-                return { valid: true, message: '' };
-        }
+        return str.slice(0, options.maxLength || 2048);
     }
 
-    // Validate name
-    validateName(name) {
-        if (name.length < 2) {
-            return { valid: false, message: 'Name must be at least 2 characters' };
-        }
-        if (name.length > this.maxLengths.name) {
-            return { valid: false, message: `Name must not exceed ${this.maxLengths.name} characters` };
-        }
-        if (!this.patterns.name.test(name)) {
-            return { valid: false, message: 'Name contains invalid characters' };
-        }
-        return { valid: true, message: '' };
-    }
+    _sanitizeHtml(str, options = {}) {
+        const allowedTags = options.allowedTags || this.config.ALLOWED_TAGS;
 
-    // Validate email
-    validateEmail(email) {
-        if (!this.patterns.email.test(email)) {
-            return { valid: false, message: 'Please enter a valid email address' };
-        }
-        if (email.length > this.maxLengths.email) {
-            return { valid: false, message: `Email must not exceed ${this.maxLengths.email} characters` };
-        }
-        return { valid: true, message: '' };
-    }
+        // Simple HTML sanitization (in production, use a proper library like DOMPurify)
+        let sanitized = str;
 
-    // Validate phone
-    validatePhone(phone) {
-        if (phone.length < 7) {
-            return { valid: false, message: 'Phone number must be at least 7 digits' };
-        }
-        if (phone.length > this.maxLengths.phone) {
-            return { valid: false, message: `Phone number must not exceed ${this.maxLengths.phone} characters` };
-        }
-        if (!this.patterns.phone.test(phone)) {
-            return { valid: false, message: 'Please enter a valid phone number' };
-        }
-        return { valid: true, message: '' };
-    }
-
-    // Validate general text
-    validateText(text) {
-        if (text.length > this.maxLengths.address) {
-            return { valid: false, message: `Text must not exceed ${this.maxLengths.address} characters` };
-        }
-        return { valid: true, message: '' };
-    }
-
-    // Validate multiline text
-    validateMultiline(text) {
-        if (text.length > this.maxLengths.requirements) {
-            return { valid: false, message: `Text must not exceed ${this.maxLengths.requirements} characters` };
-        }
-        return { valid: true, message: '' };
-    }
-
-    // Sanitize form data object
-    sanitizeFormData(formData) {
-        const sanitized = {};
-        const fieldTypes = {
-            name: 'name',
-            email: 'email',
-            phone: 'phone',
-            altPhone: 'phone',
-            location: 'text',
-            requirements: 'multiline',
-            remarks: 'multiline',
-            // Add more field mappings as needed
-        };
-
-        for (const [key, value] of Object.entries(formData)) {
-            const type = fieldTypes[key] || 'text';
-            sanitized[key] = this.sanitize(value, type);
-        }
-
-        return sanitized;
-    }
-
-    // Validate entire form data object
-    validateFormData(formData, requiredFields = []) {
-        const errors = {};
-        const fieldTypes = {
-            name: 'name',
-            email: 'email',
-            phone: 'phone',
-            altPhone: 'phone',
-            location: 'text',
-            requirements: 'multiline',
-            remarks: 'multiline',
-        };
-
-        // Validate each field
-        for (const [key, value] of Object.entries(formData)) {
-            const type = fieldTypes[key] || 'text';
-            const required = requiredFields.includes(key);
-            const validation = this.validate(value, type, required);
-
-            if (!validation.valid) {
-                errors[key] = validation.message;
+        // Remove all tags except allowed ones
+        const tagRegex = /<\/?([a-zA-Z]+)(?:\s[^>]*)?>/g;
+        sanitized = sanitized.replace(tagRegex, (match, tagName) => {
+            if (allowedTags.includes(tagName.toLowerCase())) {
+                return match;
             }
-        }
-
-        return {
-            valid: Object.keys(errors).length === 0,
-            errors: errors
-        };
-    }
-
-    // Clean and validate lead data specifically
-    sanitizeLeadData(leadData) {
-        const cleaned = {
-            name: this.sanitize(leadData.name, 'name'),
-            phone: this.sanitize(leadData.phone, 'phone'),
-            email: this.sanitize(leadData.email, 'email'),
-            altPhone: this.sanitize(leadData.altPhone, 'phone'),
-            status: this.sanitizeSelect(leadData.status, [
-                'newLead', 'contacted', 'interested', 'followup',
-                'visit', 'booked', 'closed', 'notinterested', 'dropped'
-            ]),
-            source: this.sanitizeSelect(leadData.source, [
-                'website', 'facebook', 'instagram', 'google',
-                'referral', 'walk-in', 'cold-call', 'other'
-            ]),
-            propertyType: this.sanitizeSelect(leadData.propertyType, [
-                'apartment', 'villa', 'house', 'plot',
-                'commercial', 'office', 'warehouse', 'other'
-            ]),
-            budget: this.sanitizeSelect(leadData.budget, [
-                'under-50L', '50L-1Cr', '1Cr-2Cr', '2Cr-5Cr', 'above-5Cr'
-            ]),
-            location: this.sanitize(leadData.location, 'text'),
-            requirements: this.sanitize(leadData.requirements, 'multiline'),
-            assignedTo: this.sanitizeUserId(leadData.assignedTo),
-            priority: this.sanitizeSelect(leadData.priority, ['high', 'medium', 'low'])
-        };
-
-        // Remove empty values
-        Object.keys(cleaned).forEach(key => {
-            if (!cleaned[key] || cleaned[key] === '') {
-                delete cleaned[key];
-            }
+            return '';
         });
 
+        return sanitized.slice(0, options.maxLength || this.config.MAX_LENGTHS.requirements);
+    }
+
+    _sanitizeSlug(str, options = {}) {
+        return str
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+            .replace(/\s+/g, '-') // Replace spaces with hyphens
+            .replace(/-+/g, '-') // Replace multiple hyphens with single
+            .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+            .slice(0, options.maxLength || 50);
+    }
+
+    // ===================================
+    // PRIVATE VALIDATION METHODS
+    // ===================================
+
+    _validateName(name, options = {}) {
+        if (name.length < (options.minLength || 2)) {
+            return { valid: false, message: `Name must be at least ${options.minLength || 2} characters`, code: 'NAME_TOO_SHORT' };
+        }
+
+        if (!this.config.PATTERNS.name.test(name)) {
+            return { valid: false, message: 'Name contains invalid characters', code: 'INVALID_NAME_CHARACTERS' };
+        }
+
+        return { valid: true, message: '', code: 'VALID' };
+    }
+
+    _validateEmail(email, options = {}) {
+        if (!this.config.PATTERNS.email.test(email)) {
+            return { valid: false, message: 'Please enter a valid email address', code: 'INVALID_EMAIL_FORMAT' };
+        }
+
+        // Check for disposable email domains if provided
+        if (options.blockDisposable && this._isDisposableEmail(email)) {
+            return { valid: false, message: 'Disposable email addresses are not allowed', code: 'DISPOSABLE_EMAIL' };
+        }
+
+        return { valid: true, message: '', code: 'VALID' };
+    }
+
+    _validatePhone(phone, options = {}) {
+        if (phone.length < (options.minLength || 7)) {
+            return { valid: false, message: `Phone number must be at least ${options.minLength || 7} digits`, code: 'PHONE_TOO_SHORT' };
+        }
+
+        if (!this.config.PATTERNS.phone.test(phone)) {
+            return { valid: false, message: 'Please enter a valid phone number', code: 'INVALID_PHONE_FORMAT' };
+        }
+
+        return { valid: true, message: '', code: 'VALID' };
+    }
+
+    _validateText(text, options = {}) {
+        const maxLength = options.maxLength || this.config.MAX_LENGTHS.general;
+
+        if (text.length > maxLength) {
+            return { valid: false, message: `Text must not exceed ${maxLength} characters`, code: 'TEXT_TOO_LONG' };
+        }
+
+        return { valid: true, message: '', code: 'VALID' };
+    }
+
+    _validateMultiline(text, options = {}) {
+        const maxLength = options.maxLength || this.config.MAX_LENGTHS.requirements;
+
+        if (text.length > maxLength) {
+            return { valid: false, message: `Text must not exceed ${maxLength} characters`, code: 'TEXT_TOO_LONG' };
+        }
+
+        return { valid: true, message: '', code: 'VALID' };
+    }
+
+    _validateNumber(num, options = {}) {
+        if (isNaN(num)) {
+            return { valid: false, message: 'Please enter a valid number', code: 'INVALID_NUMBER' };
+        }
+
+        if (options.min !== undefined && num < options.min) {
+            return { valid: false, message: `Number must be at least ${options.min}`, code: 'NUMBER_TOO_SMALL' };
+        }
+
+        if (options.max !== undefined && num > options.max) {
+            return { valid: false, message: `Number must not exceed ${options.max}`, code: 'NUMBER_TOO_LARGE' };
+        }
+
+        return { valid: true, message: '', code: 'VALID' };
+    }
+
+    _validateUrl(url, options = {}) {
+        if (!this.config.PATTERNS.url.test(url)) {
+            return { valid: false, message: 'Please enter a valid URL', code: 'INVALID_URL_FORMAT' };
+        }
+
+        return { valid: true, message: '', code: 'VALID' };
+    }
+
+    _validateSelect(value, options = {}) {
+        const validValues = options.validValues || [];
+
+        if (validValues.length > 0 && !validValues.includes(value)) {
+            return { valid: false, message: 'Please select a valid option', code: 'INVALID_SELECT_VALUE' };
+        }
+
+        return { valid: true, message: '', code: 'VALID' };
+    }
+
+    // ===================================
+    // SECURITY UTILITIES
+    // ===================================
+
+    _containsDangerousContent(str) {
+        return this.config.SECURITY_PATTERNS.some(pattern => pattern.test(str));
+    }
+
+    _removeDangerousContent(str) {
+        let cleaned = str;
+        this.config.SECURITY_PATTERNS.forEach(pattern => {
+            cleaned = cleaned.replace(pattern, '');
+        });
         return cleaned;
     }
 
-    // Sanitize select field values
-    sanitizeSelect(value, allowedValues) {
-        if (!value || !allowedValues.includes(value)) {
-            return '';
-        }
-        return value;
+    _isDisposableEmail(email) {
+        // List of common disposable email domains
+        const disposableDomains = [
+            '10minutemail.com', 'tempmail.org', 'guerrillamail.com',
+            'mailinator.com', 'trashmail.com', 'yopmail.com'
+        ];
+
+        const domain = email.split('@')[1]?.toLowerCase();
+        return disposableDomains.includes(domain);
     }
 
-    // Sanitize user ID (Firebase UID format)
-    sanitizeUserId(userId) {
-        if (!userId || typeof userId !== 'string') {
-            return '';
+    _logSecurityEvent(type, details) {
+        const event = {
+            type,
+            details,
+            timestamp: new Date().toISOString(),
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Server'
+        };
+
+        this.securityLog.push(event);
+
+        // Keep only last 100 events
+        if (this.securityLog.length > 100) {
+            this.securityLog.shift();
         }
-        // Firebase UIDs are alphanumeric with some special chars
-        return userId.replace(/[^a-zA-Z0-9\-_]/g, '').slice(0, 128);
+
+        // Log to console in development
+        if (typeof window !== 'undefined' && window.location?.hostname === 'localhost') {
+            console.warn('🚨 Security Event:', event);
+        }
+
+        // Send to external logging service if available
+        if (typeof window !== 'undefined' && window.authGuard?.logSecureActivity) {
+            window.authGuard.logSecureActivity('security_sanitizer_event', event);
+        }
     }
 
-    // Display validation errors in UI
-    displayValidationErrors(errors, formId = 'edit-lead-form') {
-        // Clear existing errors
+    // ===================================
+    // UI INTEGRATION METHODS
+    // ===================================
+
+    /**
+     * Display validation errors in UI
+     * @param {Object} errors - Validation errors
+     * @param {string} formId - Form ID to display errors in
+     */
+    displayValidationErrors(errors, formId = 'form') {
         this.clearValidationErrors(formId);
 
-        // Display new errors
         Object.entries(errors).forEach(([fieldName, message]) => {
-            const field = document.getElementById(`edit-lead-${fieldName}`) ||
-                         document.getElementById(fieldName);
+            const field = document.getElementById(fieldName) ||
+                         document.getElementById(`${formId}-${fieldName}`) ||
+                         document.querySelector(`[name="${fieldName}"]`);
 
             if (field) {
-                field.classList.add('error');
-
-                // Create error message element
-                const errorElement = document.createElement('div');
-                errorElement.className = 'field-error';
-                errorElement.textContent = message;
-                errorElement.style.cssText = `
-                    color: #ef4444;
-                    font-size: 11px;
-                    margin-top: 4px;
-                    font-weight: 500;
-                `;
-
-                // Insert after the field
-                field.parentNode.appendChild(errorElement);
+                this._showFieldError(field, message);
             }
         });
     }
 
-    // Clear validation errors from UI
-    clearValidationErrors(formId = 'edit-lead-form') {
+    /**
+     * Clear validation errors from UI
+     * @param {string} formId - Form ID to clear errors from
+     */
+    clearValidationErrors(formId = 'form') {
         const form = document.getElementById(formId);
         if (!form) return;
 
-        // Remove error classes
-        const errorFields = form.querySelectorAll('.error');
+        // Remove error classes and messages
+        const errorFields = form.querySelectorAll('.error, .success');
         errorFields.forEach(field => {
             field.classList.remove('error', 'success');
         });
 
-        // Remove error messages
         const errorMessages = form.querySelectorAll('.field-error');
         errorMessages.forEach(msg => msg.remove());
     }
 
-    // Mark field as valid in UI
-    markFieldValid(fieldId) {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            field.classList.remove('error');
-            field.classList.add('success');
-
-            // Remove any existing error message
-            const errorMsg = field.parentNode.querySelector('.field-error');
-            if (errorMsg) {
-                errorMsg.remove();
-            }
-        }
-    }
-
-    // Real-time validation for form fields
-    setupRealtimeValidation(formId = 'edit-lead-form') {
+    /**
+     * Setup real-time validation for form
+     * @param {string} formId - Form ID to setup validation for
+     * @param {Object} schema - Validation schema
+     */
+    setupRealtimeValidation(formId, schema = {}) {
         const form = document.getElementById(formId);
         if (!form) return;
 
-        const fieldTypes = {
-            'edit-lead-name': 'name',
-            'edit-lead-phone': 'phone',
-            'edit-lead-email': 'email',
-            'edit-lead-alt-phone': 'phone',
-            'edit-lead-location': 'text',
-            'edit-lead-requirements': 'multiline'
-        };
+        const fields = form.querySelectorAll('input, select, textarea');
 
-        const requiredFields = ['edit-lead-name', 'edit-lead-phone'];
-
-        Object.entries(fieldTypes).forEach(([fieldId, type]) => {
-            const field = document.getElementById(fieldId);
-            if (!field) return;
+        fields.forEach(field => {
+            const fieldName = field.name || field.id;
+            const fieldSchema = schema[fieldName] || { type: 'text', required: field.hasAttribute('required') };
 
             // Debounced validation
             let timeout;
-            field.addEventListener('input', () => {
+            const validateField = () => {
                 clearTimeout(timeout);
                 timeout = setTimeout(() => {
-                    const isRequired = requiredFields.includes(fieldId);
-                    const validation = this.validate(field.value, type, isRequired);
+                    const validation = this.validate(field.value, fieldSchema.type, fieldSchema.required, fieldSchema.options);
 
                     if (validation.valid) {
-                        this.markFieldValid(fieldId);
+                        this._markFieldValid(field);
                     } else {
-                        field.classList.add('error');
-                        field.classList.remove('success');
-
-                        // Show error message
-                        let errorMsg = field.parentNode.querySelector('.field-error');
-                        if (!errorMsg) {
-                            errorMsg = document.createElement('div');
-                            errorMsg.className = 'field-error';
-                            errorMsg.style.cssText = `
-                                color: #ef4444;
-                                font-size: 11px;
-                                margin-top: 4px;
-                                font-weight: 500;
-                            `;
-                            field.parentNode.appendChild(errorMsg);
-                        }
-                        errorMsg.textContent = validation.message;
+                        this._showFieldError(field, validation.message);
                     }
-                }, 500);
-            });
+                }, 300);
+            };
+
+            field.addEventListener('input', validateField);
+            field.addEventListener('blur', validateField);
         });
     }
 
-    // Sanitize display text (for showing user data safely)
-    sanitizeDisplayText(text) {
-        if (!text) return '';
-        return this.escapeHTML(String(text));
+    _showFieldError(field, message) {
+        const formGroup = field.closest('.form-group, .enhanced-form-group, .input-group');
+        if (!formGroup) return;
+
+        field.classList.add('error');
+        field.classList.remove('success');
+
+        let errorElement = formGroup.querySelector('.field-error');
+        if (!errorElement) {
+            errorElement = document.createElement('div');
+            errorElement.className = 'field-error';
+            errorElement.style.cssText = `
+                color: #ef4444;
+                font-size: 12px;
+                margin-top: 4px;
+                font-weight: 500;
+                display: block;
+            `;
+            formGroup.appendChild(errorElement);
+        }
+
+        errorElement.textContent = message;
     }
 
-    // Create safe HTML for display
+    _markFieldValid(field) {
+        const formGroup = field.closest('.form-group, .enhanced-form-group, .input-group');
+        if (!formGroup) return;
+
+        field.classList.remove('error');
+        field.classList.add('success');
+
+        const errorElement = formGroup.querySelector('.field-error');
+        if (errorElement) {
+            errorElement.remove();
+        }
+    }
+
+    // ===================================
+    // UTILITY METHODS
+    // ===================================
+
+    /**
+     * Get security log for monitoring
+     * @returns {Array} Security events log
+     */
+    getSecurityLog() {
+        return [...this.securityLog];
+    }
+
+    /**
+     * Clear validation cache
+     */
+    clearCache() {
+        this.validationCache.clear();
+    }
+
+    /**
+     * Get cache statistics
+     * @returns {Object} Cache statistics
+     */
+    getCacheStats() {
+        return {
+            size: this.validationCache.size,
+            maxSize: 1000
+        };
+    }
+
+    /**
+     * Create safe HTML for display (legacy compatibility)
+     * @param {string} template - HTML template
+     * @param {Object} data - Data to inject
+     * @returns {string} Safe HTML
+     */
     createSafeHTML(template, data) {
         let safeHTML = template;
 
         Object.entries(data).forEach(([key, value]) => {
             const placeholder = `{{${key}}}`;
-            const safeValue = this.sanitizeDisplayText(value);
+            const safeValue = this.sanitize(value, 'text');
             safeHTML = safeHTML.replace(new RegExp(placeholder, 'g'), safeValue);
         });
 
         return safeHTML;
     }
-
-    // Check for potentially dangerous content
-    containsDangerousContent(str) {
-        const dangerousPatterns = [
-            /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-            /javascript:/gi,
-            /on\w+\s*=/gi,
-            /<iframe/gi,
-            /<object/gi,
-            /<embed/gi,
-            /eval\s*\(/gi,
-            /expression\s*\(/gi
-        ];
-
-        return dangerousPatterns.some(pattern => pattern.test(str));
-    }
-
-    // Log security incidents
-    logSecurityIncident(type, details) {
-        console.warn(`🚨 Security Incident: ${type}`, details);
-
-        // You can extend this to send to your logging service
-        if (window.authGuard && window.authGuard.isAuthenticated()) {
-            window.authGuard.logActivity('security_incident', {
-                type: type,
-                details: details,
-                timestamp: new Date().toISOString()
-            });
-        }
-    }
 }
+
+// ===================================
+// GLOBAL INSTANCE AND EXPORTS
+// ===================================
 
 // Create global sanitizer instance
 const sanitizer = new DataSanitizer();
 
-// Export for use in other files
-window.sanitizer = sanitizer;
+// Legacy function for backward compatibility
+function sanitizeDisplayText(text) {
+    return sanitizer.sanitize(text, 'text');
+}
+
+// Export for different module systems
+if (typeof module !== 'undefined' && module.exports) {
+    // Node.js
+    module.exports = { DataSanitizer, sanitizer, VALIDATION_CONFIG };
+} else if (typeof window !== 'undefined') {
+    // Browser
+    window.sanitizer = sanitizer;
+    window.DataSanitizer = DataSanitizer;
+    window.VALIDATION_CONFIG = VALIDATION_CONFIG;
+    window.sanitizeDisplayText = sanitizeDisplayText;
+}
+
+console.log('✅ Enhanced Data Sanitizer v2.0 Loaded');
+console.log('🔧 Features: Advanced validation, caching, security logging, real-time UI integration');
