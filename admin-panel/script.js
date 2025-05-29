@@ -1,2036 +1,190 @@
 // ===================================
-// ENHANCED CORE SCRIPT WITH NEW FEATURES
+// CONSOLIDATED REAL ESTATE CRM SCRIPT
 // File: script.js
-// Location: /admin-panel/script.js
-// Purpose: Enhanced core functionality with professional features
+// Version: 3.0 (Consolidated)
+// Purpose: All JavaScript functionality in one secure, optimized file
+// ===================================
+
+'use strict';
+
+// ===================================
+// SECTION 1: CONFIGURATION & CONSTANTS
+// ===================================
+
+// Firebase Configuration
+const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyA0ENNDjS9E2Ph054G_3RZC3sR9J1uQ3Cs",
+    authDomain: "igplcrm.firebaseapp.com",
+    projectId: "igplcrm",
+    storageBucket: "igplcrm.firebasestorage.app",
+    messagingSenderId: "688904879234",
+    appId: "1:688904879234:web:3dfae5fcd879ae9a74889b"
+};
+
+// Database Configuration
+const DB_CONFIG = {
+    COLLECTIONS: {
+        USERS: 'users',
+        LEADS: 'leads',
+        ACTIVITY_LOGS: 'activity_logs',
+        RATE_LIMITS: 'rate_limits',
+        SECURITY_ALERTS: 'security_alerts',
+        BACKUPS: 'backups',
+        VALIDATION_ERRORS: 'validation_errors',
+        DAILY_SUMMARIES: 'daily_summaries'
+    },
+    BATCH_SIZE: 500,
+    RETRY_ATTEMPTS: 3,
+    RETRY_DELAY: 1000,
+    CACHE_DURATION: 5 * 60 * 1000,
+    MAX_CACHE_SIZE: 100
+};
+
+// Validation Configuration
+const VALIDATION_CONFIG = {
+    MAX_LENGTHS: {
+        name: 100,
+        phone: 20,
+        email: 254,
+        address: 500,
+        requirements: 1000,
+        remarks: 1000,
+        general: 255
+    },
+    PATTERNS: {
+        email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        phone: /^[\+]?[\d\s\-\(\)]{7,20}$/,
+        name: /^[a-zA-Z\s\.\-\']{1,100}$/,
+        alphanumeric: /^[a-zA-Z0-9\s]{1,100}$/,
+        url: /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/,
+        slug: /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+    },
+    SECURITY_PATTERNS: [
+        /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+        /javascript:/gi,
+        /on\w+\s*=/gi,
+        /<iframe/gi,
+        /<object/gi,
+        /<embed/gi,
+        /eval\s*\(/gi,
+        /expression\s*\(/gi,
+        /<svg[^>]*>[\s\S]*?<\/svg>/gi,
+        /data:text\/html/gi,
+        /vbscript:/gi,
+        /<!--[\s\S]*?-->/gi
+    ],
+    ALLOWED_TAGS: ['b', 'i', 'u', 'em', 'strong', 'p', 'br'],
+    LEAD_OPTIONS: {
+        status: ['newLead', 'contacted', 'interested', 'followup', 'visit', 'booked', 'closed', 'notinterested', 'dropped'],
+        source: ['website', 'facebook', 'instagram', 'google', 'referral', 'walk-in', 'cold-call', 'other'],
+        propertyType: ['apartment', 'villa', 'house', 'plot', 'commercial', 'office', 'warehouse', 'other'],
+        budget: ['under-50L', '50L-1Cr', '1Cr-2Cr', '2Cr-5Cr', 'above-5Cr'],
+        priority: ['high', 'medium', 'low']
+    },
+    USER_OPTIONS: {
+        role: ['admin', 'master', 'user'],
+        status: ['active', 'inactive']
+    }
+};
+
+// Authentication Configuration
+const AUTH_CONFIG = {
+    SESSION: {
+        TIMEOUT: 30 * 60 * 1000,
+        CHECK_INTERVAL: 60 * 1000,
+        STORAGE_KEY: 'crm_session',
+        REFRESH_THRESHOLD: 5 * 60 * 1000
+    },
+    SECURITY: {
+        MAX_FAILED_ATTEMPTS: 5,
+        LOCKOUT_TIME: 15 * 60 * 1000,
+        RATE_LIMIT_WINDOW: 60 * 1000,
+        RAPID_CLICK_THRESHOLD: 50,
+        RAPID_CLICK_WINDOW: 10 * 1000
+    },
+    ROLES: {
+        HIERARCHY: ['user', 'master', 'admin'],
+        PERMISSIONS: {
+            admin: [
+                'all', 'users:create', 'users:edit', 'users:delete', 'users:view',
+                'leads:create', 'leads:edit', 'leads:delete', 'leads:view',
+                'reports:view', 'settings:edit', 'system:admin', 'security:monitor'
+            ],
+            master: [
+                'leads:own', 'leads:team', 'users:team', 'reports:read',
+                'team:manage', 'leads:create', 'leads:edit', 'leads:view'
+            ],
+            user: [
+                'leads:assigned', 'leads:created', 'profile:edit',
+                'leads:view', 'leads:edit'
+            ]
+        }
+    },
+    UI_ELEMENTS: {
+        admin: ['.admin-only'],
+        master: ['.admin-only'],
+        user: ['.admin-only', '.master-only']
+    }
+};
+
+// UI Configuration
+const UI_CONFIG = {
+    MODAL: {
+        ANIMATION_DURATION: 300,
+        Z_INDEX_BASE: 10000,
+        MAX_MODALS: 5,
+        BACKDROP_BLUR: true,
+        AUTO_FOCUS: true,
+        TRAP_FOCUS: true
+    },
+    TOAST: {
+        DEFAULT_DURATION: 4000,
+        MAX_TOASTS: 5,
+        POSITION: 'top-right',
+        ANIMATION_DURATION: 300
+    },
+    LOADING: {
+        GLOBAL_TARGET_ID: 'loading-screen',
+        SPINNER_COLOR: '#6366f1'
+    },
+    FORM: {
+        VALIDATION_DELAY: 300,
+        AUTO_SAVE_DELAY: 2000,
+        SHOW_PROGRESS: true
+    },
+    THEME: {
+        PRIMARY_COLOR: '#6366f1',
+        SUCCESS_COLOR: '#10b981',
+        ERROR_COLOR: '#ef4444',
+        WARNING_COLOR: '#f59e0b',
+        INFO_COLOR: '#3b82f6'
+    }
+};
+
+// ===================================
+// SECTION 2: UTILITY CLASSES
 // ===================================
 
 /**
- * Main CRM Application Class
- * Manages overall application state, routing, and integration of modules.
+ * Data Utilities Class
  */
-class CRMApplication {
-    constructor() {
-        /** @type {Map<string, any>} */
-        this.state = new Map();
-        this.initialized = false;
-
-        /** @type {boolean} */
-        this.isLoading = false;
-
-        // Global data stores (will ideally be managed through data services)
-        /** @type {Array<Object>} */
-        this.allLeads = [];
-        /** @type {Array<Object>} */
-        this.allUsers = [];
-        /** @type {Array<Object>} */
-        this.allMasters = [];
-
-        /** @type {string | null} */
-        this.selectedMasterId = null;
-        /** @type {string | null} */
-        this.selectedUserId = null;
-        /** @type {string} */
-        this.currentView = 'overview'; // Default view
-        /** @type {Array<{type: string, id: string | null}>} */
-        this.currentViewStack = [];
-
-        // Managers (will be initialized after dependencies are ready)
-        /** @type {AdminManager | null} */
-        this.adminManager = null;
-        /** @type {ActivityLogger | null} */
-        this.activityLogger = null;
-
-        // Bind methods
-        this.init = this.init.bind(this);
-        this.handleLogin = this.handleLogin.bind(this);
-        this.showSection = this.showSection.bind(this);
-        this.loadDashboardData = this.loadDashboardData.bind(this);
-        this.loadOverviewStats = this.loadOverviewStats.bind(this);
-        this.loadRecentActivity = this.loadRecentActivity.bind(this);
-        this.loadMastersView = this.loadMastersView.bind(this);
-        this.loadMastersData = this.loadMastersData.bind(this);
-        this.selectMaster = this.selectMaster.bind(this);
-        this.loadMasterTeam = this.loadMasterTeam.bind(this);
-        this.selectUser = this.selectUser.bind(this);
-        this.loadUserLeads = this.loadUserLeads.bind(this);
-        this.loadUserLeadsDirectly = this.loadUserLeadsDirectly.bind(this);
-        this.loadUserLeadsDirectData = this.loadUserLeadsDirectData.bind(this);
-        this.viewLead = this.viewLead.bind(this);
-        this.editLead = this.editLead.bind(this);
-        this.deleteLead = this.deleteLead.bind(this);
-        this.showLeadModal = this.showLeadModal.bind(this);
-        this.saveLeadChanges = this.saveLeadChanges.bind(this);
-        this.deleteLeadFromDatabase = this.deleteLeadFromDatabase.bind(this);
-        this.searchMasters = this.searchMasters.bind(this);
-        this.filterUserLeads = this.filterUserLeads.bind(this);
-        this.filterUserLeadsDirectly = this.filterUserLeadsDirectly.bind(this);
-        this.setLoginLoading = this.setLoginLoading.bind(this);
-        // Methods for UI interaction that might be passed to UIHelpers.showModal
-        this.closeLeadModal = this.closeLeadModal.bind(this);
-        this.validateLeadField = this.validateLeadField.bind(this);
-        this.setupLeadFormValidation = this.setupLeadFormValidation.bind(this);
-
-        this.loginBtn = document.getElementById('login-btn');
-        this.loadingScreen = document.getElementById('loading-screen');
-        this.loginPage = document.getElementById('login-page');
-        this.dashboardPage = document.getElementById('dashboard-page');
-        this.loginForm = document.getElementById('login-form');
-    }
-
-    /**
-     * Initializes the CRM application, waits for all dependencies.
-     * @returns {Promise<void>}
-     */
-    async init() {
-        console.log('🚀 CRM Application Initializing...');
-        UIHelpers.showLoading('Initializing CRM...'); // Show global loading
-
-        try {
-            // Wait for all external scripts and their global instances to be ready
-            await this.waitForDependencies();
-            console.log('✅ All external dependencies loaded.');
-
-            // Initialize core services after dependencies are ready
-            // authGuard.init() handles firebase.auth() and user data loading
-            await authGuard.init();
-            console.log('✅ AuthGuard initialized.');
-
-            // Initialize AdminManager and ActivityLogger instances
-            // They need firebaseService to be ready, which waitForDependencies ensures.
-            this.adminManager = new AdminManager();
-            this.adminManager.init(window.firebaseService); // Pass the shared service
-            console.log('✅ AdminManager initialized.');
-
-            // activityLogger is instantiated globally in its own file and sets window.activityLogger.
-            // We just need to ensure it's available here.
-            this.activityLogger = window.activityLogger;
-            if (!this.activityLogger) {
-                 console.error('ActivityLogger global instance not found!');
-                 // Fallback if ActivityLogger instantiation in its file failed for some reason
-                 // This shouldn't happen if activity-logger.js executed correctly.
-            } else {
-                console.log('✅ ActivityLogger available.');
-            }
-
-
-            this.setupEventListeners();
-
-            if (authGuard.isAuthenticated()) {
-                console.log('✅ User authenticated, loading dashboard');
-                authGuard.showDashboard();
-                await this.loadDashboardData();
-                UIHelpers.showToast('Welcome back! Login successful.', 'success');
-            } else {
-                console.log('❌ User not authenticated, showing login page');
-                authGuard.redirectToLogin();
-            }
-
-        } catch (error) {
-            console.error('❌ CRM Application initialization error:', error);
-            UIHelpers.error('Failed to initialize application: ' + error.message);
-            // Ensure UI is reverted to login state on critical init error
-            authGuard.redirectToLogin();
-        } finally {
-            UIHelpers.hideLoading(); // Hide global loading
-            this.initialized = true;
-        }
-    }
-
-    /**
-     * Waits for all necessary global dependencies (Firebase, AuthGuard, UI components) to be ready.
-     * @returns {Promise<void>}
-     */
-    async waitForDependencies() {
-        return new Promise(resolve => {
-            const checkDeps = () => {
-                // Check if all essential global objects are available and initialized
-                if (window.firebaseService?.isInitialized &&
-                    window.authGuard && // Check if authGuard object exists
-                    window.UIHelpers && // Check if UIHelpers class exists
-                    window.UIHelpers.modalManager && // Check if UIHelpers' internal managers are initialized
-                    window.UIHelpers.toastManager &&
-                    window.UIHelpers.loadingManager &&
-                    window.UIHelpers.formBuilder &&
-                    window.sanitizer && // Check if sanitizer object exists
-                    window.FormValidation && // Check if FormValidation class exists
-                    window.SecurityUtils && // Check if SecurityUtils object exists
-                    window.logActivity // Check if global logActivity function exists (from firebase-utils or activity-logger)
-                ) {
-                    resolve();
-                } else {
-                    setTimeout(checkDeps, 100); // Re-check after a short delay
-                }
-            };
-            checkDeps();
-        });
-    }
-
-    /**
-     * Sets up all global event listeners for the application.
-     */
-    setupEventListeners() {
-        if (this.loginForm) {
-            this.loginForm.addEventListener('submit', this.handleLogin);
-        }
-
-        // Navigation with security logging
-        const navItems = document.querySelectorAll('.nav-item');
-        navItems.forEach(item => {
-            item.addEventListener('click', async (e) => {
-                e.preventDefault();
-                const section = item.getAttribute('data-section');
-                console.log('📋 Navigation clicked:', section);
-
-                // Log navigation for security via global logActivity function
-                await logActivity('navigate_to_section', { section: section });
-
-                await this.showSection(section);
-
-                navItems.forEach(nav => nav.classList.remove('active'));
-                item.classList.add('active');
-            });
-        });
-
-        // Logout button
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', async () => {
-                const confirmed = await UIHelpers.confirm({
-                    title: 'Confirm Logout',
-                    message: 'Are you sure you want to logout? Any unsaved changes will be lost.',
-                    confirmText: 'Logout',
-                    cancelText: 'Cancel',
-                    type: 'warning'
-                });
-
-                if (confirmed) {
-                    await authGuard.signOut();
-                }
-            });
-        }
-
-        // Password toggle
-        const togglePassword = document.getElementById('toggle-password');
-        const passwordInput = document.getElementById('password');
-        if (togglePassword && passwordInput) {
-            togglePassword.addEventListener('click', function() {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-
-                const icon = this.querySelector('svg');
-                if (type === 'text') {
-                    icon.innerHTML = `
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                        <line x1="1" y1="1" x2="23" y2="23"/>
-                    `;
-                } else {
-                    icon.innerHTML = `
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                    `;
-                }
-            });
-        }
-    }
-
-    /**
-     * Handles the login process, including validation and security checks.
-     * @param {Event} e - The submit event from the login form.
-     */
-    async handleLogin(e) {
-        e.preventDefault();
-
-        if (this.isLoading) return;
-
-        // Check for account lockout (using localStorage as temporary lockout mechanism)
-        const lockedUntil = localStorage.getItem('account_locked_until');
-        if (lockedUntil && Date.now() < parseInt(lockedUntil)) {
-            const remainingTime = Math.ceil((parseInt(lockedUntil) - Date.now()) / 60000);
-            UIHelpers.error(`Account locked. Try again in ${remainingTime} minutes.`, { duration: 8000 });
-            return;
-        }
-
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-
-        const email = emailInput ? emailInput.value.trim() : '';
-        const password = passwordInput ? passwordInput.value : '';
-
-        if (!email || !password) {
-            UIHelpers.warning('Please fill in all fields');
-            return;
-        }
-
-        if (!FormValidation.validateEmail(email)) {
-            UIHelpers.error('Please enter a valid email address');
-            return;
-        }
-
-        if (password.length < 6) {
-            UIHelpers.error('Password must be at least 6 characters');
-            return;
-        }
-
-        this.setLoginLoading(true);
-        this.hideErrorMessage(); // Clear any previous error messages
-
-        try {
-            console.log('🔐 Attempting login for:', email);
-            // Use global logActivity function
-            await logActivity('login_attempt', {
-                email: email,
-                userAgent: navigator.userAgent,
-                ipAddress: await authGuard.getClientIP()
-            });
-
-            const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-            console.log('✅ Login successful:', userCredential.user.email);
-
-            // Reset failed attempts on successful login
-            authGuard.failedAttempts = 0;
-            localStorage.removeItem('account_locked_until');
-
-            // Wait for authGuard to fully process the authenticated user
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            if (authGuard.isAuthenticated()) {
-                authGuard.showDashboard();
-                await this.loadDashboardData();
-                UIHelpers.showToast('Welcome back! Login successful.', 'success');
-            }
-
-        } catch (error) {
-            console.error('❌ Login error:', error);
-            await authGuard.handleAuthError(error); // Let authGuard handle error logging and lockout
-
-            let errorMsg = 'Login failed. Please try again.';
-            switch (error.code) {
-                case 'auth/user-not-found':
-                    errorMsg = 'No account found with this email address.';
-                    break;
-                case 'auth/wrong-password':
-                    errorMsg = 'Incorrect password. Please try again.';
-                    break;
-                case 'auth/invalid-email':
-                    errorMsg = 'Please enter a valid email address.';
-                    break;
-                case 'auth/too-many-requests':
-                    errorMsg = 'Too many failed attempts. Please try again later.';
-                    break;
-                case 'auth/network-request-failed':
-                    errorMsg = 'Network error. Please check your connection.';
-                    break;
-                case 'auth/user-disabled':
-                    errorMsg = 'This account has been disabled.';
-                    break;
-                default:
-                    errorMsg = error.message || 'An unexpected error occurred.';
-            }
-            this.showErrorMessage(errorMsg); // Show error message in UI
-            UIHelpers.error(errorMsg, { duration: 6000 }); // Show as toast
-        } finally {
-            this.setLoginLoading(false);
-        }
-    }
-
-    /**
-     * Toggles loading state for the login button.
-     * @param {boolean} loading - True to show loading, false to hide.
-     */
-    setLoginLoading(loading) {
-        this.isLoading = loading;
-        const btnText = this.loginBtn?.querySelector('.btn-text');
-        const btnSpinner = this.loginBtn?.querySelector('.btn-spinner');
-        const errorDiv = document.getElementById('error-message');
-
-        if (this.loginBtn) {
-            this.loginBtn.disabled = loading;
-            this.loginBtn.classList.toggle('loading', loading);
-
-            if (loading) {
-                if (btnText) btnText.style.display = 'none';
-                if (btnSpinner) btnSpinner.style.display = 'block';
-                if (errorDiv) errorDiv.style.display = 'none'; // Hide error when loading starts
-            } else {
-                if (btnText) btnText.style.display = 'block';
-                if (btnSpinner) btnSpinner.style.display = 'none';
-            }
-        }
-    }
-
-    /**
-     * Shows an error message in the login form.
-     * @param {string} message - The error message to display.
-     */
-    showErrorMessage(message) {
-        const errorDiv = document.getElementById('error-message');
-        if (errorDiv) {
-            errorDiv.innerHTML = `<strong>Error:</strong> ${sanitizer.sanitize(message, 'text')}`;
-            errorDiv.style.display = 'block';
-        }
-    }
-
-    /**
-     * Hides the error message in the login form.
-     */
-    hideErrorMessage() {
-        const errorDiv = document.getElementById('error-message');
-        if (errorDiv) {
-            errorDiv.style.display = 'none';
-        }
-    }
-
-    /**
-     * Shows a specific content section in the dashboard.
-     * @param {string} sectionName - The name of the section to show (e.g., 'overview', 'leads').
-     */
-    async showSection(sectionName) {
-        console.log('📋 Showing section:', sectionName);
-        UIHelpers.showLoading('Loading section...');
-
-        try {
-            const contentSections = document.querySelectorAll('.content-section');
-            contentSections.forEach(section => {
-                section.classList.remove('active');
-                section.style.display = 'none';
-            });
-
-            const targetSection = document.getElementById(`${sectionName}-section`);
-            if (targetSection) {
-                targetSection.classList.add('active');
-                targetSection.style.display = 'block';
-
-                // Reset navigation state for new top-level section
-                this.currentViewStack = [];
-                this.selectedMasterId = null;
-                this.selectedUserId = null;
-                this.currentView = sectionName;
-
-                // Load section-specific content
-                switch (sectionName) {
-                    case 'overview':
-                        await this.loadDashboardData();
-                        break;
-                    case 'leads':
-                        if (authGuard.hasRole('user')) {
-                            await this.loadUserLeadsDirectly();
-                        } else {
-                            this.currentView = 'masters'; // Default for non-user roles in leads section
-                            await this.loadMastersView();
-                        }
-                        break;
-                    case 'users':
-                        // Use the instantiated adminManager
-                        if (this.adminManager && authGuard.hasRole('admin')) {
-                            await this.adminManager.loadMasterManagementPanel();
-                        } else {
-                            UIHelpers.error('Access denied to User Management.');
-                            targetSection.innerHTML = `<div class="coming-soon"><h3>Access Denied</h3><p>You do not have permission to view this section.</p></div>`;
-                        }
-                        break;
-                    case 'reports':
-                        // Use the instantiated activityLogger
-                        if (this.activityLogger) {
-                            await this.activityLogger.loadActivityDashboard();
-                        } else {
-                            targetSection.innerHTML = `<div class="coming-soon"><h3>Reports Coming Soon</h3><p>Reports and Analytics module is under development.</p></div>`;
-                        }
-                        break;
-                    case 'team':
-                        // Assuming this is handled by a separate part of adminManager or a new TeamManager
-                        // For now, keep as placeholder
-                        await this.loadTeamManagementSection();
-                        break;
-                    default:
-                        console.log('ℹ️ Section not implemented:', sectionName);
-                        targetSection.innerHTML = `<div class="coming-soon"><h3>Coming Soon!</h3><p>This section is under active development. Stay tuned for exciting updates!</p></div>`;
-                }
-            } else {
-                console.error('❌ Section not found:', `${sectionName}-section`);
-                UIHelpers.error('Requested section not found.');
-            }
-        } catch (error) {
-            console.error('❌ Error showing section:', error);
-            UIHelpers.error('Failed to load section: ' + error.message);
-        } finally {
-            UIHelpers.hideLoading();
-        }
-    }
-
-    /**
-     * Loads all data for the main dashboard overview.
-     */
-    async loadDashboardData() {
-        if (!authGuard.isAuthenticated()) return;
-
-        console.log('📊 Loading dashboard data...');
-        UIHelpers.showLoading('Loading dashboard data...');
-
-        try {
-            await Promise.all([
-                this.loadOverviewStats(),
-                this.loadRecentActivity()
-            ]);
-            console.log('✅ Dashboard data loaded');
-        } catch (error) {
-            console.error('❌ Error loading dashboard data:', error);
-            UIHelpers.error('Failed to load dashboard data: ' + error.message);
-        } finally {
-            UIHelpers.hideLoading();
-        }
-    }
-
-    /**
-     * Loads and updates the main overview statistics (total leads, active leads, etc.).
-     */
-    async loadOverviewStats() {
-        console.log('📈 Loading overview stats...');
-        try {
-            const currentUserId = authGuard.getCurrentUser()?.uid;
-            const currentUserRole = authGuard.getCurrentRole();
-
-            let leads = [];
-            // Access Firestore via firebaseService.db
-            if (currentUserRole === 'admin') {
-                leads = await firebaseService.db.get(DB_CONFIG.COLLECTIONS.LEADS);
-            } else if (currentUserRole === 'master') {
-                const teamMembers = await firebaseService.ops.getTeamMembers(currentUserId);
-                const teamMemberIds = teamMembers.map(m => m.id);
-                teamMemberIds.push(currentUserId); // Include master's own leads
-                leads = await firebaseService.db.get(DB_CONFIG.COLLECTIONS.LEADS, null, {
-                    filters: [{ field: 'assignedTo', operator: 'in', value: teamMemberIds }]
-                });
-            } else { // user
-                leads = await firebaseService.db.get(DB_CONFIG.COLLECTIONS.LEADS, null, {
-                    filters: [{ field: 'assignedTo', operator: '==', value: currentUserId }]
-                });
-            }
-
-            this.allLeads = leads; // Update global/class leads array
-
-            const totalLeads = leads.length;
-            const activeLeads = leads.filter(lead =>
-                !['closed', 'dropped', 'notinterested'].includes(lead.status?.toLowerCase())
-            ).length;
-            const pendingFollowups = leads.filter(lead =>
-                lead.status?.toLowerCase() === 'followup' || lead.status?.toLowerCase() === 'followUp'
-            ).length;
-            const overdueTasks = leads.filter(lead => {
-                if (!lead.followupDate) return false;
-                const followupDate = lead.followupDate.toDate ? lead.followupDate.toDate() : new Date(lead.followupDate);
-                return followupDate < new Date() && !['closed', 'dropped', 'notinterested'].includes(lead.status?.toLowerCase());
-            }).length;
-
-            // Update UI elements
-            document.getElementById('total-leads').textContent = totalLeads.toString();
-            document.getElementById('active-leads').textContent = activeLeads.toString();
-            document.getElementById('pending-followups').textContent = pendingFollowups.toString();
-            document.getElementById('overdue-tasks').textContent = overdueTasks.toString();
-
-            // Placeholder for trend calculation (needs more historical data)
-            this.updateTrendIndicator('total-leads-trend', 'up', 'Active System');
-            this.updateTrendIndicator('active-leads-trend', 'up', 'High Activity');
-            this.updateTrendIndicator('followups-trend', 'neutral', 'Steady');
-            this.updateTrendIndicator('overdue-trend', 'down', 'Needs Attention');
-
-            // Update leads table (showing first 10 recent leads)
-            this.updateLeadsTable(leads.slice(0, 10));
-
-        } catch (error) {
-            console.error('❌ Error loading overview stats:', error);
-            UIHelpers.error('Failed to load overview statistics.');
-            // Fallback to error state for metrics
-            document.getElementById('total-leads').textContent = '-';
-            document.getElementById('active-leads').textContent = '-';
-            document.getElementById('pending-followups').textContent = '-';
-            document.getElementById('overdue-tasks').textContent = '-';
-            document.getElementById('leads-table-body').innerHTML = '<tr><td colspan="6" class="loading-row">Error loading leads data.</td></tr>';
-        }
-    }
-
-    /**
-     * Updates the trend indicator for a metric card.
-     * @param {string} elementId - The ID of the trend element.
-     * @param {'up' | 'down' | 'neutral'} trendType - The type of trend.
-     * @param {string} text - The descriptive text for the trend.
-     */
-    updateTrendIndicator(elementId, trendType, text) {
-        const trendElement = document.getElementById(elementId);
-        if (trendElement) {
-            trendElement.className = `metric-trend trend-${trendType}`;
-            let iconSvg = '';
-            if (trendType === 'up') {
-                iconSvg = `<polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/>`;
-            } else if (trendType === 'down') {
-                iconSvg = `<polyline points="1,18 8.5,10.5 13.5,15.5 23,6"/>`;
-            } else { // neutral
-                iconSvg = `<circle cx="12" cy="12" r="10"/>`;
-            }
-            trendElement.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${iconSvg}</svg> ${text}`;
-        }
-    }
-
-    /**
-     * Updates the recent leads table in the dashboard.
-     * @param {Array<Object>} leads - Array of lead objects to display.
-     */
-    updateLeadsTable(leads) {
-        const tableBody = document.getElementById('leads-table-body');
-        if (!tableBody) return;
-
-        if (leads.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="6" class="loading-row">No recent leads found</td></tr>';
-            return;
-        }
-
-        tableBody.innerHTML = leads.map(lead => `
-            <tr class="fade-in">
-                <td><strong>${sanitizer.sanitize(lead.name || 'Unknown', 'text')}</strong></td>
-                <td>${sanitizer.sanitize(lead.phone || 'No phone', 'text')}</td>
-                <td><span class="status-badge enhanced status-${(lead.status || 'newlead').toLowerCase()}">${this.getStatusText(lead.status)}</span></td>
-                <td>${sanitizer.sanitize(lead.source || 'Unknown', 'text')}</td>
-                <td>${this.formatDate(lead.createdAt)}</td>
-                <td>
-                    <button class="action-btn view" onclick="crmApp.viewLead('${lead.id}')">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                            <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                        View
-                    </button>
-                    <button class="action-btn edit" onclick="crmApp.editLead('${lead.id}')">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                        Edit
-                    </button>
-                </td>
-            </tr>
-        `).join('');
-    }
-
-    /**
-     * Loads and updates the recent activity feed in the dashboard.
-     */
-    async loadRecentActivity() {
-        console.log('📋 Loading recent activity...');
-        try {
-            const currentUserId = authGuard.getCurrentUser()?.uid;
-            const currentUserRole = authGuard.getCurrentRole();
-
-            let activities = [];
-            // Access Cloud Functions via firebaseService.cf
-            if (firebaseService.cf.isInitialized) {
-                const result = await firebaseService.cf.call('getRecentActivity', { limit: 5 });
-                activities = result.activities;
-            } else {
-                // Fallback to direct Firestore read via firebaseService.db
-                let queryOptions = {
-                    orderBy: [{ field: 'timestamp', direction: 'desc' }],
-                    limit: 5
-                };
-
-                if (currentUserRole === 'user') {
-                    queryOptions.filters = [{ field: 'userId', operator: '==', value: currentUserId }];
-                } else if (currentUserRole === 'master') {
-                    const teamUserIds = await firebaseService.ops.getTeamMembers(currentUserId);
-                    teamUserIds.push({ id: currentUserId }); // Include master's own activity
-                    const teamIds = teamUserIds.map(m => m.id);
-                    queryOptions.filters = [{ field: 'userId', operator: 'in', value: teamIds }];
-                }
-                // Admin sees all
-
-                activities = await firebaseService.db.get(DB_CONFIG.COLLECTIONS.ACTIVITY_LOGS, null, queryOptions);
-            }
-
-            const activityList = document.getElementById('activity-list');
-            if (!activityList) return;
-
-            if (activities.length === 0) {
-                activityList.innerHTML = `
-                    <div class="premium-activity-item">
-                        <div class="activity-icon">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"/>
-                                <line x1="12" y1="16" x2="12" y2="12"/>
-                                <line x1="12" y1="8" x2="12.01" y2="8"/>
-                            </svg>
-                        </div>
-                        <div class="activity-content">
-                            <p>No recent activity</p>
-                            <div class="activity-time">Start by adding some leads or users</div>
-                        </div>
-                    </div>
-                `;
-                return;
-            }
-
-            activityList.innerHTML = activities.map(activity => `
-                <div class="premium-activity-item">
-                    <div class="activity-icon">
-                        ${this.getActivityIcon(activity.action)}
-                    </div>
-                    <div class="activity-content">
-                        <p>${this.getActivityText(activity.action, activity.details)}</p>
-                        <div class="activity-time">${this.formatTimeAgo(new Date(activity.timestamp))}</div>
-                    </div>
-                </div>
-            `).join('');
-
-        } catch (error) {
-            console.error('❌ Error loading recent activity:', error);
-            UIHelpers.error('Failed to load recent activity.');
-            document.getElementById('activity-list').innerHTML = `
-                <div class="premium-activity-item">
-                    <div class="activity-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                            <line x1="12" y1="9" x2="12" y2="13"/>
-                            <line x1="12" y1="17" x2="12.01" y2="17"/>
-                        </svg>
-                    </div>
-                    <div class="activity-content">
-                        <p>Error loading activity data</p>
-                        <div class="activity-time">Please refresh the page</div>
-                    </div>
-                </div>
-            `;
-        }
-    }
-
-    /**
-     * Provides an SVG icon based on the activity type.
-     * @param {string} action - The activity action.
-     * @returns {string} SVG icon string.
-     */
-    getActivityIcon(action) {
-        const icons = {
-            'login_success': '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>',
-            'create_lead': '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>',
-            'update_lead': '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
-            'delete_lead': '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6z"/><path d="M10 11v6"/><path d="M14 11v6"/>',
-            'create_user': '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
-            'logout': '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
-            'navigate_to_section': '<path d="M9.5 3L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L14.5 3z"/>'
-        };
-
-        return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${icons[action] || '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'}</svg>`;
-    }
-
-    /**
-     * Provides a descriptive text for the activity.
-     * @param {string} action - The activity action.
-     * @param {Object} details - Additional details for the activity.
-     * @returns {string} Descriptive text.
-     */
-    getActivityText(action, details) {
-        let text = '';
-        switch (action) {
-            case 'login_success':
-                text = `Logged in successfully`;
-                break;
-            case 'create_lead':
-                text = `New lead created: <strong>${sanitizer.sanitize(details.leadName || 'Unknown', 'text')}</strong>`;
-                break;
-            case 'update_lead':
-                text = `Lead updated: <strong>${sanitizer.sanitize(details.leadId || 'Unknown', 'text')}</strong>`;
-                if (details.newStatus) {
-                    text += ` to <span class="status-badge enhanced status-${details.newStatus.toLowerCase()}">${this.getStatusText(details.newStatus)}</span>`;
-                }
-                break;
-            case 'delete_lead':
-                text = `Lead deleted: <strong>${sanitizer.sanitize(details.leadName || 'Unknown', 'text')}</strong>`;
-                break;
-            case 'create_user':
-                text = `New user created: <strong>${sanitizer.sanitize(details.newUserEmail || 'Unknown', 'text')}</strong> (${sanitizer.sanitize(details.newUserRole || 'user', 'text')})`;
-                break;
-            case 'logout':
-                text = `Logged out`;
-                break;
-            case 'navigate_to_section':
-                text = `Mapsd to <strong>${sanitizer.sanitize(details.section || 'Unknown', 'text')}</strong> section`;
-                break;
-            default:
-                text = sanitizer.sanitize(action.replace(/_/g, ' ') || 'Unknown activity', 'text');
-                break;
-        }
-        return text;
-    }
-
-    /**
-     * Loads the view for managing masters and their teams.
-     */
-    async loadMastersView() {
-        console.log('👑 Loading masters view...');
-        UIHelpers.showLoading('Loading Masters...');
-
-        const leadsSection = document.getElementById('leads-section');
-        if (!leadsSection) {
-            UIHelpers.error('Leads section not found for Masters View.');
-            return;
-        }
-
-        // Dynamically create the Masters Overview Panel structure
-        leadsSection.innerHTML = `
-            <div class="master-management-panel">
-                <div class="panel-header">
-                    <div class="panel-title">
-                        Masters & Teams Overview
-                    </div>
-                    <div class="panel-controls">
-                        <div class="enhanced-search-box">
-                            <input type="text" id="masters-search" placeholder="Search masters..." onkeyup="crmApp.searchMasters(this.value)">
-                            <div class="search-icon">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="11" cy="11" r="8"/>
-                                    <path d="M21 21l-4.35-4.35"/>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="enhanced-stats-grid">
-                    <div class="enhanced-stat-card">
-                        <div class="enhanced-stat-header">
-                            <div class="enhanced-stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                    <circle cx="12" cy="7" r="4"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="enhanced-stat-number" id="masters-count">0</div>
-                        <div class="enhanced-stat-label">Total Masters</div>
-                    </div>
-                </div>
-
-                <div class="enhanced-master-grid" id="masters-grid">
-                    <div class="loading-card">Loading masters...</div>
-                </div>
-            </div>
-        `;
-
-        await this.loadMastersData();
-        UIHelpers.hideLoading();
-    }
-
-    /**
-     * Fetches and displays data for the Masters overview.
-     */
-    async loadMastersData() {
-        try {
-            const mastersContainer = document.getElementById('enhanced-masters-container');
-            if (!mastersContainer) return;
-
-            UIHelpers.showLoading('Fetching master data...', mastersContainer);
-
-            // Using firebaseService.db to get data
-            const users = await firebaseService.db.get(DB_CONFIG.COLLECTIONS.USERS);
-            const masters = users.filter(user => user.role === 'master');
-            this.allMasters = masters;
-            this.allUsers = users; // Keep all users loaded for lookups
-
-            document.getElementById('masters-count').textContent = masters.length.toString();
-
-            if (masters.length === 0) {
-                mastersContainer.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                <circle cx="12" cy="7" r="4"/>
-                            </svg>
-                        </div>
-                        <h3>No Masters Found</h3>
-                        <p>There are no masters in the system yet.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            const allLeadsData = await firebaseService.db.get(DB_CONFIG.COLLECTIONS.LEADS);
-
-            const mastersWithStats = masters.map(master => {
-                const teamMembers = users.filter(user => user.linkedMaster === master.id);
-                const teamMemberIds = teamMembers.map(member => member.id);
-                teamMemberIds.push(master.id); // Include master's own leads if assigned to themselves
-
-                const masterLeads = allLeadsData.filter(lead =>
-                    teamMemberIds.includes(lead.assignedTo) ||
-                    teamMemberIds.includes(lead.createdBy)
-                );
-
-                const activeLeads = masterLeads.filter(lead =>
-                    !['closed', 'dropped', 'notinterested'].includes(lead.status?.toLowerCase())
-                ).length;
-
-                const pendingFollowups = masterLeads.filter(lead =>
-                    lead.status?.toLowerCase() === 'followup'
-                ).length;
-
-                return {
-                    ...master,
-                    teamCount: teamMembers.length,
-                    teamMembers: teamMembers,
-                    totalLeads: masterLeads.length,
-                    activeLeads: activeLeads,
-                    pendingFollowups: pendingFollowups,
-                    lastActive: master.lastLogin ? new Date(master.lastLogin.seconds * 1000) : null
-                };
-            });
-
-            mastersContainer.innerHTML = mastersWithStats.map(master =>
-                this.renderMasterCard(master)
-            ).join('');
-
-        } catch (error) {
-            console.error('❌ Error loading masters:', error);
-            UIHelpers.error('Failed to load masters data.');
-            const mastersContainer = document.getElementById('enhanced-masters-container');
-            if (mastersContainer) {
-                mastersContainer.innerHTML = '<div class="loading-card">Error loading masters</div>';
-            }
-        } finally {
-            UIHelpers.hideLoading(null); // Hide loading spinner for the container
-        }
-    }
-
-    /**
-     * Renders a single master card for the Masters overview.
-     * @param {Object} master - Master data.
-     * @returns {string} HTML string for the master card.
-     * @private
-     */
-    renderMasterCard(master) {
-        const statusClass = master.status === 'active' ? 'success' : 'danger';
-        const lastActiveText = master.lastActive ?
-            this.formatTimeAgo(master.lastActive) : 'Never logged in';
-
-        return `
-            <div class="enhanced-master-card" onclick="crmApp.selectMaster('${master.id}')">
-                <div class="master-card-header">
-                    <div class="enhanced-master-avatar">
-                        ${(master.name || master.email || 'M').charAt(0).toUpperCase()}
-                    </div>
-                    <div class="master-card-info">
-                        <h3>${sanitizer.sanitize(master.name || 'Unnamed Master', 'text')}</h3>
-                        <p>${sanitizer.sanitize(master.email, 'email')}</p>
-                        <div class="enhanced-master-badge">Master</div>
-                    </div>
-                </div>
-
-                <div class="master-card-stats">
-                    <div class="master-stat-item">
-                        <div class="master-stat-number">${master.teamCount}</div>
-                        <div class="master-stat-label">Team Size</div>
-                    </div>
-                    <div class="master-stat-item">
-                        <div class="master-stat-number">${master.activeLeads}</div>
-                        <div class="master-stat-label">Active Leads</div>
-                    </div>
-                    <div class="master-stat-item">
-                        <div class="master-stat-number">${master.totalLeads}</div>
-                        <div class="master-stat-label">Total Leads</div>
-                    </div>
-                    <div class="master-stat-item">
-                        <div class="master-stat-number">${master.pendingFollowups}</div>
-                        <div class="master-stat-label">Follow-ups</div>
-                    </div>
-                </div>
-
-                <div class="master-card-meta">
-                    <div class="meta-item">
-                        <span class="enhanced-status-badge ${statusClass}">
-                            ${master.status === 'active' ? 'Active' : 'Inactive'}
-                        </span>
-                    </div>
-                    <div class="meta-item">
-                        <small>Last active: ${lastActiveText}</small>
-                    </div>
-                </div>
-
-                <div class="master-card-footer">
-                    <span class="view-team">Click to view team →</span>
-                </div>
-            </div>
-        `;
-    }
-
-    /**
-     * Handles selection of a master to view their team.
-     * @param {string} masterId - ID of the selected master.
-     */
-    async selectMaster(masterId) {
-        console.log('👤 Selecting master:', masterId);
-        UIHelpers.showLoading('Loading master\'s team...');
-
-        this.selectedMasterId = masterId;
-        this.currentView = 'team_members';
-        this.currentViewStack.push({ type: 'master', id: masterId });
-
-        const master = this.allMasters.find(m => m.id === masterId);
-        if (!master) {
-            UIHelpers.error('Master not found.');
-            UIHelpers.hideLoading();
-            return;
-        }
-
-        await logActivity('view_master_team', { masterId: masterId });
-
-        const leadsSection = document.getElementById('leads-section');
-        if (!leadsSection) {
-            UIHelpers.error('Leads section not found for Team View.');
-            UIHelpers.hideLoading();
-            return;
-        }
-
-        leadsSection.innerHTML = `
-            <div class="master-management-panel">
-                <div class="panel-header">
-                    <div class="panel-title">
-                        Team Members - ${sanitizer.sanitize(master.name || 'Unnamed Master', 'text')}
-                    </div>
-                    <div class="panel-controls">
-                        <button class="enhanced-btn enhanced-btn-secondary" onclick="crmApp.loadMastersView()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M19 12H5m7-7l-7 7 7 7"/>
-                            </svg>
-                            Back to Masters
-                        </button>
-                    </div>
-                </div>
-
-                <div class="breadcrumb">
-                    <span class="breadcrumb-item" onclick="crmApp.loadMastersView()">Masters</span>
-                    <span class="breadcrumb-separator">→</span>
-                    <span class="breadcrumb-item active">${sanitizer.sanitize(master.name || 'Master', 'text')}'s Team</span>
-                </div>
-
-                <div class="enhanced-master-grid" id="team-members-container">
-                    <div class="loading-card">Loading team members...</div>
-                </div>
-            </div>
-        `;
-
-        await this.loadMasterTeam(masterId);
-        UIHelpers.hideLoading();
-    }
-
-    /**
-     * Loads and displays team members for a given master.
-     * @param {string} masterId - ID of the master.
-     */
-    async loadMasterTeam(masterId) {
-        try {
-            const teamContainer = document.getElementById('team-members-container');
-            if (!teamContainer) return;
-
-            UIHelpers.showLoading('Fetching team members...', teamContainer);
-
-            const teamMembers = this.allUsers.filter(user => user.linkedMaster === masterId);
-
-            if (teamMembers.length === 0) {
-                teamContainer.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                            </svg>
-                        </div>
-                        <h3>No Team Members</h3>
-                        <p>This master doesn't have any team members yet.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            const leadsSnapshot = await firebaseService.db.get(DB_CONFIG.COLLECTIONS.LEADS);
-
-            const teamWithStats = teamMembers.map(user => {
-                const userLeads = leadsSnapshot.filter(lead =>
-                    lead.assignedTo === user.id || lead.createdBy === user.id
-                );
-                const activeLeads = userLeads.filter(lead =>
-                    !['closed', 'dropped', 'notinterested'].includes(lead.status?.toLowerCase())
-                ).length;
-
-                return {
-                    ...user,
-                    leadsCount: userLeads.length,
-                    activeLeads: activeLeads,
-                    leads: userLeads
-                };
-            });
-
-            teamContainer.innerHTML = teamWithStats.map(user => this.renderUserCard(user)).join('');
-
-        } catch (error) {
-            console.error('❌ Error loading master team:', error);
-            UIHelpers.error('Failed to load team members.');
-            const teamContainer = document.getElementById('team-members-container');
-            if (teamContainer) {
-                teamContainer.innerHTML = '<div class="loading-card">Error loading team.</div>';
-            }
-        } finally {
-            UIHelpers.hideLoading(null);
-        }
-    }
-
-    /**
-     * Renders a single user card for team members.
-     * @param {Object} user - User data.
-     * @returns {string} HTML string for the user card.
-     * @private
-     */
-    renderUserCard(user) {
-        const statusClass = user.status === 'active' ? 'success' : 'danger';
-        const lastActiveText = user.lastLogin ?
-            this.formatTimeAgo(new Date(user.lastLogin.seconds * 1000)) : 'Never logged in';
-
-        return `
-            <div class="enhanced-master-card" onclick="crmApp.selectUser('${user.id}')">
-                <div class="master-card-header">
-                    <div class="enhanced-master-avatar" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                        ${(user.name || user.email || 'U').charAt(0).toUpperCase()}
-                    </div>
-                    <div class="master-card-info">
-                        <h3>${sanitizer.sanitize(user.name || 'Unnamed User', 'text')}</h3>
-                        <p>${sanitizer.sanitize(user.email, 'email')}</p>
-                        <div class="enhanced-master-badge" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">User</div>
-                    </div>
-                </div>
-
-                <div class="master-card-stats">
-                    <div class="master-stat-item">
-                        <div class="master-stat-number">${user.leadsCount}</div>
-                        <div class="master-stat-label">Total Leads</div>
-                    </div>
-                    <div class="master-stat-item">
-                        <div class="master-stat-number">${user.activeLeads}</div>
-                        <div class="master-stat-label">Active Leads</div>
-                    </div>
-                </div>
-
-                <div class="master-card-meta">
-                    <div class="meta-item">
-                        <span class="enhanced-status-badge ${statusClass}">
-                            ${user.status === 'active' ? 'Active' : 'Inactive'}
-                        </span>
-                    </div>
-                    <div class="meta-item">
-                        <small>Last active: ${lastActiveText}</small>
-                    </div>
-                </div>
-
-                <div class="master-card-footer">
-                    <span class="view-team">Click to view leads →</span>
-                </div>
-            </div>
-        `;
-    }
-
-    /**
-     * Handles selection of a user to view their leads.
-     * @param {string} userId - ID of the selected user.
-     */
-    async selectUser(userId) {
-        console.log('📋 Selecting user:', userId);
-        UIHelpers.showLoading('Loading user\'s leads...');
-
-        this.selectedUserId = userId;
-        this.currentView = 'user_leads';
-        this.currentViewStack.push({ type: 'user', id: userId });
-
-        const user = this.allUsers.find(u => u.id === userId);
-        const master = this.allMasters.find(m => m.id === this.selectedMasterId);
-
-        if (!user) {
-            UIHelpers.error('User not found.');
-            UIHelpers.hideLoading();
-            return;
-        }
-
-        await logActivity('view_user_leads', { userId: userId, masterId: this.selectedMasterId });
-
-        const leadsSection = document.getElementById('leads-section');
-        if (!leadsSection) {
-            UIHelpers.error('Leads section not found for User Leads View.');
-            UIHelpers.hideLoading();
-            return;
-        }
-
-        leadsSection.innerHTML = `
-            <div class="enhanced-data-table">
-                <div class="enhanced-table-header">
-                    <div class="enhanced-table-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                            <circle cx="9" cy="7" r="4"/>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                        </svg>
-                        Leads - ${sanitizer.sanitize(user.name || 'Unnamed User', 'text')}
-                    </div>
-                    <div class="table-controls">
-                        <div class="enhanced-search-box">
-                            <input type="text" id="leads-search" placeholder="Search leads..." onkeyup="crmApp.filterUserLeads(this.value)">
-                            <div class="search-icon">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="11" cy="11" r="8"/>
-                                    <path d="M21 21l-4.35-4.35"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <button class="enhanced-btn enhanced-btn-secondary" onclick="crmApp.selectMaster('${this.selectedMasterId}')">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M19 12H5m7-7l-7 7 7 7"/>
-                            </svg>
-                            Back to Team
-                        </button>
-                        <button class="enhanced-btn enhanced-btn-primary" onclick="crmApp.selectUser('${userId}')">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="23,4 23,10 17,10"/>
-                                <polyline points="1,20 1,14 7,14"/>
-                                <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10"/>
-                                <path d="M3.51,15a9,9,0,0,0,14.85,3.36L23,14"/>
-                            </svg>
-                            Refresh
-                        </button>
-                    </div>
-                </div>
-
-                <div class="breadcrumb">
-                    <span class="breadcrumb-item" onclick="crmApp.loadMastersView()">Masters</span>
-                    <span class="breadcrumb-separator">→</span>
-                    <span class="breadcrumb-item" onclick="crmApp.selectMaster('${this.selectedMasterId}')">${sanitizer.sanitize(master?.name || 'Master', 'text')}'s Team</span>
-                    <span class="breadcrumb-separator">→</span>
-                    <span class="breadcrumb-item active">${sanitizer.sanitize(user.name || 'User', 'text')}'s Leads</span>
-                </div>
-
-                <div class="enhanced-table-wrapper">
-                    <table class="enhanced-table">
-                        <thead>
-                            <tr>
-                                <th class="sortable" data-field="name">Name</th>
-                                <th class="sortable" data-field="phone">Phone</th>
-                                <th>Email</th>
-                                <th class="sortable" data-field="status">Status</th>
-                                <th class="sortable" data-field="source">Source</th>
-                                <th class="sortable" data-field="created">Created</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="enhanced-user-leads-table-body">
-                            <tr>
-                                <td colspan="7" class="loading-row">Loading leads...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-
-        await this.loadUserLeads(userId);
-        UIHelpers.hideLoading();
-    }
-
-    /**
-     * Loads and displays leads for a specific user.
-     * @param {string} userId - ID of the user.
-     */
-    async loadUserLeads(userId) {
-        try {
-            const tableBody = document.getElementById('enhanced-user-leads-table-body');
-            if (!tableBody) return;
-
-            UIHelpers.showLoading('Fetching user leads...', tableBody);
-
-            // Using firebaseService.db to get leads
-            const leads = await firebaseService.db.get(DB_CONFIG.COLLECTIONS.LEADS, null, {
-                filters: [{ field: 'assignedTo', operator: '==', value: userId }],
-                orderBy: [{ field: 'createdAt', direction: 'desc' }]
-            });
-
-            this.state.set('currentEnhancedUserLeads', leads); // Store for filtering
-
-            if (leads.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="7" class="loading-row">No leads found for this user</td></tr>';
-                return;
-            }
-
-            tableBody.innerHTML = leads.map(lead => {
-                const createdAt = lead.createdAt ? (lead.createdAt.toDate ? lead.createdAt.toDate() : new Date(lead.createdAt.seconds * 1000)) : new Date(0);
-                const formattedDate = this.formatDate(createdAt);
-
-                return `
-                    <tr data-lead-id="${lead.id}">
-                        <td><strong>${sanitizer.sanitize(lead.name || 'Unnamed Lead', 'text')}</strong></td>
-                        <td>${sanitizer.sanitize(lead.phone || 'No phone', 'text')}</td>
-                        <td>${sanitizer.sanitize(lead.email || 'Not provided', 'email')}</td>
-                        <td><span class="enhanced-status-badge ${(lead.status || 'newlead').toLowerCase()}">${this.getStatusText(lead.status)}</span></td>
-                        <td>${sanitizer.sanitize(lead.source || 'Not specified', 'text')}</td>
-                        <td>${formattedDate}</td>
-                        <td>
-                            <button class="enhanced-action-btn view" onclick="crmApp.viewLead('${lead.id}')">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                    <circle cx="12" cy="12" r="3"/>
-                                </svg>
-                                View
-                            </button>
-                            <button class="enhanced-action-btn edit" onclick="crmApp.editLead('${lead.id}')">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                </svg>
-                                Edit
-                            </button>
-                            <button class="enhanced-action-btn delete" onclick="crmApp.deleteLead('${lead.id}')">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="3,6 5,6 21,6"/>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                                </svg>
-                                Delete
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-        } catch (error) {
-            console.error('❌ Error loading user leads:', error);
-            UIHelpers.error('Failed to load user leads.');
-            const tableBody = document.getElementById('enhanced-user-leads-table-body');
-            if (tableBody) {
-                tableBody.innerHTML = '<tr><td colspan="7" class="loading-row">Error loading leads. Please refresh.</td></tr>';
-            }
-        } finally {
-            UIHelpers.hideLoading(null);
-        }
-    }
-
-    /**
-     * Loads and displays leads directly for a regular user (non-admin/master).
-     */
-    async loadUserLeadsDirectly() {
-        console.log('📋 Loading user leads directly...');
-        UIHelpers.showLoading('Loading your leads...');
-
-        const leadsSection = document.getElementById('leads-section');
-        if (!leadsSection) {
-            UIHelpers.error('Leads section not found for direct user view.');
-            UIHelpers.hideLoading();
-            return;
-        }
-
-        const currentUserId = authGuard.getCurrentUser()?.uid;
-        const currentUserName = authGuard.getCurrentUser()?.name || 'Your';
-
-        leadsSection.innerHTML = `
-            <div class="enhanced-data-table">
-                <div class="enhanced-table-header">
-                    <div class="enhanced-table-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                            <circle cx="9" cy="7" r="4"/>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                        </svg>
-                        ${currentUserName} Leads
-                    </div>
-                    <div class="table-controls">
-                        <div class="enhanced-search-box">
-                            <input type="text" id="user-leads-search" placeholder="Search your leads..." onkeyup="crmApp.filterUserLeadsDirectly(this.value)">
-                            <div class="search-icon">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="11" cy="11" r="8"/>
-                                    <path d="M21 21l-4.35-4.35"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <button class="enhanced-btn enhanced-btn-primary" onclick="crmApp.loadUserLeadsDirectly()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="23,4 23,10 17,10"/>
-                                <polyline points="1,20 1,14 7,14"/>
-                                <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10"/>
-                                <path d="M3.51,15a9,9,0,0,0,14.85,3.36L23,14"/>
-                            </svg>
-                            Refresh
-                        </button>
-                    </div>
-                </div>
-
-                <div class="enhanced-table-wrapper">
-                    <table class="enhanced-table">
-                        <thead>
-                            <tr>
-                                <th class="sortable" data-field="name">Name</th>
-                                <th class="sortable" data-field="phone">Phone</th>
-                                <th>Email</th>
-                                <th class="sortable" data-field="status">Status</th>
-                                <th class="sortable" data-field="source">Source</th>
-                                <th class="sortable" data-field="created">Created</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="user-leads-direct-table-body">
-                            <tr>
-                                <td colspan="7" class="loading-row">Loading your leads...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-
-        await this.loadUserLeadsDirectData(currentUserId);
-        UIHelpers.hideLoading();
-    }
-
-    /**
-     * Fetches and displays leads directly assigned to the current user.
-     * @param {string} userId - ID of the current user.
-     */
-    async loadUserLeadsDirectData(userId) {
-        try {
-            const tableBody = document.getElementById('user-leads-direct-table-body');
-            if (!tableBody) return;
-
-            UIHelpers.showLoading('Fetching your leads...', tableBody);
-
-            // Using firebaseService.db to get leads
-            const leads = await firebaseService.db.get(DB_CONFIG.COLLECTIONS.LEADS, null, {
-                filters: [{ field: 'assignedTo', operator: '==', value: userId }],
-                orderBy: [{ field: 'createdAt', direction: 'desc' }]
-            });
-
-            this.state.set('currentUserDirectLeads', leads);
-            this.allLeads = leads; // Update global leads array for consistent findLeadById
-
-            if (leads.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="7" class="loading-row">No leads assigned to you yet</td></tr>';
-                return;
-            }
-
-            tableBody.innerHTML = leads.map(lead => {
-                const createdAt = lead.createdAt ? (lead.createdAt.toDate ? lead.createdAt.toDate() : new Date(lead.createdAt.seconds * 1000)) : new Date(0);
-                const formattedDate = this.formatDate(createdAt);
-
-                return `
-                    <tr data-lead-id="${lead.id}">
-                        <td><strong>${sanitizer.sanitize(lead.name || 'Unnamed Lead', 'text')}</strong></td>
-                        <td>${sanitizer.sanitize(lead.phone || 'No phone', 'text')}</td>
-                        <td>${sanitizer.sanitize(lead.email || 'Not provided', 'email')}</td>
-                        <td><span class="enhanced-status-badge ${(lead.status || 'newlead').toLowerCase()}">${this.getStatusText(lead.status)}</span></td>
-                        <td>${sanitizer.sanitize(lead.source || 'Not specified', 'text')}</td>
-                        <td>${formattedDate}</td>
-                        <td>
-                            <button class="enhanced-action-btn view" onclick="crmApp.viewLead('${lead.id}')">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                    <circle cx="12" cy="12" r="3"/>
-                                </svg>
-                                View
-                            </button>
-                            <button class="enhanced-action-btn edit" onclick="crmApp.editLead('${lead.id}')">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                </svg>
-                                Edit
-                            </button>
-                            <button class="enhanced-action-btn delete" onclick="crmApp.deleteLead('${lead.id}')">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="3,6 5,6 21,6"/>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                                </svg>
-                                Delete
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-        } catch (error) {
-            console.error('❌ Error loading user leads directly:', error);
-            UIHelpers.error('Failed to load your leads.');
-            const tableBody = document.getElementById('user-leads-direct-table-body');
-            if (tableBody) {
-                tableBody.innerHTML = '<tr><td colspan="7" class="loading-row">Error loading leads. Please refresh.</td></tr>';
-            }
-        } finally {
-            UIHelpers.hideLoading(null);
-        }
-    }
-
-    /**
-     * Views details of a specific lead in a modal.
-     * @param {string} leadId - ID of the lead to view.
-     */
-    async viewLead(leadId) {
-        const lead = this.findLeadById(leadId);
-        if (!lead) {
-            UIHelpers.error('Lead not found.');
-            return;
-        }
-
-        await logActivity('view_lead_details', { leadId: leadId });
-        this.showLeadModal(lead, 'view');
-    }
-
-    /**
-     * Opens a modal to edit a specific lead.
-     * @param {string} leadId - ID of the lead to edit.
-     */
-    async editLead(leadId) {
-        const lead = this.findLeadById(leadId);
-        if (!lead) {
-            UIHelpers.error('Lead not found.');
-            return;
-        }
-
-        await logActivity('edit_lead_attempt', { leadId: leadId });
-        this.showLeadModal(lead, 'edit');
-    }
-
-    /**
-     * Deletes a lead after confirmation.
-     * @param {string} leadId - ID of the lead to delete.
-     */
-    async deleteLead(leadId) {
-        const lead = this.findLeadById(leadId);
-        if (!lead) {
-            UIHelpers.error('Lead not found.');
-            return;
-        }
-
-        const confirmed = await UIHelpers.confirmDelete(lead.name || 'this lead');
-
-        if (confirmed) {
-            await this.deleteLeadFromDatabase(leadId);
-        }
-    }
-
-    /**
-     * Finds a lead by its ID from the currently loaded leads.
-     * @param {string} leadId - The ID of the lead to find.
-     * @returns {Object | undefined} The found lead object or undefined.
-     */
-    findLeadById(leadId) {
-        return this.allLeads.find(l => l.id === leadId) ||
-               this.state.get('currentEnhancedUserLeads')?.find(l => l.id === leadId) ||
-               this.state.get('currentUserDirectLeads')?.find(l => l.id === leadId);
-    }
-
-    /**
-     * Shows a modal for viewing or editing lead details.
-     * @param {Object} lead - The lead object.
-     * @param {'view' | 'edit'} mode - The mode of the modal.
-     */
-    showLeadModal(lead, mode = 'view') {
-        const isEditMode = mode === 'edit';
-        const createdAt = lead.createdAt ? (lead.createdAt.toDate ? lead.createdAt.toDate() : new Date(lead.createdAt.seconds * 1000)) : new Date(0);
-
-        // UIHelpers.showModal now handles modal creation and management
-        UIHelpers.showModal({
-            id: 'enhanced-lead-modal',
-            title: `${isEditMode ? 'Edit' : 'View'} Lead - ${sanitizer.sanitize(lead.name || 'Unnamed Lead', 'text')}`,
-            content: `
-                <form id="enhanced-lead-form" class="enhanced-form">
-                    <div class="enhanced-form-section">
-                        <div class="enhanced-section-title">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                <circle cx="12" cy="7" r="4"/>
-                            </svg>
-                            Personal Information
-                        </div>
-                        <div class="enhanced-form-grid">
-                            <div class="enhanced-form-group">
-                                <label>Full Name *</label>
-                                <input type="text" id="enhanced-lead-name" value="${sanitizer.sanitize(lead.name || '', 'text')}" ${!isEditMode ? 'readonly' : ''} required>
-                                <div class="enhanced-field-error" style="display: none;"></div>
-                            </div>
-                            <div class="enhanced-form-group">
-                                <label>Phone Number *</label>
-                                <input type="tel" id="enhanced-lead-phone" value="${sanitizer.sanitize(lead.phone || '', 'phone')}" ${!isEditMode ? 'readonly' : ''} required>
-                                <div class="enhanced-field-error" style="display: none;"></div>
-                            </div>
-                            <div class="enhanced-form-group">
-                                <label>Email Address</label>
-                                <input type="email" id="enhanced-lead-email" value="${sanitizer.sanitize(lead.email || '', 'email')}" ${!isEditMode ? 'readonly' : ''}>
-                                <div class="enhanced-field-error" style="display: none;"></div>
-                            </div>
-                            <div class="enhanced-form-group">
-                                <label>Alternative Phone</label>
-                                <input type="tel" id="enhanced-lead-alt-phone" value="${sanitizer.sanitize(lead.altPhone || '', 'phone')}" ${!isEditMode ? 'readonly' : ''}>
-                                <div class="enhanced-field-error" style="display: none;"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="enhanced-form-section">
-                        <div class="enhanced-section-title">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M3 9.5L12 4l9 5.5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-11z"/>
-                                <polyline points="9,22 9,12 15,12 15,22"/>
-                            </svg>
-                            Lead Information
-                        </div>
-                        <div class="enhanced-form-grid">
-                            <div class="enhanced-form-group">
-                                <label>Status *</label>
-                                <select id="enhanced-lead-status" ${!isEditMode ? 'disabled' : ''} required>
-                                    ${VALIDATION_CONFIG.LEAD_OPTIONS.status.map(status => `
-                                        <option value="${status}" ${lead.status === status ? 'selected' : ''}>${this.getStatusText(status)}</option>
-                                    `).join('')}
-                                </select>
-                            </div>
-                            <div class="enhanced-form-group">
-                                <label>Source</label>
-                                <select id="enhanced-lead-source" ${!isEditMode ? 'disabled' : ''}>
-                                    <option value="" ${!lead.source ? 'selected' : ''}>Select source</option>
-                                    ${VALIDATION_CONFIG.LEAD_OPTIONS.source.map(source => `
-                                        <option value="${source}" ${lead.source === source ? 'selected' : ''}>${source.charAt(0).toUpperCase() + source.slice(1).replace('-', ' ')}</option>
-                                    `).join('')}
-                                </select>
-                            </div>
-                            <div class="enhanced-form-group full-width">
-                                <label>Requirements</label>
-                                <textarea id="enhanced-lead-requirements" rows="4" ${!isEditMode ? 'readonly' : ''} placeholder="Enter lead requirements and notes...">${sanitizer.sanitize(lead.requirements || '', 'multiline')}</textarea>
-                                <div class="enhanced-field-error" style="display: none;"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="enhanced-form-section">
-                        <div class="enhanced-section-title">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"/>
-                                <path d="M12 6v6l4 2"/>
-                            </svg>
-                            System Information
-                        </div>
-                        <div class="enhanced-form-grid">
-                            <div class="enhanced-form-group">
-                                <label>Created Date</label>
-                                <input type="text" value="${this.formatDate(createdAt)}" readonly>
-                            </div>
-                            <div class="enhanced-form-group">
-                                <label>Lead ID</label>
-                                <input type="text" value="${lead.id}" readonly>
-                            </div>
-                            <div class="enhanced-form-group">
-                                <label>Last Updated</label>
-                                <input type="text" value="${lead.updatedAt ? this.formatDate(lead.updatedAt.toDate ? lead.updatedAt.toDate() : new Date(lead.updatedAt.seconds * 1000)) : 'Never'}" readonly>
-                            </div>
-                            <div class="enhanced-form-group">
-                                <label>Assigned To</label>
-                                <input type="text" value="${this.getAssignedUserName(lead.assignedTo)}" readonly>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            `,
-            size: 'large',
-            buttons: isEditMode ? [
-                {
-                    text: 'Cancel',
-                    className: 'btn-secondary',
-                    action: 'cancel',
-                    onClick: (e, modal) => UIHelpers.hideModal(modal.id)
-                },
-                {
-                    text: 'Save Changes',
-                    className: 'btn-primary',
-                    action: 'submit',
-                    primary: true,
-                    onClick: async (formData, modal) => {
-                        const success = await this.saveLeadChanges(lead.id, formData);
-                        if (success) {
-                            UIHelpers.hideModal(modal.id);
-                        } else {
-                            // Don't close modal if save failed due to validation or other errors
-                            return false;
-                        }
-                    }
-                }
-            ] : [
-                {
-                    text: 'Close',
-                    className: 'btn-secondary',
-                    action: 'close',
-                    onClick: (e, modal) => UIHelpers.hideModal(modal.id)
-                },
-                {
-                    text: 'Edit Lead',
-                    className: 'btn-primary',
-                    action: 'edit',
-                    onClick: (e, modal) => {
-                        UIHelpers.hideModal(modal.id);
-                        this.editLead(lead.id); // Re-open in edit mode
-                    }
-                }
-            ],
-            onShow: (modal) => {
-                if (isEditMode) {
-                    this.setupLeadFormValidation();
-                }
-            }
-        });
-    }
-
-    /**
-     * Sets up real-time validation for the lead form within the modal.
-     */
-    setupLeadFormValidation() {
-        const form = document.getElementById('enhanced-lead-form');
-        if (!form) return;
-
-        const inputs = form.querySelectorAll('input, select, textarea');
-        inputs.forEach(input => {
-            input.addEventListener('input', () => this.validateLeadField(input));
-            input.addEventListener('blur', () => this.validateLeadField(input));
-        });
-    }
-
-    /**
-     * Validates a single lead form field and updates its UI state.
-     * @param {HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement} field - The input field to validate.
-     * @returns {boolean} True if valid, false otherwise.
-     */
-    validateLeadField(field) {
-        const formGroup = field.closest('.enhanced-form-group');
-        if (!formGroup) return true;
-
-        let isValid = true;
-        let errorMessage = '';
-
-        const value = field.value.trim();
-        const fieldName = field.id.replace('enhanced-lead-', '');
-
-        switch (fieldName) {
-            case 'name':
-                const nameValidation = sanitizer.validate(value, 'name', field.required);
-                if (!nameValidation.valid) {
-                    isValid = false;
-                    errorMessage = nameValidation.message;
-                }
-                break;
-            case 'phone':
-            case 'alt-phone':
-                const phoneValidation = sanitizer.validate(value, 'phone', field.required);
-                if (!phoneValidation.valid) {
-                    isValid = false;
-                    errorMessage = phoneValidation.message;
-                }
-                break;
-            case 'email':
-                const emailValidation = sanitizer.validate(value, 'email', field.required);
-                if (!emailValidation.valid) {
-                    isValid = false;
-                    errorMessage = emailValidation.message;
-                }
-                break;
-            case 'requirements':
-                const reqValidation = sanitizer.validate(value, 'multiline', field.required);
-                if (!reqValidation.valid) {
-                    isValid = false;
-                    errorMessage = reqValidation.message;
-                }
-                break;
-            case 'status':
-            case 'source':
-                const selectValidation = sanitizer.validate(value, 'select', field.required, {
-                    validValues: VALIDATION_CONFIG.LEAD_OPTIONS[fieldName]
-                });
-                if (!selectValidation.valid) {
-                    isValid = false;
-                    errorMessage = selectValidation.message;
-                }
-                break;
-        }
-
-        // Update UI based on validation
-        const errorElement = formGroup.querySelector('.enhanced-field-error');
-        if (isValid) {
-            formGroup.classList.remove('error');
-            formGroup.classList.add('success');
-            if (errorElement) errorElement.style.display = 'none';
-        } else {
-            formGroup.classList.remove('success');
-            formGroup.classList.add('error');
-            if (errorElement) {
-                errorElement.textContent = errorMessage;
-                errorElement.style.display = 'block';
-            }
-        }
-        return isValid;
-    }
-
-    /**
-     * Saves changes to a lead.
-     * @param {string} leadId - ID of the lead to save.
-     * @param {Object} formData - The form data to save.
-     * @returns {Promise<boolean>} True if save was successful, false otherwise.
-     */
-    async saveLeadChanges(leadId, formData) {
-        try {
-            const formElement = document.getElementById('enhanced-lead-form');
-            if (!formElement) return false;
-
-            // Manual re-validation of all fields on submit
-            let isFormValid = true;
-            formElement.querySelectorAll('input, select, textarea').forEach(input => {
-                if (!this.validateLeadField(input)) {
-                    isFormValid = false;
-                }
-            });
-
-            if (!isFormValid) {
-                UIHelpers.warning('Please fix the errors before saving');
-                return false;
-            }
-
-            // Sanitize and validate data using the global sanitizer
-            const sanitizedResult = sanitizer.sanitizeLeadData({
-                name: formData['enhanced-lead-name'],
-                phone: formData['enhanced-lead-phone'],
-                email: formData['enhanced-lead-email'],
-                altPhone: formData['enhanced-lead-alt-phone'],
-                status: formData['enhanced-lead-status'],
-                source: formData['enhanced-lead-source'],
-                requirements: formData['enhanced-lead-requirements']
-            });
-
-            if (!sanitizedResult.isValid) {
-                UIHelpers.error('Validation failed: ' + Object.values(sanitizedResult.errors).join(', '));
-                sanitizer.displayValidationErrors(sanitizedResult.errors, 'enhanced-lead-form');
-                return false;
-            }
-
-            const updateData = {
-                ...sanitizedResult.sanitizedData,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                updatedBy: authGuard.getCurrentUser()?.uid
-            };
-
-            UIHelpers.showLoading('Saving changes...');
-
-            // Use firebaseService.db.update for database operation
-            await firebaseService.db.update(DB_CONFIG.COLLECTIONS.LEADS, leadId, updateData);
-
-            await logActivity('update_lead', {
-                leadId: leadId,
-                changes: Object.keys(updateData).filter(key => key !== 'updatedAt' && key !== 'updatedBy'),
-                previousStatus: this.findLeadById(leadId)?.status,
-                newStatus: updateData.status
-            });
-
-            UIHelpers.success('Lead updated successfully!');
-
-            // Refresh current view
-            if (this.selectedUserId) {
-                await this.selectUser(this.selectedUserId);
-            } else if (authGuard.hasRole('user')) {
-                await this.loadUserLeadsDirectly();
-            } else {
-                // If on master/team view, refresh masters data
-                await this.loadMastersView();
-            }
-            return true;
-        } catch (error) {
-            console.error('❌ Error saving lead changes:', error);
-            UIHelpers.error('Error saving lead: ' + error.message);
-            return false;
-        } finally {
-            UIHelpers.hideLoading();
-        }
-    }
-
-    /**
-     * Deletes a lead from the database.
-     * @param {string} leadId - ID of the lead to delete.
-     */
-    async deleteLeadFromDatabase(leadId) {
-        try {
-            UIHelpers.showLoading('Deleting lead...');
-
-            // Use firebaseService.db.delete for database operation
-            await firebaseService.db.delete(DB_CONFIG.COLLECTIONS.LEADS, leadId);
-
-            await logActivity('delete_lead', {
-                leadId: leadId,
-                leadName: this.findLeadById(leadId)?.name || 'Unknown Lead'
-            });
-
-            UIHelpers.success('Lead deleted successfully!');
-
-            // Refresh current view
-            if (this.selectedUserId) {
-                await this.selectUser(this.selectedUserId);
-            } else if (authGuard.hasRole('user')) {
-                await this.loadUserLeadsDirectly();
-            } else {
-                await this.loadMastersView();
-            }
-
-        } catch (error) {
-            console.error('❌ Error deleting lead:', error);
-            UIHelpers.error('Error deleting lead: ' + error.message);
-        } finally {
-            UIHelpers.hideLoading();
-        }
-    }
-
-    /**
-     * Searches masters in the current view.
-     * @param {string} searchTerm - The search term.
-     */
-    searchMasters(searchTerm) {
-        const masterCards = document.querySelectorAll('.enhanced-master-card');
-        const term = searchTerm.toLowerCase().trim();
-
-        masterCards.forEach(card => {
-            const name = card.querySelector('.master-card-info h3')?.textContent.toLowerCase() || '';
-            const email = card.querySelector('.master-card-info p')?.textContent.toLowerCase() || '';
-
-            if (name.includes(term) || email.includes(term) || term === '') {
-                card.style.display = 'block';
-            } else {
-                card.style.display = 'none';
-            }
-        });
-    }
-
-    /**
-     * Filters user leads displayed in the table.
-     * @param {string} searchTerm - The search term.
-     */
-    filterUserLeads(searchTerm) {
-        const currentLeads = this.state.get('currentEnhancedUserLeads');
-        if (!currentLeads) return;
-
-        const tableBody = document.getElementById('enhanced-user-leads-table-body');
-        if (!tableBody) return;
-
-        const filteredLeads = currentLeads.filter(lead => {
-            const searchText = searchTerm.toLowerCase();
-            return (
-                (lead.name || '').toLowerCase().includes(searchText) ||
-                (lead.phone || '').toLowerCase().includes(searchText) ||
-                (lead.email || '').toLowerCase().includes(searchText) ||
-                (lead.status || '').toLowerCase().includes(searchText) ||
-                (lead.source || '').toLowerCase().includes(searchText)
-            );
-        });
-
-        if (filteredLeads.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="7" class="loading-row">No leads match your search</td></tr>';
-            return;
-        }
-
-        tableBody.innerHTML = filteredLeads.map(lead => {
-            const createdAt = lead.createdAt ? (lead.createdAt.toDate ? lead.createdAt.toDate() : new Date(lead.createdAt.seconds * 1000)) : new Date(0);
-            const formattedDate = this.formatDate(createdAt);
-
-            return `
-                <tr data-lead-id="${lead.id}">
-                    <td><strong>${sanitizer.sanitize(lead.name || 'Unnamed Lead', 'text')}</strong></td>
-                    <td>${sanitizer.sanitize(lead.phone || 'No phone', 'text')}</td>
-                    <td>${sanitizer.sanitize(lead.email || 'Not provided', 'email')}</td>
-                    <td><span class="enhanced-status-badge ${(lead.status || 'newlead').toLowerCase()}">${this.getStatusText(lead.status)}</span></td>
-                    <td>${sanitizer.sanitize(lead.source || 'Not specified', 'text')}</td>
-                    <td>${formattedDate}</td>
-                    <td>
-                        <button class="enhanced-action-btn view" onclick="crmApp.viewLead('${lead.id}')">View</button>
-                        <button class="enhanced-action-btn edit" onclick="crmApp.editLead('${lead.id}')">Edit</button>
-                        <button class="enhanced-action-btn delete" onclick="crmApp.deleteLead('${lead.id}')">Delete</button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    /**
-     * Filters leads when displayed directly to a user.
-     * @param {string} searchTerm - The search term.
-     */
-    filterUserLeadsDirectly(searchTerm) {
-        const currentLeads = this.state.get('currentUserDirectLeads');
-        if (!currentLeads) return;
-
-        const tableBody = document.getElementById('user-leads-direct-table-body');
-        if (!tableBody) return;
-
-        const filteredLeads = currentLeads.filter(lead => {
-            const searchText = searchTerm.toLowerCase();
-            return (
-                (lead.name || '').toLowerCase().includes(searchText) ||
-                (lead.phone || '').toLowerCase().includes(searchText) ||
-                (lead.email || '').toLowerCase().includes(searchText) ||
-                (lead.status || '').toLowerCase().includes(searchText) ||
-                (lead.source || '').toLowerCase().includes(searchText)
-            );
-        });
-
-        if (filteredLeads.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="7" class="loading-row">No leads match your search</td></tr>';
-            return;
-        }
-
-        tableBody.innerHTML = filteredLeads.map(lead => {
-            const createdAt = lead.createdAt ? (lead.createdAt.toDate ? lead.createdAt.toDate() : new Date(lead.createdAt.seconds * 1000)) : new Date(0);
-            const formattedDate = this.formatDate(createdAt);
-
-            return `
-                <tr data-lead-id="${lead.id}">
-                    <td><strong>${sanitizer.sanitize(lead.name || 'Unnamed Lead', 'text')}</strong></td>
-                    <td>${sanitizer.sanitize(lead.phone || 'No phone', 'text')}</td>
-                    <td>${sanitizer.sanitize(lead.email || 'Not provided', 'email')}</td>
-                    <td><span class="enhanced-status-badge ${(lead.status || 'newlead').toLowerCase()}">${this.getStatusText(lead.status)}</span></td>
-                    <td>${sanitizer.sanitize(lead.source || 'Not specified', 'text')}</td>
-                    <td>${formattedDate}</td>
-                    <td>
-                        <button class="enhanced-action-btn view" onclick="crmApp.viewLead('${lead.id}')">View</button>
-                        <button class="enhanced-action-btn edit" onclick="crmApp.editLead('${lead.id}')">Edit</button>
-                        <button class="enhanced-action-btn delete" onclick="crmApp.deleteLead('${lead.id}')">Delete</button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    /**
-     * Formats a Date object into a readable string.
-     * @param {Date | Object} date - The date object or Firestore timestamp.
-     * @returns {string} Formatted date string.
-     */
-    formatDate(date) {
+class DataUtils {
+    static formatDate(date, options = {}) {
         if (!date) return 'N/A';
         const d = date.toDate ? date.toDate() : (date instanceof Date ? date : new Date(date));
         if (isNaN(d.getTime())) return 'Invalid Date';
 
-        const options = {
+        const defaultOptions = {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
         };
-        return d.toLocaleDateString('en-US', options);
+        return d.toLocaleDateString('en-US', { ...defaultOptions, ...options });
     }
 
-    /**
-     * Formats a date into a "time ago" string.
-     * @param {Date | Object} date - The date object or Firestore timestamp.
-     * @returns {string} Time ago string.
-     */
-    formatTimeAgo(date) {
+    static formatTimeAgo(date) {
         if (!date) return 'N/A';
         const d = date.toDate ? date.toDate() : (date instanceof Date ? date : new Date(date));
         if (isNaN(d.getTime())) return 'Invalid Date';
@@ -2041,91 +195,4916 @@ class CRMApplication {
         if (diffInSeconds < 60) return 'Just now';
         if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
         if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-        if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`; // 30 days
+        if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
 
         return d.toLocaleDateString();
     }
 
-    /**
-     * Gets the display text for a lead status.
-     * @param {string} status - The status key.
-     * @returns {string} The display text.
-     */
-    getStatusText(status) {
-        const statusMap = {
-            'newLead': 'New Lead',
-            'newlead': 'New Lead', // Handle variations
-            'followUp': 'Follow Up',
-            'followup': 'Follow Up',
-            'visit': 'Visit Scheduled',
-            'booked': 'Booked',
-            'closed': 'Closed',
-            'dropped': 'Dropped',
-            'contacted': 'Contacted',
-            'interested': 'Interested',
-            'notinterested': 'Not Interested'
+    static debounce(func, wait, immediate) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                timeout = null;
+                if (!immediate) func(...args);
+            };
+            const callNow = immediate && !timeout;
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+            if (callNow) func(...args);
         };
-        return statusMap[status] || status || 'New Lead';
     }
 
-    /**
-     * Gets the name of the user assigned to a lead.
-     * @param {string} userId - The ID of the assigned user.
-     * @returns {string} User's name or 'Unknown User'.
-     */
-    getAssignedUserName(userId) {
-        const user = this.allUsers.find(u => u.id === userId);
-        return user ? (user.name || user.email) : 'Unknown User';
+    static throttle(func, limit) {
+        let inThrottle;
+        return function(...args) {
+            if (!inThrottle) {
+                func.apply(this, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
     }
 
-    /**
-     * Placeholder for Team Management section loading.
-     */
-    async loadTeamManagementSection() {
-        console.log('👥 Team Management section - Coming soon');
-        const teamSection = document.getElementById('team-section');
-        if (teamSection) {
-            teamSection.innerHTML = `
-                <div class="coming-soon">
-                    <div class="coming-soon-icon">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                            <circle cx="9" cy="7" r="4"/>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                        </svg>
-                    </div>
-                    <h3>Advanced Team Analytics</h3>
-                    <p>Comprehensive team management dashboard coming soon.</p>
+    static generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+    }
+
+    static sanitizeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+}
+
+/**
+ * Form Validation Class
+ */
+class FormValidation {
+    static validateEmail(email) {
+        return VALIDATION_CONFIG.PATTERNS.email.test(email);
+    }
+
+    static validatePhone(phone) {
+        return VALIDATION_CONFIG.PATTERNS.phone.test(phone);
+    }
+
+    static validateName(name) {
+        return VALIDATION_CONFIG.PATTERNS.name.test(name);
+    }
+
+    static validateRequired(value) {
+        return value !== null && value !== undefined && value.toString().trim() !== '';
+    }
+
+    static validateLength(value, min = 0, max = Infinity) {
+        const length = value ? value.toString().length : 0;
+        return length >= min && length <= max;
+    }
+
+    static validateUrl(url) {
+        return VALIDATION_CONFIG.PATTERNS.url.test(url);
+    }
+
+    static validateField(field, value, rules = {}) {
+        const errors = [];
+
+        if (rules.required && !this.validateRequired(value)) {
+            errors.push(`${field} is required`);
+        }
+
+        if (value && rules.email && !this.validateEmail(value)) {
+            errors.push(`${field} must be a valid email`);
+        }
+
+        if (value && rules.phone && !this.validatePhone(value)) {
+            errors.push(`${field} must be a valid phone number`);
+        }
+
+        if (value && rules.minLength && !this.validateLength(value, rules.minLength)) {
+            errors.push(`${field} must be at least ${rules.minLength} characters`);
+        }
+
+        if (value && rules.maxLength && !this.validateLength(value, 0, rules.maxLength)) {
+            errors.push(`${field} must be no more than ${rules.maxLength} characters`);
+        }
+
+        return {
+            isValid: errors.length === 0,
+            errors: errors
+        };
+    }
+}
+
+/**
+ * Error Handler Class
+ */
+class ErrorHandler {
+    constructor() {
+        this.errors = [];
+        this.securityUtils = null;
+    }
+
+    init(securityUtils) {
+        this.securityUtils = securityUtils;
+        this.setupGlobalErrorHandling();
+    }
+
+    setupGlobalErrorHandling() {
+        window.addEventListener('error', (event) => {
+            this.logError(event.error, 'Global Error', {
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno
+            });
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            this.logError(event.reason, 'Unhandled Promise Rejection');
+        });
+    }
+
+    logError(error, context = '', details = {}) {
+        const errorInfo = {
+            message: error?.message || 'Unknown error',
+            stack: error?.stack || '',
+            context: context,
+            details: details,
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            url: window.location.href
+        };
+
+        this.errors.push(errorInfo);
+
+        // Keep only last 100 errors
+        if (this.errors.length > 100) {
+            this.errors.shift();
+        }
+
+        console.error('CRM Error:', errorInfo);
+
+        if (this.securityUtils) {
+            this.securityUtils.logSecurityIncident('application_error', errorInfo);
+        }
+    }
+
+    getErrors() {
+        return [...this.errors];
+    }
+
+    clearErrors() {
+        this.errors = [];
+    }
+}
+
+// ===================================
+// SECTION 3: DATA SANITIZER
+// ===================================
+
+/**
+ * Enhanced Data Sanitizer Class
+ */
+class DataSanitizer {
+    constructor(config = VALIDATION_CONFIG) {
+        this.config = config;
+        this.securityLog = [];
+        this.validationCache = new Map();
+    }
+
+    sanitize(input, type = 'text', options = {}) {
+        try {
+            if (input === null || input === undefined) {
+                return options.defaultValue || '';
+            }
+
+            let sanitized = String(input).trim();
+            const maxLength = options.maxLength || this.config.MAX_LENGTHS[type] || this.config.MAX_LENGTHS.general;
+
+            if (sanitized.length > maxLength) {
+                sanitized = sanitized.slice(0, maxLength);
+                this._logSecurityEvent('length_truncation', { type, originalLength: input.length, truncatedLength: maxLength });
+            }
+
+            if (this._containsDangerousContent(sanitized)) {
+                this._logSecurityEvent('dangerous_content_detected', { type, content: sanitized.slice(0, 100) });
+                sanitized = this._removeDangerousContent(sanitized);
+            }
+
+            switch (type) {
+                case 'name':
+                    return this._sanitizeName(sanitized, options);
+                case 'email':
+                    return this._sanitizeEmail(sanitized, options);
+                case 'phone':
+                    return this._sanitizePhone(sanitized, options);
+                case 'text':
+                    return this._sanitizeText(sanitized, options);
+                case 'multiline':
+                    return this._sanitizeMultiline(sanitized, options);
+                case 'number':
+                    return this._sanitizeNumber(sanitized, options);
+                case 'url':
+                    return this._sanitizeUrl(sanitized, options);
+                case 'html':
+                    return this._sanitizeHtml(sanitized, options);
+                case 'slug':
+                    return this._sanitizeSlug(sanitized, options);
+                default:
+                    return this._sanitizeText(sanitized, options);
+            }
+        } catch (error) {
+            this._logSecurityEvent('sanitization_error', { type, error: error.message });
+            return options.defaultValue || '';
+        }
+    }
+
+    validate(input, type, required = false, options = {}) {
+        try {
+            const cacheKey = `${type}_${required}_${JSON.stringify(options)}_${input}`;
+
+            if (this.validationCache.has(cacheKey)) {
+                return this.validationCache.get(cacheKey);
+            }
+
+            const isEmpty = !input || String(input).trim() === '';
+            if (required && isEmpty) {
+                const result = {
+                    valid: false,
+                    message: options.requiredMessage || 'This field is required',
+                    code: 'REQUIRED_FIELD_EMPTY'
+                };
+                this.validationCache.set(cacheKey, result);
+                return result;
+            }
+
+            if (!required && isEmpty) {
+                const result = { valid: true, message: '', code: 'VALID_EMPTY' };
+                this.validationCache.set(cacheKey, result);
+                return result;
+            }
+
+            const sanitized = this.sanitize(input, type, options);
+            let result;
+
+            switch (type) {
+                case 'name':
+                    result = this._validateName(sanitized, options);
+                    break;
+                case 'email':
+                    result = this._validateEmail(sanitized, options);
+                    break;
+                case 'phone':
+                    result = this._validatePhone(sanitized, options);
+                    break;
+                case 'text':
+                    result = this._validateText(sanitized, options);
+                    break;
+                case 'multiline':
+                    result = this._validateMultiline(sanitized, options);
+                    break;
+                case 'number':
+                    result = this._validateNumber(sanitized, options);
+                    break;
+                case 'url':
+                    result = this._validateUrl(sanitized, options);
+                    break;
+                case 'select':
+                    result = this._validateSelect(sanitized, options);
+                    break;
+                default:
+                    result = this._validateText(sanitized, options);
+            }
+
+            this.validationCache.set(cacheKey, result);
+
+            if (this.validationCache.size > 1000) {
+                const firstKey = this.validationCache.keys().next().value;
+                this.validationCache.delete(firstKey);
+            }
+
+            return result;
+        } catch (error) {
+            this._logSecurityEvent('validation_error', { type, error: error.message });
+            return {
+                valid: false,
+                message: 'Validation error occurred',
+                code: 'VALIDATION_ERROR'
+            };
+        }
+    }
+
+    validateFormData(formData, schema = {}) {
+        const errors = {};
+        const warnings = [];
+        const sanitizedData = {};
+        let isValid = true;
+
+        try {
+            for (const [fieldName, value] of Object.entries(formData)) {
+                const fieldSchema = schema[fieldName] || {};
+                const {
+                    type = 'text',
+                    required = false,
+                    options = {}
+                } = fieldSchema;
+
+                const validation = this.validate(value, type, required, options);
+
+                if (!validation.valid) {
+                    errors[fieldName] = validation.message;
+                    isValid = false;
+                } else {
+                    sanitizedData[fieldName] = this.sanitize(value, type, options);
+
+                    if (validation.warning) {
+                        warnings.push({
+                            field: fieldName,
+                            message: validation.warning
+                        });
+                    }
+                }
+            }
+
+            return {
+                isValid,
+                errors,
+                warnings,
+                sanitizedData,
+                summary: {
+                    totalFields: Object.keys(formData).length,
+                    validFields: Object.keys(sanitizedData).length,
+                    errorCount: Object.keys(errors).length,
+                    warningCount: warnings.length
+                }
+            };
+        } catch (error) {
+            this._logSecurityEvent('form_validation_error', { error: error.message });
+            return {
+                isValid: false,
+                errors: { _form: 'Form validation failed' },
+                warnings: [],
+                sanitizedData: {},
+                summary: { totalFields: 0, validFields: 0, errorCount: 1, warningCount: 0 }
+            };
+        }
+    }
+
+    sanitizeLeadData(leadData) {
+        const schema = {
+            name: { type: 'name', required: true },
+            phone: { type: 'phone', required: true },
+            email: { type: 'email', required: false },
+            altPhone: { type: 'phone', required: false },
+            status: { type: 'select', options: { validValues: this.config.LEAD_OPTIONS.status } },
+            source: { type: 'select', options: { validValues: this.config.LEAD_OPTIONS.source } },
+            propertyType: { type: 'select', options: { validValues: this.config.LEAD_OPTIONS.propertyType } },
+            budget: { type: 'select', options: { validValues: this.config.LEAD_OPTIONS.budget } },
+            location: { type: 'text', required: false },
+            requirements: { type: 'multiline', required: false },
+            assignedTo: { type: 'text', required: false },
+            priority: { type: 'select', options: { validValues: this.config.LEAD_OPTIONS.priority } }
+        };
+
+        const result = this.validateFormData(leadData, schema);
+
+        const cleanedData = {};
+        for (const [key, value] of Object.entries(result.sanitizedData)) {
+            if (value && value !== '') {
+                cleanedData[key] = value;
+            }
+        }
+
+        return {
+            ...result,
+            sanitizedData: cleanedData
+        };
+    }
+
+    sanitizeUserData(userData) {
+        const schema = {
+            name: { type: 'name', required: true },
+            email: { type: 'email', required: true },
+            role: { type: 'select', options: { validValues: this.config.USER_OPTIONS.role } },
+            status: { type: 'select', options: { validValues: this.config.USER_OPTIONS.status } },
+            linkedMaster: { type: 'text', required: false }
+        };
+
+        return this.validateFormData(userData, schema);
+    }
+
+    // Private sanitization methods
+    _sanitizeName(str, options = {}) {
+        return str
+            .replace(/[<>\"'&]/g, '')
+            .replace(/\s+/g, ' ')
+            .replace(/[^\w\s\.\-\']/g, '')
+            .slice(0, options.maxLength || this.config.MAX_LENGTHS.name);
+    }
+
+    _sanitizeEmail(str, options = {}) {
+        return str
+            .toLowerCase()
+            .replace(/[<>\"'&\s]/g, '')
+            .slice(0, options.maxLength || this.config.MAX_LENGTHS.email);
+    }
+
+    _sanitizePhone(str, options = {}) {
+        return str
+            .replace(/[<>\"'&]/g, '')
+            .replace(/[^\d\+\-\s\(\)]/g, '')
+            .slice(0, options.maxLength || this.config.MAX_LENGTHS.phone);
+    }
+
+    _sanitizeText(str, options = {}) {
+        return str
+            .replace(/[<>]/g, '')
+            .replace(/javascript:/gi, '')
+            .replace(/on\w+\s*=/gi, '')
+            .slice(0, options.maxLength || this.config.MAX_LENGTHS.general);
+    }
+
+    _sanitizeMultiline(str, options = {}) {
+        return str
+            .replace(/[<>]/g, '')
+            .replace(/javascript:/gi, '')
+            .replace(/on\w+\s*=/gi, '')
+            .replace(/\r\n/g, '\n')
+            .slice(0, options.maxLength || this.config.MAX_LENGTHS.requirements);
+    }
+
+    _sanitizeNumber(str, options = {}) {
+        const num = parseFloat(str);
+        if (isNaN(num)) {
+            return options.defaultValue || 0;
+        }
+        const min = options.min || -Infinity;
+        const max = options.max || Infinity;
+        return Math.max(min, Math.min(max, num));
+    }
+
+    _sanitizeUrl(str, options = {}) {
+        str = str.replace(/[<>\"']/g, '');
+        if (str && !str.match(/^https?:\/\//)) {
+            str = 'https://' + str;
+        }
+        return str.slice(0, options.maxLength || 2048);
+    }
+
+    _sanitizeHtml(str, options = {}) {
+        const allowedTags = options.allowedTags || this.config.ALLOWED_TAGS;
+        let sanitized = str;
+        const tagRegex = /<\/?([a-zA-Z]+)(?:\s[^>]*)?>/g;
+        sanitized = sanitized.replace(tagRegex, (match, tagName) => {
+            if (allowedTags.includes(tagName.toLowerCase())) {
+                return match;
+            }
+            return '';
+        });
+        return sanitized.slice(0, options.maxLength || this.config.MAX_LENGTHS.requirements);
+    }
+
+    _sanitizeSlug(str, options = {}) {
+        return str
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '')
+            .slice(0, options.maxLength || 50);
+    }
+
+    // Private validation methods
+    _validateName(name, options = {}) {
+        if (name.length < (options.minLength || 2)) {
+            return { valid: false, message: `Name must be at least ${options.minLength || 2} characters`, code: 'NAME_TOO_SHORT' };
+        }
+        if (!this.config.PATTERNS.name.test(name)) {
+            return { valid: false, message: 'Name contains invalid characters', code: 'INVALID_NAME_CHARACTERS' };
+        }
+        return { valid: true, message: '', code: 'VALID' };
+    }
+
+    _validateEmail(email, options = {}) {
+        if (!this.config.PATTERNS.email.test(email)) {
+            return { valid: false, message: 'Please enter a valid email address', code: 'INVALID_EMAIL_FORMAT' };
+        }
+        if (options.blockDisposable && this._isDisposableEmail(email)) {
+            return { valid: false, message: 'Disposable email addresses are not allowed', code: 'DISPOSABLE_EMAIL' };
+        }
+        return { valid: true, message: '', code: 'VALID' };
+    }
+
+    _validatePhone(phone, options = {}) {
+        if (phone.length < (options.minLength || 7)) {
+            return { valid: false, message: `Phone number must be at least ${options.minLength || 7} digits`, code: 'PHONE_TOO_SHORT' };
+        }
+        if (!this.config.PATTERNS.phone.test(phone)) {
+            return { valid: false, message: 'Please enter a valid phone number', code: 'INVALID_PHONE_FORMAT' };
+        }
+        return { valid: true, message: '', code: 'VALID' };
+    }
+
+    _validateText(text, options = {}) {
+        const maxLength = options.maxLength || this.config.MAX_LENGTHS.general;
+        if (text.length > maxLength) {
+            return { valid: false, message: `Text must not exceed ${maxLength} characters`, code: 'TEXT_TOO_LONG' };
+        }
+        return { valid: true, message: '', code: 'VALID' };
+    }
+
+    _validateMultiline(text, options = {}) {
+        const maxLength = options.maxLength || this.config.MAX_LENGTHS.requirements;
+        if (text.length > maxLength) {
+            return { valid: false, message: `Text must not exceed ${maxLength} characters`, code: 'TEXT_TOO_LONG' };
+        }
+        return { valid: true, message: '', code: 'VALID' };
+    }
+
+    _validateNumber(num, options = {}) {
+        if (isNaN(num)) {
+            return { valid: false, message: 'Please enter a valid number', code: 'INVALID_NUMBER' };
+        }
+        if (options.min !== undefined && num < options.min) {
+            return { valid: false, message: `Number must be at least ${options.min}`, code: 'NUMBER_TOO_SMALL' };
+        }
+        if (options.max !== undefined && num > options.max) {
+            return { valid: false, message: `Number must not exceed ${options.max}`, code: 'NUMBER_TOO_LARGE' };
+        }
+        return { valid: true, message: '', code: 'VALID' };
+    }
+
+    _validateUrl(url, options = {}) {
+        if (!this.config.PATTERNS.url.test(url)) {
+            return { valid: false, message: 'Please enter a valid URL', code: 'INVALID_URL_FORMAT' };
+        }
+        return { valid: true, message: '', code: 'VALID' };
+    }
+
+    _validateSelect(value, options = {}) {
+        const validValues = options.validValues || [];
+        if (validValues.length > 0 && !validValues.includes(value)) {
+            return { valid: false, message: 'Please select a valid option', code: 'INVALID_SELECT_VALUE' };
+        }
+        return { valid: true, message: '', code: 'VALID' };
+    }
+
+    // Security utilities
+    _containsDangerousContent(str) {
+        return this.config.SECURITY_PATTERNS.some(pattern => pattern.test(str));
+    }
+
+    _removeDangerousContent(str) {
+        let cleaned = str;
+        this.config.SECURITY_PATTERNS.forEach(pattern => {
+            cleaned = cleaned.replace(pattern, '');
+        });
+        return cleaned;
+    }
+
+    _isDisposableEmail(email) {
+        const disposableDomains = [
+            '10minutemail.com', 'tempmail.org', 'guerrillamail.com',
+            'mailinator.com', 'trashmail.com', 'yopmail.com'
+        ];
+        const domain = email.split('@')[1]?.toLowerCase();
+        return disposableDomains.includes(domain);
+    }
+
+    _logSecurityEvent(type, details) {
+        const event = {
+            type,
+            details,
+            timestamp: new Date().toISOString(),
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Server'
+        };
+
+        this.securityLog.push(event);
+
+        if (this.securityLog.length > 100) {
+            this.securityLog.shift();
+        }
+
+        if (typeof window !== 'undefined' && window.location?.hostname === 'localhost') {
+            console.warn('🚨 Security Event:', event);
+        }
+    }
+
+    getSecurityLog() {
+        return [...this.securityLog];
+    }
+
+    clearCache() {
+        this.validationCache.clear();
+    }
+
+    getCacheStats() {
+        return {
+            size: this.validationCache.size,
+            maxSize: 1000
+        };
+    }
+}
+
+// ===================================
+// SECTION 4: SECURITY UTILITIES
+// ===================================
+
+/**
+ * Security Utilities Class
+ */
+class SecurityUtils {
+    constructor() {
+        this.incidents = [];
+        this.rateLimits = new Map();
+        this.securityMetrics = {
+            totalIncidents: 0,
+            blockedAttacks: 0,
+            suspiciousActivity: 0
+        };
+    }
+
+    sanitizeInput(input) {
+        if (typeof input !== 'string') return input;
+
+        const original = input;
+        const sanitized = input
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;')
+            .replace(/\//g, '&#x2F;');
+
+        if (original !== sanitized) {
+            this.logSecurityIncident('input_sanitized', {
+                original: original.slice(0, 100),
+                sanitized: sanitized.slice(0, 100)
+            });
+        }
+
+        return sanitized;
+    }
+
+    checkRateLimit(operation, maxAttempts = 5, windowMs = 60000) {
+        const key = `${operation}_${Date.now()}`;
+        const now = Date.now();
+
+        if (this.rateLimits.size > 1000) {
+            this._cleanRateLimits(windowMs);
+        }
+
+        const recentAttempts = Array.from(this.rateLimits.keys())
+            .filter(k => k.startsWith(operation) && now - parseInt(k.split('_')[1]) < windowMs)
+            .length;
+
+        if (recentAttempts >= maxAttempts) {
+            this.logSecurityIncident('rate_limit_exceeded', {
+                operation,
+                attempts: recentAttempts,
+                maxAttempts,
+                windowMs
+            });
+            return false;
+        }
+
+        this.rateLimits.set(key, true);
+        return true;
+    }
+
+    containsDangerousContent(str) {
+        if (typeof str !== 'string') return false;
+
+        const dangerousPatterns = [
+            /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+            /javascript:/gi,
+            /on\w+\s*=/gi,
+            /<iframe/gi,
+            /<object/gi,
+            /<embed/gi,
+            /eval\s*\(/gi,
+            /expression\s*\(/gi,
+            /data:text\/html/gi,
+            /vbscript:/gi,
+            /<svg[^>]*onload/gi
+        ];
+
+        const isDangerous = dangerousPatterns.some(pattern => pattern.test(str));
+
+        if (isDangerous) {
+            this.logSecurityIncident('dangerous_content_detected', {
+                content: str.slice(0, 200),
+                patterns: dangerousPatterns.filter(p => p.test(str)).map(p => p.toString())
+            });
+        }
+
+        return isDangerous;
+    }
+
+    generateSecureToken(length = 32) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        const array = new Uint8Array(length);
+
+        if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+            crypto.getRandomValues(array);
+            return Array.from(array, byte => chars[byte % chars.length]).join('');
+        } else {
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+    }
+
+    logSecurityIncident(type, details = {}) {
+        const incident = {
+            id: this.generateSecureToken(16),
+            type,
+            details,
+            timestamp: new Date().toISOString(),
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown',
+            url: typeof window !== 'undefined' ? window.location.href : 'Unknown',
+            sessionId: this._getCurrentSessionId(),
+            severity: this._calculateSeverity(type)
+        };
+
+        this.incidents.push(incident);
+        this.securityMetrics.totalIncidents++;
+
+        if (this.incidents.length > 500) {
+            this.incidents = this.incidents.slice(-400);
+        }
+
+        if (this._isDevelopment()) {
+            console.warn(`🚨 Security Incident [${incident.severity}]:`, incident);
+        }
+
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'security_incident', {
+                event_category: 'security',
+                event_label: type,
+                custom_parameter_severity: incident.severity
+            });
+        }
+    }
+
+    getSecurityReport() {
+        const recent = this.incidents.filter(
+            incident => Date.now() - new Date(incident.timestamp).getTime() < 24 * 60 * 60 * 1000
+        );
+
+        return {
+            metrics: { ...this.securityMetrics },
+            recentIncidents: recent.length,
+            highSeverityIncidents: recent.filter(i => i.severity === 'high').length,
+            topIncidentTypes: this._getTopIncidentTypes(recent),
+            rateLimitStatus: {
+                activeKeys: this.rateLimits.size,
+                memoryUsage: this.rateLimits.size * 50
+            }
+        };
+    }
+
+    _cleanRateLimits(windowMs) {
+        const now = Date.now();
+        const keysToDelete = [];
+
+        for (const [key] of this.rateLimits) {
+            const timestamp = parseInt(key.split('_')[1]);
+            if (now - timestamp > windowMs) {
+                keysToDelete.push(key);
+            }
+        }
+
+        keysToDelete.forEach(key => this.rateLimits.delete(key));
+    }
+
+    _getCurrentSessionId() {
+        try {
+            const session = JSON.parse(localStorage.getItem(AUTH_CONFIG.SESSION.STORAGE_KEY) || '{}');
+            return session.sessionId || 'unknown';
+        } catch {
+            return 'unknown';
+        }
+    }
+
+    _calculateSeverity(type) {
+        const highSeverityTypes = [
+            'dangerous_content_detected', 'rate_limit_exceeded', 'session_hijack_attempt',
+            'privilege_escalation', 'sql_injection_attempt', 'xss_attempt'
+        ];
+
+        const mediumSeverityTypes = [
+            'failed_login', 'suspicious_activity', 'invalid_token', 'session_timeout'
+        ];
+
+        if (highSeverityTypes.includes(type)) return 'high';
+        if (mediumSeverityTypes.includes(type)) return 'medium';
+        return 'low';
+    }
+
+    _isDevelopment() {
+        return typeof window !== 'undefined' &&
+               (window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1' ||
+                window.location.hostname.includes('dev'));
+    }
+
+    _getTopIncidentTypes(incidents) {
+        const counts = {};
+        incidents.forEach(incident => {
+            counts[incident.type] = (counts[incident.type] || 0) + 1;
+        });
+
+        return Object.entries(counts)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 5)
+            .map(([type, count]) => ({ type, count }));
+    }
+}
+
+// ===================================
+// SECTION 5: PERMISSION SYSTEM
+// ===================================
+
+/**
+ * Permission System Class
+ */
+class PermissionSystem {
+    constructor(config = AUTH_CONFIG.ROLES) {
+        this.config = config;
+    }
+
+    hasPermission(userRole, permission) {
+        if (!userRole || !this.config.PERMISSIONS[userRole]) {
+            return false;
+        }
+
+        const rolePermissions = this.config.PERMISSIONS[userRole];
+        return rolePermissions.includes('all') || rolePermissions.includes(permission);
+    }
+
+    hasAnyPermission(userRole, permissions) {
+        return permissions.some(permission => this.hasPermission(userRole, permission));
+    }
+
+    hasAllPermissions(userRole, permissions) {
+        return permissions.every(permission => this.hasPermission(userRole, permission));
+    }
+
+    canAccessLead(userRole, userId, lead) {
+        if (!lead || !userId) return false;
+
+        if (userRole === 'admin') return true;
+
+        if (lead.createdBy === userId || lead.assignedTo === userId) {
+            return true;
+        }
+
+        if (userRole === 'master') {
+            return this._isTeamMember(userId, lead.assignedTo);
+        }
+
+        return false;
+    }
+
+    getRoleLevel(role) {
+        return this.config.HIERARCHY.indexOf(role);
+    }
+
+    hasHigherOrEqualRole(role1, role2) {
+        return this.getRoleLevel(role1) >= this.getRoleLevel(role2);
+    }
+
+    _isTeamMember(masterId, userId) {
+        return false;
+    }
+}
+
+// ===================================
+// SECTION 6: SESSION MANAGER
+// ===================================
+
+/**
+ * Session Manager Class
+ */
+class SessionManager {
+    constructor(config = AUTH_CONFIG.SESSION) {
+        this.config = config;
+        this.sessionTimer = null;
+        this.warningTimer = null;
+        this.activityListeners = [];
+        this.securityUtils = new SecurityUtils();
+    }
+
+    createSession(userId, userData) {
+        const sessionData = {
+            userId,
+            userData,
+            sessionId: this.securityUtils.generateSecureToken(32),
+            startTime: Date.now(),
+            lastActivity: Date.now(),
+            fingerprint: this._generateFingerprint(),
+            ipAddress: null,
+            userAgent: navigator.userAgent
+        };
+
+        try {
+            localStorage.setItem(this.config.STORAGE_KEY, JSON.stringify(sessionData));
+            this._startSessionMonitoring();
+            this._setupActivityTracking();
+
+            console.log('✅ Secure session created:', sessionData.sessionId);
+            return sessionData;
+        } catch (error) {
+            this.securityUtils.logSecurityIncident('session_creation_failed', {
+                error: error.message,
+                userId: userId
+            });
+            throw new Error('Failed to create session');
+        }
+    }
+
+    validateSession() {
+        try {
+            const sessionData = this._getSessionData();
+            if (!sessionData) return null;
+
+            const now = Date.now();
+            const timeSinceActivity = now - sessionData.lastActivity;
+
+            if (timeSinceActivity > this.config.TIMEOUT) {
+                this.securityUtils.logSecurityIncident('session_expired', {
+                    sessionId: sessionData.sessionId,
+                    inactiveTime: timeSinceActivity
+                });
+                this.destroySession();
+                return null;
+            }
+
+            const currentFingerprint = this._generateFingerprint();
+            if (sessionData.fingerprint !== currentFingerprint) {
+                this.securityUtils.logSecurityIncident('session_hijack_attempt', {
+                    sessionId: sessionData.sessionId,
+                    originalFingerprint: sessionData.fingerprint,
+                    currentFingerprint
+                });
+                this.destroySession();
+                return null;
+            }
+
+            sessionData.lastActivity = now;
+            localStorage.setItem(this.config.STORAGE_KEY, JSON.stringify(sessionData));
+
+            return sessionData;
+        } catch (error) {
+            this.securityUtils.logSecurityIncident('session_validation_error', {
+                error: error.message
+            });
+            this.destroySession();
+            return null;
+        }
+    }
+
+    refreshActivity() {
+        const sessionData = this._getSessionData();
+        if (sessionData) {
+            sessionData.lastActivity = Date.now();
+            localStorage.setItem(this.config.STORAGE_KEY, JSON.stringify(sessionData));
+        }
+    }
+
+    destroySession() {
+        try {
+            const sessionData = this._getSessionData();
+            if (sessionData) {
+                this.securityUtils.logSecurityIncident('session_destroyed', {
+                    sessionId: sessionData.sessionId,
+                    duration: Date.now() - sessionData.startTime
+                });
+            }
+
+            localStorage.removeItem(this.config.STORAGE_KEY);
+            this._stopSessionMonitoring();
+            this._cleanupActivityTracking();
+
+            console.log('🗑️ Session destroyed');
+        } catch (error) {
+            console.error('Error destroying session:', error);
+        }
+    }
+
+    getTimeUntilExpiry() {
+        const sessionData = this._getSessionData();
+        if (!sessionData) return 0;
+
+        const timeSinceActivity = Date.now() - sessionData.lastActivity;
+        return Math.max(0, this.config.TIMEOUT - timeSinceActivity);
+    }
+
+    isCloseToExpiry() {
+        return this.getTimeUntilExpiry() < this.config.REFRESH_THRESHOLD;
+    }
+
+    _getSessionData() {
+        try {
+            const data = localStorage.getItem(this.config.STORAGE_KEY);
+            return data ? JSON.parse(data) : null;
+        } catch {
+            return null;
+        }
+    }
+
+    _generateFingerprint() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.textBaseline = 'top';
+        ctx.font = '14px Arial';
+        ctx.fillText('Fingerprint', 2, 2);
+
+        return btoa(JSON.stringify({
+            canvas: canvas.toDataURL(),
+            screen: `${screen.width}x${screen.height}x${screen.colorDepth}`,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            language: navigator.language,
+            platform: navigator.platform,
+            cookieEnabled: navigator.cookieEnabled,
+            doNotTrack: navigator.doNotTrack
+        }));
+    }
+
+    _startSessionMonitoring() {
+        if (this.sessionTimer) clearInterval(this.sessionTimer);
+
+        this.sessionTimer = setInterval(() => {
+            const sessionData = this.validateSession();
+            if (!sessionData) {
+                this._handleSessionTimeout();
+                return;
+            }
+
+            if (this.isCloseToExpiry() && !this.warningTimer) {
+                this._showExpiryWarning();
+            }
+        }, this.config.CHECK_INTERVAL);
+    }
+
+    _stopSessionMonitoring() {
+        if (this.sessionTimer) {
+            clearInterval(this.sessionTimer);
+            this.sessionTimer = null;
+        }
+        if (this.warningTimer) {
+            clearTimeout(this.warningTimer);
+            this.warningTimer = null;
+        }
+    }
+
+    _setupActivityTracking() {
+        const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+        const throttledRefresh = this._throttle(() => this.refreshActivity(), 5000);
+
+        activityEvents.forEach(event => {
+            document.addEventListener(event, throttledRefresh, { passive: true });
+            this.activityListeners.push({ event, handler: throttledRefresh });
+        });
+    }
+
+    _cleanupActivityTracking() {
+        this.activityListeners.forEach(({ event, handler }) => {
+            document.removeEventListener(event, handler);
+        });
+        this.activityListeners = [];
+    }
+
+    _handleSessionTimeout() {
+        this._stopSessionMonitoring();
+
+        if (typeof window !== 'undefined' && window.authGuard) {
+            window.authGuard.handleSessionTimeout();
+        }
+    }
+
+    _showExpiryWarning() {
+        const timeLeft = Math.ceil(this.getTimeUntilExpiry() / 1000 / 60);
+
+        if (typeof window !== 'undefined' && window.UIHelpers) {
+            window.UIHelpers.showToast(
+                `Your session will expire in ${timeLeft} minutes. Click anywhere to extend.`,
+                'warning',
+                { duration: 10000 }
+            );
+        }
+
+        this.warningTimer = setTimeout(() => {
+            this.warningTimer = null;
+        }, 60000);
+    }
+
+    _throttle(func, limit) {
+        let inThrottle;
+        return function() {
+            const args = arguments;
+            const context = this;
+            if (!inThrottle) {
+                func.apply(context, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    }
+}
+
+// ===================================
+// SECTION 7: UI COMPONENTS
+// ===================================
+
+/**
+ * Enhanced Modal Manager
+ */
+class ModalManager {
+    constructor() {
+        this.activeModals = new Map();
+        this.modalCount = 0;
+        this.focusStack = [];
+        this.bodyScrollPosition = 0;
+        this._setupGlobalListeners();
+    }
+
+    show(options = {}) {
+        try {
+            const modalId = options.id || `modal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+            if (this.activeModals.has(modalId)) {
+                console.warn(`Modal ${modalId} is already active. Focusing it.`);
+                this.activeModals.get(modalId).element.focus();
+                return this.activeModals.get(modalId);
+            }
+
+            if (this.activeModals.size >= UI_CONFIG.MODAL.MAX_MODALS) {
+                console.warn('Maximum number of modals reached. Closing oldest.');
+                const oldestModalId = this.activeModals.keys().next().value;
+                this.hide(oldestModalId);
+            }
+
+            const modal = this._createModal(modalId, options);
+            this.activeModals.set(modalId, modal);
+
+            if (this.activeModals.size === 1) {
+                this._saveCurrentState();
+                document.body.style.overflow = 'hidden';
+            }
+
+            document.body.appendChild(modal.element);
+            this._animateModalIn(modal);
+
+            if (options.onShow) {
+                options.onShow(modal);
+            }
+
+            return modal;
+        } catch (error) {
+            console.error('Failed to show modal:', error);
+            return null;
+        }
+    }
+
+    hide(modalId) {
+        const modal = this.activeModals.get(modalId);
+        if (!modal) {
+            return false;
+        }
+
+        this._animateModalOut(modal, () => {
+            if (modal.element.parentNode) {
+                modal.element.remove();
+            }
+            this.activeModals.delete(modalId);
+
+            if (modal.options.onHide) {
+                modal.options.onHide(modal);
+            }
+
+            if (this.activeModals.size === 0) {
+                this._restoreState();
+                document.body.style.overflow = '';
+            } else {
+                const remainingModals = Array.from(this.activeModals.values());
+                if (remainingModals.length > 0) {
+                    const topModal = remainingModals[remainingModals.length - 1];
+                    this._setupFocusManagement(topModal);
+                }
+            }
+        });
+        return true;
+    }
+
+    hideAll() {
+        Array.from(this.activeModals.keys()).forEach(id => this.hide(id));
+    }
+
+    getActiveCount() {
+        return this.activeModals.size;
+    }
+
+    hasActiveModals() {
+        return this.activeModals.size > 0;
+    }
+
+    _createModal(modalId, options) {
+        const defaultOptions = {
+            title: 'Modal',
+            content: '',
+            size: 'medium',
+            closable: true,
+            backdrop: true,
+            animation: true,
+            focus: true,
+            className: '',
+            buttons: [],
+            onShow: null,
+            onHide: null,
+            onSubmit: null
+        };
+
+        const modal = {
+            id: modalId,
+            element: document.createElement('div'),
+            options: { ...defaultOptions, ...options },
+            zIndex: UI_CONFIG.MODAL.Z_INDEX_BASE + this.activeModals.size,
+            focusableElements: [],
+            currentFocusIndex: 0
+        };
+
+        modal.element.className = `modal modal-${modal.options.size} ${modal.options.className}`;
+        modal.element.setAttribute('role', 'dialog');
+        modal.element.setAttribute('aria-modal', 'true');
+        modal.element.setAttribute('aria-labelledby', `${modalId}-title`);
+        modal.element.setAttribute('data-modal-id', modalId);
+        modal.element.style.zIndex = modal.zIndex;
+
+        if (modal.options.backdrop) {
+            modal.element.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+            if (UI_CONFIG.MODAL.BACKDROP_BLUR) {
+                modal.element.style.backdropFilter = 'blur(8px)';
+            }
+        }
+
+        const contentEl = document.createElement('div');
+        contentEl.className = 'modal-content';
+
+        contentEl.appendChild(this._createModalHeader(modal));
+        contentEl.appendChild(this._createModalBody(modal));
+
+        if (modal.options.buttons && modal.options.buttons.length > 0) {
+            contentEl.appendChild(this._createModalFooter(modal));
+        }
+
+        modal.element.appendChild(contentEl);
+        this._setupModalEventListeners(modal);
+        return modal;
+    }
+
+    _createModalHeader(modal) {
+        const headerEl = document.createElement('div');
+        headerEl.className = 'modal-header';
+
+        const titleEl = document.createElement('h2');
+        titleEl.id = `${modal.id}-title`;
+        titleEl.className = 'modal-title';
+        titleEl.textContent = modal.options.title;
+        headerEl.appendChild(titleEl);
+
+        if (modal.options.closable) {
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'modal-close';
+            closeBtn.setAttribute('aria-label', 'Close modal');
+            closeBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+            closeBtn.onclick = () => this.hide(modal.id);
+            headerEl.appendChild(closeBtn);
+        }
+        return headerEl;
+    }
+
+    _createModalBody(modal) {
+        const bodyEl = document.createElement('div');
+        bodyEl.className = 'modal-body';
+        if (typeof modal.options.content === 'string') {
+            bodyEl.innerHTML = modal.options.content;
+        } else if (modal.options.content instanceof HTMLElement) {
+            bodyEl.appendChild(modal.options.content);
+        }
+        return bodyEl;
+    }
+
+    _createModalFooter(modal) {
+        const footerEl = document.createElement('div');
+        footerEl.className = 'modal-footer';
+        modal.options.buttons.forEach(button => {
+            const btnEl = document.createElement('button');
+            btnEl.type = 'button';
+            btnEl.className = `btn ${button.className || 'btn-secondary'}`;
+            btnEl.textContent = button.text;
+            if (button.action) btnEl.setAttribute('data-action', button.action);
+            if (button.primary) btnEl.classList.add('btn-primary');
+
+            btnEl.onclick = async (e) => {
+                let shouldClose = true;
+                if (button.onClick) {
+                    const formData = this._extractFormData(modal.element.querySelector('form'));
+                    const result = await button.onClick(formData, modal);
+                    if (result === false) {
+                        shouldClose = false;
+                    }
+                }
+                if (shouldClose && (button.action === 'close' || button.action === 'cancel' || button.primary)) {
+                    this.hide(modal.id);
+                }
+            };
+            footerEl.appendChild(btnEl);
+        });
+        return footerEl;
+    }
+
+    _extractFormData(formElement) {
+        if (!formElement) return {};
+        const formData = {};
+        const elements = formElement.elements;
+        for (let i = 0; i < elements.length; i++) {
+            const item = elements[i];
+            if (item.name) {
+                if (item.type === 'checkbox') {
+                    formData[item.name] = item.checked;
+                } else if (item.type === 'radio') {
+                    if (item.checked) {
+                        formData[item.name] = item.value;
+                    }
+                } else {
+                    formData[item.name] = item.value;
+                }
+            }
+        }
+        return formData;
+    }
+
+    _animateModalIn(modal) {
+        modal.element.style.display = 'flex';
+        requestAnimationFrame(() => {
+            modal.element.style.opacity = '1';
+            const modalContent = modal.element.querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.style.transition = `transform ${UI_CONFIG.MODAL.ANIMATION_DURATION}ms ease-out, opacity ${UI_CONFIG.MODAL.ANIMATION_DURATION}ms ease-out`;
+                modalContent.style.transform = 'translateY(0) scale(1)';
+                modalContent.style.opacity = '1';
+            }
+        });
+        this._setupFocusManagement(modal);
+    }
+
+    _animateModalOut(modal, callback) {
+        modal.element.style.opacity = '0';
+        const modalContent = modal.element.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.style.transition = `transform ${UI_CONFIG.MODAL.ANIMATION_DURATION}ms ease-in, opacity ${UI_CONFIG.MODAL.ANIMATION_DURATION}ms ease-in`;
+            modalContent.style.transform = 'translateY(20px) scale(0.95)';
+            modalContent.style.opacity = '0';
+        }
+        setTimeout(callback, UI_CONFIG.MODAL.ANIMATION_DURATION);
+    }
+
+    _setupModalEventListeners(modal) {
+        modal.element.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.options.closable) {
+                this.hide(modal.id);
+            } else if (e.key === 'Tab') {
+                this._handleTabNavigation(e, modal);
+            }
+        });
+        modal.element.addEventListener('click', (e) => {
+            if (e.target === modal.element && modal.options.closable && modal.options.backdrop) {
+                this.hide(modal.id);
+            }
+        });
+    }
+
+    _setupFocusManagement(modal) {
+        this.focusStack.push(document.activeElement);
+        const focusable = modal.element.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        modal.focusableElements = Array.from(focusable).filter(el => !el.disabled && el.offsetParent !== null);
+
+        if (modal.focusableElements.length > 0 && UI_CONFIG.MODAL.AUTO_FOCUS) {
+            setTimeout(() => modal.focusableElements[0].focus(), 50);
+        }
+    }
+
+    _handleTabNavigation(e, modal) {
+        if (!UI_CONFIG.MODAL.TRAP_FOCUS || modal.focusableElements.length === 0) return;
+
+        const firstFocusable = modal.focusableElements[0];
+        const lastFocusable = modal.focusableElements[modal.focusableElements.length - 1];
+
+        if (e.shiftKey) {
+            if (document.activeElement === firstFocusable) {
+                e.preventDefault();
+                lastFocusable.focus();
+            }
+        } else {
+            if (document.activeElement === lastFocusable) {
+                e.preventDefault();
+                firstFocusable.focus();
+            }
+        }
+    }
+
+    _saveCurrentState() {
+        this.bodyScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+    }
+
+    _restoreState() {
+        window.scrollTo(0, this.bodyScrollPosition);
+        const lastFocused = this.focusStack.pop();
+        if (lastFocused && typeof lastFocused.focus === 'function') {
+            setTimeout(() => lastFocused.focus(), 100);
+        }
+    }
+
+    _setupGlobalListeners() {
+        // Setup global listeners if needed
+    }
+}
+
+/**
+ * Toast Notification Manager
+ */
+class ToastManager {
+    constructor() {
+        this.toastContainer = null;
+        this.activeToasts = new Map();
+        this._createToastContainer();
+    }
+
+    _createToastContainer() {
+        this.toastContainer = document.createElement('div');
+        this.toastContainer.className = `toast-container toast-${UI_CONFIG.TOAST.POSITION}`;
+        this.toastContainer.setAttribute('aria-live', 'polite');
+        this.toastContainer.setAttribute('aria-atomic', 'false');
+
+        Object.assign(this.toastContainer.style, {
+            position: 'fixed',
+            zIndex: (UI_CONFIG.MODAL.Z_INDEX_BASE + 100).toString(),
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            padding: '10px',
+            maxWidth: '90%',
+            boxSizing: 'border-box'
+        });
+
+        const position = UI_CONFIG.TOAST.POSITION;
+        if (position.includes('top')) this.toastContainer.style.top = '20px';
+        if (position.includes('bottom')) this.toastContainer.style.bottom = '20px';
+        if (position.includes('right')) this.toastContainer.style.right = '20px';
+        if (position.includes('left')) this.toastContainer.style.left = '20px';
+        if (position.includes('center')) {
+            this.toastContainer.style.left = '50%';
+            this.toastContainer.style.transform = 'translateX(-50%)';
+            if (position === 'top-center') this.toastContainer.style.top = '20px';
+            if (position === 'bottom-center') this.toastContainer.style.bottom = '20px';
+        }
+
+        document.body.appendChild(this.toastContainer);
+    }
+
+    show(message, type = 'info', options = {}) {
+        if (this.activeToasts.size >= UI_CONFIG.TOAST.MAX_TOASTS) {
+            const oldestToastId = this.activeToasts.keys().next().value;
+            this.hide(oldestToastId);
+        }
+
+        const toastId = `toast_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const duration = options.duration || UI_CONFIG.TOAST.DEFAULT_DURATION;
+
+        const toastElement = document.createElement('div');
+        toastElement.className = `toast-notification toast-${type} ${options.className || ''}`;
+        toastElement.setAttribute('role', 'alert');
+        toastElement.setAttribute('aria-live', 'assertive');
+
+        toastElement.innerHTML = `
+            <div class="toast-content">
+                <div class="toast-icon">
+                    ${this._getIconSVG(type)}
                 </div>
+                <div class="toast-body">
+                    ${options.title ? `<div class="toast-title">${this._sanitize(options.title)}</div>` : ''}
+                    <div class="toast-message">${this._sanitize(message)}</div>
+                </div>
+                ${options.closable !== false ? '<button class="toast-close-btn" aria-label="Close notification">&times;</button>' : ''}
+            </div>
+        `;
+
+        this.toastContainer.appendChild(toastElement);
+        this.activeToasts.set(toastId, toastElement);
+
+        toastElement.style.opacity = '0';
+        if (UI_CONFIG.TOAST.POSITION.includes('right')) {
+            toastElement.style.transform = 'translateX(100%)';
+        } else if (UI_CONFIG.TOAST.POSITION.includes('left')) {
+            toastElement.style.transform = 'translateX(-100%)';
+        } else if (UI_CONFIG.TOAST.POSITION.includes('top')) {
+            toastElement.style.transform = 'translateY(-100%)';
+        } else if (UI_CONFIG.TOAST.POSITION.includes('bottom')) {
+            toastElement.style.transform = 'translateY(100%)';
+        }
+
+        requestAnimationFrame(() => {
+            toastElement.style.transition = `all ${UI_CONFIG.TOAST.ANIMATION_DURATION}ms ease-out`;
+            toastElement.style.opacity = '1';
+            toastElement.style.transform = 'translate(0,0)';
+        });
+
+        if (options.closable !== false) {
+            toastElement.querySelector('.toast-close-btn').onclick = () => this.hide(toastId);
+        }
+        if (options.onClick) {
+            toastElement.style.cursor = 'pointer';
+            toastElement.addEventListener('click', (event) => {
+                if (event.target.closest('.toast-close-btn') === null) {
+                    options.onClick(toastId);
+                    this.hide(toastId);
+                }
+            });
+        }
+
+        if (duration > 0) {
+            setTimeout(() => this.hide(toastId), duration);
+        }
+        return toastId;
+    }
+
+    hide(toastId) {
+        const toastElement = this.activeToasts.get(toastId);
+        if (toastElement) {
+            toastElement.style.opacity = '0';
+            if (UI_CONFIG.TOAST.POSITION.includes('right')) {
+                toastElement.style.transform = 'translateX(100%)';
+            } else if (UI_CONFIG.TOAST.POSITION.includes('left')) {
+                toastElement.style.transform = 'translateX(-100%)';
+            } else if (UI_CONFIG.TOAST.POSITION.includes('top')) {
+                toastElement.style.transform = 'translateY(-100%)';
+            } else if (UI_CONFIG.TOAST.POSITION.includes('bottom')) {
+                toastElement.style.transform = 'translateY(100%)';
+            }
+
+            setTimeout(() => {
+                if (toastElement.parentNode) {
+                    toastElement.remove();
+                }
+                this.activeToasts.delete(toastId);
+            }, UI_CONFIG.TOAST.ANIMATION_DURATION);
+        }
+    }
+
+    _getIconSVG(type) {
+        switch (type) {
+            case 'success': return `<svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`;
+            case 'error': return `<svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`;
+            case 'warning': return `<svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>`;
+            case 'info':
+            default: return `<svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>`;
+        }
+    }
+
+    _sanitize(html) {
+        const div = document.createElement('div');
+        div.textContent = html;
+        return div.innerHTML;
+    }
+}
+
+/**
+ * Loading Indicator Manager
+ */
+class LoadingManager {
+    constructor() {
+        this.activeLoaders = new Map();
+        this.globalLoaderElement = null;
+    }
+
+    show(target, options = {}) {
+        const loaderId = `loader_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const message = options.message || 'Loading...';
+
+        if (target === 'global' || (typeof target === 'string' && target === UI_CONFIG.LOADING.GLOBAL_TARGET_ID)) {
+            if (!this.globalLoaderElement) {
+                this.globalLoaderElement = document.getElementById(UI_CONFIG.LOADING.GLOBAL_TARGET_ID);
+                if (!this.globalLoaderElement) {
+                    this.globalLoaderElement = document.createElement('div');
+                    this.globalLoaderElement.id = UI_CONFIG.LOADING.GLOBAL_TARGET_ID;
+                    this.globalLoaderElement.className = 'loading-screen';
+                    this.globalLoaderElement.innerHTML = `
+                        <div class="loading-spinner"></div>
+                        <p class="loading-message">${message}</p>
+                    `;
+                    document.body.appendChild(this.globalLoaderElement);
+                }
+            }
+            this.globalLoaderElement.style.display = 'flex';
+            this.globalLoaderElement.style.opacity = '1';
+            const messageElement = this.globalLoaderElement.querySelector('.loading-message') || this.globalLoaderElement.querySelector('p');
+            if (messageElement) {
+                messageElement.textContent = message;
+            }
+            document.body.style.overflow = 'hidden';
+            this.activeLoaders.set(loaderId, { type: 'global', element: this.globalLoaderElement });
+            return loaderId;
+
+        } else if (target instanceof HTMLElement) {
+            const targetElement = target;
+            const overlay = document.createElement('div');
+            overlay.className = 'element-loading-overlay';
+            overlay.innerHTML = `
+                <div class="loading-spinner-local"></div>
+                ${options.message ? `<p class="loading-message-local">${options.message}</p>` : ''}
             `;
+            if (window.getComputedStyle(targetElement).position === 'static') {
+                targetElement.style.position = 'relative';
+            }
+            targetElement.appendChild(overlay);
+            this.activeLoaders.set(loaderId, { type: 'element', element: overlay, targetElement: targetElement });
+            return loaderId;
+
+        } else if (typeof target === 'string') {
+            const targetElement = document.getElementById(target);
+            if (targetElement) {
+                return this.show(targetElement, options);
+            } else {
+                console.warn(`Loading target element with ID '${target}' not found.`);
+                return null;
+            }
+        }
+        return null;
+    }
+
+    hide(id = 'global') {
+        const loaderInfo = this.activeLoaders.get(id);
+        if (loaderInfo) {
+            if (loaderInfo.type === 'global') {
+                loaderInfo.element.style.opacity = '0';
+                setTimeout(() => {
+                    loaderInfo.element.style.display = 'none';
+                    if (this.activeLoaders.size === 1) {
+                        document.body.style.overflow = '';
+                    }
+                }, UI_CONFIG.MODAL.ANIMATION_DURATION);
+            } else if (loaderInfo.type === 'element') {
+                loaderInfo.element.remove();
+            }
+            this.activeLoaders.delete(id);
+        }
+    }
+
+    hideAll() {
+        Array.from(this.activeLoaders.keys()).forEach(id => this.hide(id));
+    }
+}
+
+/**
+ * Confirmation Dialog Manager
+ */
+class ConfirmationManager {
+    static async confirm(options = {}) {
+        return new Promise((resolve) => {
+            const modalId = `confirm-modal-${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            let resolvedByButton = false;
+
+            const defaults = {
+                title: 'Confirm Action',
+                message: 'Are you sure you want to proceed?',
+                confirmText: 'Confirm',
+                cancelText: 'Cancel',
+                type: 'info',
+                size: 'small',
+                closable: true,
+                backdrop: true
+            };
+            const config = { ...defaults, ...options };
+
+            let iconSVG = '';
+            if (config.type === 'warning') iconSVG = `<svg class="confirm-icon warning" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2L1 21h22L12 2zm0 16c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm1-4h-2v-4h2v4z"/></svg>`;
+            else if (config.type === 'danger') iconSVG = `<svg class="confirm-icon danger" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`;
+            else if (config.type === 'success') iconSVG = `<svg class="confirm-icon success" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`;
+            else if (config.type === 'info' || config.type === 'primary') iconSVG = `<svg class="confirm-icon info" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>`;
+
+            window.modalManager.show({
+                id: modalId,
+                title: config.title,
+                size: config.size,
+                closable: config.closable,
+                backdrop: config.backdrop,
+                content: `
+                    <div class="confirmation-dialog-content">
+                        ${iconSVG}
+                        <p>${config.message}</p>
+                        ${config.details ? `<div class="confirmation-details">${config.details}</div>` : ''}
+                    </div>
+                `,
+                buttons: [
+                    {
+                        text: config.cancelText,
+                        className: 'btn-secondary',
+                        onClick: () => { resolvedByButton = true; resolve(false); }
+                    },
+                    {
+                        text: config.confirmText,
+                        className: `btn-${config.type === 'danger' ? 'danger' : (config.type === 'warning' ? 'warning' : 'primary')}`,
+                        primary: true,
+                        onClick: () => { resolvedByButton = true; resolve(true); }
+                    }
+                ],
+                onHide: () => {
+                    if (!resolvedByButton) {
+                        resolve(false);
+                    }
+                }
+            });
+        });
+    }
+
+    static async confirmDelete(itemName = 'item') {
+        return this.confirm({
+            title: `Confirm Deletion`,
+            message: `Are you sure you want to delete ${itemName}? This action cannot be undone.`,
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            type: 'danger',
+            details: 'This action is permanent and cannot be reversed.'
+        });
+    }
+
+    static async confirmSave() {
+        return this.confirm({
+            title: 'Save Changes?',
+            message: 'Do you want to save your changes?',
+            confirmText: 'Save',
+            cancelText: 'Discard',
+            type: 'primary',
+            details: 'Your unsaved changes will be lost if you discard.'
+        });
+    }
+
+    static async confirmDiscard() {
+        return this.confirm({
+            title: 'Discard Changes?',
+            message: 'You have unsaved changes. Are you sure you want to discard them?',
+            confirmText: 'Discard',
+            cancelText: 'Keep Editing',
+            type: 'warning',
+            details: 'Any unsaved changes will be lost.'
+        });
+    }
+}
+
+/**
+ * Enhanced UIHelpers Class
+ */
+class UIHelpers {
+    static showModal(options) {
+        return window.modalManager.show(options);
+    }
+
+    static hideModal(id) {
+        return window.modalManager.hide(id);
+    }
+
+    static showToast(message, type, options) {
+        return window.toastManager.show(message, type, options);
+    }
+
+    static success(message, options) {
+        return window.toastManager.show(message, 'success', options);
+    }
+
+    static error(message, options) {
+        return window.toastManager.show(message, 'error', { ...options, duration: options?.duration || 6000 });
+    }
+
+    static warning(message, options) {
+        return window.toastManager.show(message, 'warning', options);
+    }
+
+    static info(message, options) {
+        return window.toastManager.show(message, 'info', options);
+    }
+
+    static showLoading(target, options) {
+        return window.loadingManager.show(target, options);
+    }
+
+    static hideLoading(id = null) {
+        return window.loadingManager.hide(id);
+    }
+
+    static confirm(options) {
+        return window.ConfirmationManager.confirm(options);
+    }
+
+    static confirmDelete(itemName) {
+        return window.ConfirmationManager.confirmDelete(itemName);
+    }
+
+    static confirmSave() {
+        return window.ConfirmationManager.confirmSave();
+    }
+
+    static confirmDiscard() {
+        return window.ConfirmationManager.confirmDiscard();
+    }
+}
+
+// ===================================
+// SECTION 8: FIREBASE SERVICES
+// ===================================
+
+/**
+ * Enhanced Firebase Database Manager
+ */
+class FirebaseManager {
+    constructor() {
+        this.db = null;
+        this.auth = null;
+        this.isInitialized = false;
+        this.cache = new Map();
+        this.retryQueue = [];
+        this.securityUtils = null;
+
+        this.metrics = {
+            operations: 0,
+            cacheHits: 0,
+            cacheMisses: 0,
+            errors: 0,
+            retries: 0
+        };
+    }
+
+    async init() {
+        try {
+            console.log('🔥 Initializing Enhanced Firebase Manager...');
+
+            if (typeof firebase === 'undefined') {
+                throw new Error('Firebase SDK not loaded');
+            }
+
+            if (!firebase.apps.length) {
+                firebase.initializeApp(FIREBASE_CONFIG);
+            }
+
+            this.auth = firebase.auth();
+            this.db = firebase.firestore();
+
+            this.db.settings({
+                cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
+            });
+
+            try {
+                await this.db.enablePersistence({ synchronizeTabs: true });
+                console.log('💾 Offline persistence enabled');
+            } catch (error) {
+                if (error.code === 'failed-precondition') {
+                    console.warn('Multiple tabs open, persistence only enabled in one tab');
+                } else if (error.code === 'unimplemented') {
+                    console.warn('Browser doesn\'t support persistence');
+                }
+            }
+
+            if (typeof window !== 'undefined' && window.securityUtils) {
+                this.securityUtils = window.securityUtils;
+            }
+
+            this._setupConnectionMonitoring();
+            this._setupPerformanceMonitoring();
+
+            this.isInitialized = true;
+            console.log('✅ Firebase Manager initialized successfully');
+
+            return true;
+        } catch (error) {
+            console.error('❌ Firebase initialization failed:', error);
+            this._logError('firebase_init_error', error);
+            throw error;
+        }
+    }
+
+    async get(collection, docId = null, options = {}) {
+        try {
+            this._incrementMetric('operations');
+
+            if (!this.isInitialized) {
+                throw new Error('Firebase not initialized');
+            }
+
+            const cacheKey = `${collection}_${docId || 'all'}_${JSON.stringify(options)}`;
+
+            if (this._shouldUseCache(options) && this.cache.has(cacheKey)) {
+                const cached = this.cache.get(cacheKey);
+                if (Date.now() - cached.timestamp < DB_CONFIG.CACHE_DURATION) {
+                    this._incrementMetric('cacheHits');
+                    return cached.data;
+                } else {
+                    this.cache.delete(cacheKey);
+                }
+            }
+
+            this._incrementMetric('cacheMisses');
+
+            let query = this.db.collection(collection);
+            let result;
+
+            if (docId) {
+                const doc = await query.doc(docId).get();
+                result = doc.exists ? { id: doc.id, ...doc.data() } : null;
+            } else {
+                query = this._applyFilters(query, options);
+                query = this._applySort(query, options);
+                query = this._applyPagination(query, options);
+
+                const snapshot = await query.get();
+                result = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            }
+
+            if (this._shouldUseCache(options)) {
+                this._cacheResult(cacheKey, result);
+            }
+
+            await this._logActivity('database_read', {
+                collection,
+                docId,
+                resultCount: Array.isArray(result) ? result.length : (result ? 1 : 0)
+            });
+
+            return result;
+        } catch (error) {
+            this._incrementMetric('errors');
+            console.error(`❌ Error getting data from ${collection}:`, error);
+            this._logError('database_read_error', error, { collection, docId });
+
+            if (this._isRetryableError(error) && options.retry !== false) {
+                return this._retryOperation('get', [collection, docId, { ...options, retry: false }]);
+            }
+
+            throw error;
+        }
+    }
+
+    async create(collection, data, options = {}) {
+        try {
+            this._incrementMetric('operations');
+
+            if (!this.isInitialized) {
+                throw new Error('Firebase not initialized');
+            }
+
+            const sanitizedData = await this._validateAndSanitizeData(collection, data, 'create');
+
+            const docData = {
+                ...sanitizedData,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                createdBy: this._getCurrentUserId(),
+                version: 1
+            };
+
+            let docRef;
+            if (options.docId) {
+                docRef = this.db.collection(collection).doc(options.docId);
+                await docRef.set(docData);
+            } else {
+                docRef = await this.db.collection(collection).add(docData);
+            }
+
+            this._invalidateCache(collection);
+
+            await this._logActivity('database_create', {
+                collection,
+                docId: docRef.id,
+                dataKeys: Object.keys(sanitizedData)
+            });
+
+            return docRef.id;
+        } catch (error) {
+            this._incrementMetric('errors');
+            console.error(`❌ Error creating document in ${collection}:`, error);
+            this._logError('database_create_error', error, { collection, data: Object.keys(data) });
+
+            if (this._isRetryableError(error) && options.retry !== false) {
+                return this._retryOperation('create', [collection, data, { ...options, retry: false }]);
+            }
+
+            throw error;
+        }
+    }
+
+    async update(collection, docId, data, options = {}) {
+        try {
+            this._incrementMetric('operations');
+
+            if (!this.isInitialized) {
+                throw new Error('Firebase not initialized');
+            }
+
+            const sanitizedData = await this._validateAndSanitizeData(collection, data, 'update');
+            const docRef = this.db.collection(collection).doc(docId);
+
+            if (options.expectedVersion) {
+                await this.db.runTransaction(async (transaction) => {
+                    const doc = await transaction.get(docRef);
+                    if (!doc.exists) {
+                        throw new Error('Document not found');
+                    }
+
+                    const currentVersion = doc.data().version || 1;
+                    if (currentVersion !== options.expectedVersion) {
+                        throw new Error('Document version mismatch - concurrent update detected');
+                    }
+
+                    const updateData = {
+                        ...sanitizedData,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedBy: this._getCurrentUserId(),
+                        version: currentVersion + 1
+                    };
+
+                    transaction.update(docRef, updateData);
+                });
+            } else {
+                const updateData = {
+                    ...sanitizedData,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedBy: this._getCurrentUserId()
+                };
+
+                await docRef.update(updateData);
+            }
+
+            this._invalidateCache(collection, docId);
+
+            await this._logActivity('database_update', {
+                collection,
+                docId,
+                updateKeys: Object.keys(sanitizedData)
+            });
+
+            return true;
+        } catch (error) {
+            this._incrementMetric('errors');
+            console.error(`❌ Error updating document ${docId} in ${collection}:`, error);
+            this._logError('database_update_error', error, { collection, docId, data: Object.keys(data) });
+
+            if (this._isRetryableError(error) && options.retry !== false) {
+                return this._retryOperation('update', [collection, docId, data, { ...options, retry: false }]);
+            }
+
+            throw error;
+        }
+    }
+
+    async delete(collection, docId, options = {}) {
+        try {
+            this._incrementMetric('operations');
+
+            if (!this.isInitialized) {
+                throw new Error('Firebase not initialized');
+            }
+
+            const docRef = this.db.collection(collection).doc(docId);
+
+            if (options.softDelete) {
+                await docRef.update({
+                    deleted: true,
+                    deletedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    deletedBy: this._getCurrentUserId()
+                });
+            } else {
+                await docRef.delete();
+            }
+
+            this._invalidateCache(collection, docId);
+
+            await this._logActivity('database_delete', {
+                collection,
+                docId,
+                softDelete: !!options.softDelete
+            });
+
+            return true;
+        } catch (error) {
+            this._incrementMetric('errors');
+            console.error(`❌ Error deleting document ${docId} from ${collection}:`, error);
+            this._logError('database_delete_error', error, { collection, docId });
+
+            if (this._isRetryableError(error) && options.retry !== false) {
+                return this._retryOperation('delete', [collection, docId, { ...options, retry: false }]);
+            }
+
+            throw error;
+        }
+    }
+
+    createListener(collection, callback, options = {}) {
+        try {
+            if (!this.isInitialized) {
+                throw new Error('Firebase not initialized');
+            }
+
+            let query = this.db.collection(collection);
+            query = this._applyFilters(query, options);
+            query = this._applySort(query, options);
+
+            const unsubscribe = query.onSnapshot(
+                (snapshot) => {
+                    try {
+                        const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        callback(docs, null);
+                    } catch (error) {
+                        console.error('Error processing snapshot:', error);
+                        callback(null, error);
+                    }
+                },
+                (error) => {
+                    console.error('Snapshot listener error:', error);
+                    this._logError('database_listener_error', error, { collection });
+                    callback(null, error);
+                }
+            );
+
+            return () => {
+                try {
+                    unsubscribe();
+                    console.log(`📱 Listener for ${collection} unsubscribed`);
+                } catch (error) {
+                    console.error('Error unsubscribing listener:', error);
+                }
+            };
+        } catch (error) {
+            console.error('❌ Error creating listener:', error);
+            this._logError('database_listener_create_error', error, { collection });
+            throw error;
+        }
+    }
+
+    getMetrics() {
+        return {
+            ...this.metrics,
+            cacheSize: this.cache.size,
+            cacheHitRate: this.metrics.cacheHits / (this.metrics.cacheHits + this.metrics.cacheMisses) || 0,
+            retryQueue: this.retryQueue.length
+        };
+    }
+
+    clearCache() {
+        this.cache.clear();
+        console.log('🗑️ Firebase cache cleared');
+    }
+
+    // Private helper methods
+    _applyFilters(query, options) {
+        if (!options.filters) return query;
+
+        for (const filter of options.filters) {
+            switch (filter.operator) {
+                case '==':
+                    query = query.where(filter.field, '==', filter.value);
+                    break;
+                case '!=':
+                    query = query.where(filter.field, '!=', filter.value);
+                    break;
+                case '>':
+                    query = query.where(filter.field, '>', filter.value);
+                    break;
+                case '>=':
+                    query = query.where(filter.field, '>=', filter.value);
+                    break;
+                case '<':
+                    query = query.where(filter.field, '<', filter.value);
+                    break;
+                case '<=':
+                    query = query.where(filter.field, '<=', filter.value);
+                    break;
+                case 'in':
+                    query = query.where(filter.field, 'in', filter.value);
+                    break;
+                case 'array-contains':
+                    query = query.where(filter.field, 'array-contains', filter.value);
+                    break;
+                case 'array-contains-any':
+                    query = query.where(filter.field, 'array-contains-any', filter.value);
+                    break;
+            }
+        }
+
+        return query;
+    }
+
+    _applySort(query, options) {
+        if (!options.orderBy) return query;
+
+        for (const sort of options.orderBy) {
+            query = query.orderBy(sort.field, sort.direction || 'asc');
+        }
+
+        return query;
+    }
+
+    _applyPagination(query, options) {
+        if (options.limit) {
+            query = query.limit(options.limit);
+        }
+
+        if (options.startAfter) {
+            query = query.startAfter(options.startAfter);
+        }
+
+        if (options.startAt) {
+            query = query.startAt(options.startAt);
+        }
+
+        return query;
+    }
+
+    async _validateAndSanitizeData(collection, data, operation) {
+        try {
+            if (typeof window !== 'undefined' && window.sanitizer) {
+                switch (collection) {
+                    case DB_CONFIG.COLLECTIONS.LEADS:
+                        const leadResult = window.sanitizer.sanitizeLeadData(data);
+                        if (!leadResult.isValid) {
+                            throw new Error(`Lead validation failed: ${Object.values(leadResult.errors).join(', ')}`);
+                        }
+                        return leadResult.sanitizedData;
+
+                    case DB_CONFIG.COLLECTIONS.USERS:
+                        const userResult = window.sanitizer.sanitizeUserData(data);
+                        if (!userResult.isValid) {
+                            throw new Error(`User validation failed: ${Object.values(userResult.errors).join(', ')}`);
+                        }
+                        return userResult.sanitizedData;
+
+                    default:
+                        const sanitized = {};
+                        for (const [key, value] of Object.entries(data)) {
+                            sanitized[key] = window.sanitizer.sanitize(value, 'text');
+                        }
+                        return sanitized;
+                }
+            }
+
+            return this._basicSanitization(data);
+        } catch (error) {
+            console.error('Data validation/sanitization failed:', error);
+            throw error;
+        }
+    }
+
+    _basicSanitization(data) {
+        const sanitized = {};
+        for (const [key, value] of Object.entries(data)) {
+            if (typeof value === 'string') {
+                sanitized[key] = value
+                    .replace(/[<>]/g, '')
+                    .replace(/javascript:/gi, '')
+                    .trim()
+                    .slice(0, 1000);
+            } else {
+                sanitized[key] = value;
+            }
+        }
+        return sanitized;
+    }
+
+    _getCurrentUserId() {
+        if (typeof window !== 'undefined' && window.authGuard) {
+            return window.authGuard.getCurrentUser()?.uid || 'system';
+        }
+        return 'system';
+    }
+
+    _shouldUseCache(options) {
+        return options.cache !== false && !options.realtime;
+    }
+
+    _cacheResult(key, data) {
+        if (this.cache.size >= DB_CONFIG.MAX_CACHE_SIZE) {
+            const firstKey = this.cache.keys().next().value;
+            this.cache.delete(firstKey);
+        }
+
+        this.cache.set(key, {
+            data,
+            timestamp: Date.now()
+        });
+    }
+
+    _invalidateCache(collection, docId = null) {
+        const keysToDelete = [];
+
+        for (const key of this.cache.keys()) {
+            if (key.startsWith(collection)) {
+                if (!docId || key.includes(docId)) {
+                    keysToDelete.push(key);
+                }
+            }
+        }
+
+        keysToDelete.forEach(key => this.cache.delete(key));
+    }
+
+    _isRetryableError(error) {
+        const retryableCodes = [
+            'unavailable',
+            'deadline-exceeded',
+            'internal',
+            'cancelled',
+            'unknown'
+        ];
+
+        return retryableCodes.includes(error.code) ||
+               error.message?.includes('network') ||
+               error.message?.includes('timeout');
+    }
+
+    async _retryOperation(method, args) {
+        return new Promise((resolve, reject) => {
+            const operation = {
+                method,
+                args,
+                attempts: 0,
+                resolve,
+                reject
+            };
+
+            this.retryQueue.push(operation);
+            this._processRetryQueue();
+        });
+    }
+
+    async _processRetryQueue() {
+        if (this.retryQueue.length === 0) return;
+
+        const operation = this.retryQueue.shift();
+        operation.attempts++;
+
+        if (operation.attempts > DB_CONFIG.RETRY_ATTEMPTS) {
+            operation.reject(new Error('Max retry attempts exceeded'));
+            return;
+        }
+
+        try {
+            await new Promise(resolve => setTimeout(resolve, DB_CONFIG.RETRY_DELAY * operation.attempts));
+            const result = await this[operation.method](...operation.args);
+            operation.resolve(result);
+            this._incrementMetric('retries');
+        } catch (error) {
+            if (this._isRetryableError(error)) {
+                this.retryQueue.unshift(operation);
+                setTimeout(() => this._processRetryQueue(), DB_CONFIG.RETRY_DELAY * operation.attempts);
+            } else {
+                operation.reject(error);
+            }
+        }
+    }
+
+    _setupConnectionMonitoring() {
+        if (typeof window === 'undefined') return;
+
+        let isOnline = navigator.onLine;
+
+        const updateConnectionStatus = (online) => {
+            if (online !== isOnline) {
+                isOnline = online;
+                console.log(`🌐 Connection status: ${online ? 'Online' : 'Offline'}`);
+
+                if (this.securityUtils) {
+                    this.securityUtils.logSecurityIncident('connection_status_change', {
+                        online,
+                        timestamp: Date.now()
+                    });
+                }
+            }
+        };
+
+        window.addEventListener('online', () => updateConnectionStatus(true));
+        window.addEventListener('offline', () => updateConnectionStatus(false));
+    }
+
+    _setupPerformanceMonitoring() {
+        setInterval(() => {
+            const metrics = this.getMetrics();
+            if (metrics.operations > 0) {
+                console.log('📊 Firebase Performance:', {
+                    operations: metrics.operations,
+                    cacheHitRate: `${(metrics.cacheHitRate * 100).toFixed(1)}%`,
+                    errors: metrics.errors,
+                    retries: metrics.retries
+                });
+            }
+        }, 60000);
+    }
+
+    _incrementMetric(metric) {
+        this.metrics[metric] = (this.metrics[metric] || 0) + 1;
+    }
+
+    async _logActivity(action, details) {
+        try {
+           // if (typeof window !== 'undefined' && window.authGuard) {
+           //   await window.authGuard.logActivity(action, details);
+            //}
+        } catch (error) {
+            console.error('Failed to log activity:', error);
+        }
+    }
+
+    _logError(type, error, context = {}) {
+        console.error(`Database Error [${type}]:`, error, context);
+
+        if (this.securityUtils) {
+            this.securityUtils.logSecurityIncident(type, {
+                error: error.message,
+                code: error.code,
+                context
+            });
         }
     }
 }
 
-// Instantiate the main application
-const crmApp = new CRMApplication();
+/**
+ * Database Operations Class
+ */
+class DatabaseOperations {
+    constructor(firebaseManager) {
+        this.fm = firebaseManager;
+    }
 
-// Ensure the application initializes once the DOM is fully loaded.
-document.addEventListener('DOMContentLoaded', () => crmApp.init());
+    async getLeadsForUser(userId, role = 'user') {
+        try {
+            let filters = [];
 
-// Expose main app functions globally for direct HTML calls
-// In a more advanced setup, these would be managed by a routing system.
-window.crmApp = crmApp;
-// Proxy calls to methods on the crmApp instance
-window.showEnhancedSection = (section) => crmApp.showSection(section);
-window.loadEnhancedDashboardData = () => crmApp.loadDashboardData();
-window.selectEnhancedMaster = (masterId) => crmApp.selectMaster(masterId);
-window.selectEnhancedUser = (userId) => crmApp.selectUser(userId);
-window.searchEnhancedMasters = (searchTerm) => crmApp.searchMasters(searchTerm);
-window.filterEnhancedUserLeads = (searchTerm) => crmApp.filterUserLeads(searchTerm);
-window.filterUserLeadsDirectly = (searchTerm) => crmApp.filterUserLeadsDirectly(searchTerm);
-window.viewEnhancedLead = (leadId) => crmApp.viewLead(leadId);
-window.editEnhancedLead = (leadId) => crmApp.editLead(leadId);
-window.deleteEnhancedLead = (leadId) => crmApp.deleteLead(leadId);
-window.closeEnhancedLeadModal = () => crmApp.closeLeadModal(); // Assuming crmApp now has this directly
-window.saveEnhancedLeadChanges = (leadId, formData) => crmApp.saveLeadChanges(leadId, formData);
-window.loadUserLeadsDirectly = () => crmApp.loadUserLeadsDirectly();
-window.loadEnhancedMastersView = () => crmApp.loadMastersView();
+            switch (role) {
+                case 'admin':
+                    break;
+                case 'master':
+                    const teamMembers = await this.getTeamMembers(userId);
+                    const teamIds = [userId, ...teamMembers.map(m => m.id)];
+                    filters.push({ field: 'assignedTo', operator: 'in', value: teamIds });
+                    break;
+                case 'user':
+                default:
+                    filters.push({ field: 'assignedTo', operator: '==', value: userId });
+                    break;
+            }
+
+            return await this.fm.get(DB_CONFIG.COLLECTIONS.LEADS, null, {
+                filters,
+                orderBy: [{ field: 'createdAt', direction: 'desc' }]
+            });
+        } catch (error) {
+            console.error('Error getting leads for user:', error);
+            throw error;
+        }
+    }
+
+    async getTeamMembers(masterId) {
+        return await this.fm.get(DB_CONFIG.COLLECTIONS.USERS, null, {
+            filters: [{ field: 'linkedMaster', operator: '==', value: masterId }]
+        });
+    }
+
+    async getUserStats(userId, role) {
+        try {
+            let filters = [];
+            if (role !== 'admin') {
+                filters.push({ field: 'assignedTo', operator: '==', value: userId });
+            }
+
+            const leads = await this.fm.get(DB_CONFIG.COLLECTIONS.LEADS, null, { filters });
+
+            return {
+                totalLeads: leads.length,
+                activeLeads: leads.filter(lead => !['closed', 'dropped'].includes(lead.status)).length,
+                completedLeads: leads.filter(lead => ['closed', 'booked'].includes(lead.status)).length
+            };
+        } catch (error) {
+            console.error('Error getting user stats:', error);
+            throw error;
+        }
+    }
+
+    async logActivity(action, details = {}) {
+        try {
+            const activityData = {
+                action,
+                details,
+                userId: this.currentUser?.uid,
+                userRole: this.userRole,
+                timestamp: Date.now(),
+                sessionId: this.sessionManager._getSessionData()?.sessionId
+            };
 
 
-console.log('✅ Refactored script.js loaded and CRMApplication instantiated.');
+
+            if (window.firebaseService && window.firebaseService.isInitialized) {
+                // ... rest of the code
+            }
+        } catch (error) {
+            console.error('Failed to log activity:', error);
+        }
+    }
+
+    async exportData(collection, format = 'json', options = {}) {
+        try {
+            const data = await this.fm.get(collection, null, options);
+
+            let exportData;
+            switch (format) {
+                case 'csv':
+                    exportData = this._convertToCSV(data);
+                    break;
+                case 'json':
+                default:
+                    exportData = JSON.stringify(data, null, 2);
+                    break;
+            }
+
+            await this.logActivity('data_export', {
+                collection,
+                format,
+                recordCount: data.length,
+                size: exportData.length
+            });
+
+            return {
+                data: exportData,
+                filename: `${collection}_export_${new Date().toISOString().split('T')[0]}.${format}`,
+                mimeType: format === 'csv' ? 'text/csv' : 'application/json'
+            };
+        } catch (error) {
+            console.error('Failed to export data:', error);
+            throw error;
+        }
+    }
+
+    _getCurrentUserId() {
+        if (typeof window !== 'undefined' && window.authGuard) {
+            return window.authGuard.getCurrentUser()?.uid || 'anonymous';
+        }
+        return 'system';
+    }
+
+    _getCurrentUserRole() {
+        if (typeof window !== 'undefined' && window.authGuard) {
+            return window.authGuard.getCurrentRole() || 'unknown';
+        }
+        return 'system';
+    }
+
+    _getSessionId() {
+        try {
+            const session = JSON.parse(localStorage.getItem('crm_session') || '{}');
+            return session.sessionId || 'no-session';
+        } catch {
+            return 'no-session';
+        }
+    }
+
+    async _getClientIP() {
+        try {
+            const response = await fetch('https://api.ipify.org?format=json');
+            const data = await response.json();
+            return data.ip;
+        } catch {
+            return 'unknown';
+        }
+    }
+
+    _convertToCSV(data) {
+        if (!data || data.length === 0) return '';
+
+        const headers = Object.keys(data[0]);
+        const csvRows = [];
+
+        csvRows.push(headers.join(','));
+
+        for (const row of data) {
+            const values = headers.map(header => {
+                const value = row[header];
+                let cellValue = '';
+                if (value === null || value === undefined) {
+                    cellValue = '';
+                } else if (typeof value === 'object') {
+                    if (value.seconds) {
+                        cellValue = new Date(value.seconds * 1000).toISOString();
+                    } else {
+                        cellValue = JSON.stringify(value);
+                    }
+                } else {
+                    cellValue = String(value);
+                }
+
+                const escaped = cellValue.replace(/"/g, '""');
+                return escaped.includes(',') ? `"${escaped}"` : escaped;
+            });
+            csvRows.push(values.join(','));
+        }
+
+        return csvRows.join('\n');
+    }
+}
+
+/**
+ * Real-time Data Sync Manager
+ */
+class RealtimeManager {
+    constructor(firebaseManager) {
+        this.fm = firebaseManager;
+        this.listeners = new Map();
+        this.connectionState = 'disconnected';
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+    }
+
+    subscribe(collection, callback, options = {}) {
+        try {
+            const listenerId = this._generateListenerId(collection, options);
+
+            if (this.listeners.has(listenerId)) {
+                console.warn(`Listener ${listenerId} already exists`);
+                return this.listeners.get(listenerId).unsubscribe;
+            }
+
+            const unsubscribe = this.fm.createListener(collection, (data, error) => {
+                if (error) {
+                    console.error(`Real-time error for ${collection}:`, error);
+                    this._handleConnectionError(error);
+                    callback(null, error);
+                } else {
+                    this.connectionState = 'connected';
+                    this.reconnectAttempts = 0;
+                    callback(data, null);
+                }
+            }, options);
+
+            this.listeners.set(listenerId, {
+                collection,
+                options,
+                callback,
+                unsubscribe,
+                createdAt: Date.now()
+            });
+
+            console.log(`📡 Real-time listener created for ${collection}`);
+            return unsubscribe;
+        } catch (error) {
+            console.error('Failed to create real-time subscription:', error);
+            throw error;
+        }
+    }
+
+    unsubscribe(collection, options = {}) {
+        const listenerId = this._generateListenerId(collection, options);
+        const listener = this.listeners.get(listenerId);
+
+        if (listener) {
+            listener.unsubscribe();
+            this.listeners.delete(listenerId);
+            console.log(`📡 Real-time listener removed for ${collection}`);
+        }
+    }
+
+    unsubscribeAll() {
+        for (const [listenerId, listener] of this.listeners) {
+            try {
+                listener.unsubscribe();
+            } catch (error) {
+                console.error(`Error unsubscribing listener ${listenerId}:`, error);
+            }
+        }
+        this.listeners.clear();
+        console.log('📡 All real-time listeners removed');
+    }
+
+    getConnectionStatus() {
+        return {
+            state: this.connectionState,
+            reconnectAttempts: this.reconnectAttempts,
+            activeListeners: this.listeners.size,
+            listeners: Array.from(this.listeners.entries()).map(([id, listener]) => ({
+                id,
+                collection: listener.collection,
+                createdAt: listener.createdAt,
+                age: Date.now() - listener.createdAt
+            }))
+        };
+    }
+
+    _generateListenerId(collection, options) {
+        return `${collection}_${JSON.stringify(options)}`;
+    }
+
+    _handleConnectionError(error) {
+        this.connectionState = 'error';
+        this.reconnectAttempts++;
+
+        if (this.reconnectAttempts <= this.maxReconnectAttempts) {
+            const delay = Math.pow(2, this.reconnectAttempts) * 1000;
+            console.log(`🔄 Attempting reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
+
+            setTimeout(() => {
+                this.connectionState = 'reconnecting';
+            }, delay);
+        } else {
+            console.error('❌ Max reconnection attempts reached');
+            this.connectionState = 'failed';
+        }
+    }
+}
+
+/**
+ * Firebase Cloud Functions Interface
+ */
+class CloudFunctions {
+    constructor() {
+        this.functions = null;
+        this.isInitialized = false;
+    }
+
+    async init() {
+        try {
+            if (typeof firebase !== 'undefined' && firebase.functions) {
+                this.functions = firebase.functions();
+                this.isInitialized = true;
+                console.log('☁️ Cloud Functions initialized');
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Failed to initialize Cloud Functions:', error);
+            return false;
+        }
+    }
+
+    async call(functionName, data = {}) {
+        try {
+            if (!this.isInitialized) {
+                throw new Error('Cloud Functions not initialized');
+            }
+
+            const callable = this.functions.httpsCallable(functionName);
+            const result = await callable(data);
+
+            console.log(`☁️ Cloud function ${functionName} executed successfully`);
+            return result.data;
+        } catch (error) {
+            console.error(`❌ Cloud function ${functionName} failed:`, error);
+            throw error;
+        }
+    }
+
+    async createLead(leadData) {
+        return await this.call('createLead', leadData);
+    }
+
+    async updateLead(leadId, updates) {
+        return await this.call('updateLead', { leadId, updates });
+    }
+
+    async deleteLead(leadId) {
+        return await this.call('deleteLead', { leadId });
+    }
+
+    async getUserStats(userId) {
+        return await this.call('getUserStats', { userId });
+    }
+
+    async exportUserData(userId) {
+        return await this.call('exportUserData', { userId });
+    }
+
+    async checkRateLimit(operation, maxAttempts, windowMs) {
+        return await this.call('checkRateLimit', { operation, maxAttempts, windowMs });
+    }
+}
+
+/**
+ * Main Firebase Service
+ */
+class FirebaseService {
+    constructor() {
+        this.manager = new FirebaseManager();
+        this.operations = null;
+        this.realtime = null;
+        this.cloudFunctions = new CloudFunctions();
+        this.isInitialized = false;
+    }
+
+    async init() {
+        try {
+            console.log('🚀 Initializing Firebase Service...');
+
+            await this.manager.init();
+
+            this.operations = new DatabaseOperations(this.manager);
+            this.realtime = new RealtimeManager(this.manager);
+
+            await this.cloudFunctions.init();
+
+            this.isInitialized = true;
+            console.log('✅ Firebase Service initialized successfully');
+
+            return true;
+        } catch (error) {
+            console.error('❌ Firebase Service initialization failed:', error);
+            throw error;
+        }
+    }
+
+    get db() {
+        return this.manager;
+    }
+
+    get ops() {
+        return this.operations;
+    }
+
+    get rt() {
+        return this.realtime;
+    }
+
+    get cf() {
+        return this.cloudFunctions;
+    }
+
+    getStatus() {
+        return {
+            initialized: this.isInitialized,
+            manager: this.manager.isInitialized,
+            cloudFunctions: this.cloudFunctions.isInitialized,
+            metrics: this.manager.getMetrics(),
+            realtime: this.realtime.getConnectionStatus()
+        };
+    }
+}
+
+// ===================================
+// SECTION 9: AUTHENTICATION GUARD
+// ===================================
+
+/**
+ * Main Authentication Guard Class
+ */
+class AuthGuard {
+    constructor() {
+        this.currentUser = null;
+        this.userRole = null;
+        this.isInitialized = false;
+
+        this.securityUtils = new SecurityUtils();
+        this.permissionSystem = new PermissionSystem();
+        this.sessionManager = new SessionManager();
+
+        this.failedAttempts = 0;
+        this.securityMonitors = [];
+    }
+
+    async init() {
+        try {
+            console.log('🔐 Initializing Enhanced Authentication System...');
+
+            this._initializeSecurityMonitoring();
+
+            return new Promise((resolve) => {
+                if (typeof firebase === 'undefined') {
+                    console.error('Firebase not available');
+                    resolve(false);
+                    return;
+                }
+
+                firebase.auth().onAuthStateChanged(async (user) => {
+                    try {
+                        if (user) {
+                            await this._handleUserAuthenticated(user);
+                            resolve(true);
+                        } else {
+                            this._handleUserNotAuthenticated();
+                            resolve(false);
+                        }
+                    } catch (error) {
+                        console.error('Authentication error during init:', error);
+                        if (window.errorHandler) {
+                            window.errorHandler.logError(error, 'AuthGuard Initialization Error');
+                        }
+                        resolve(false);
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('Failed to initialize auth system:', error);
+            if (window.errorHandler) {
+                window.errorHandler.logError(error, 'AuthGuard System Init Error');
+            }
+            return false;
+        }
+    }
+
+    isAuthenticated() {
+        return this.currentUser !== null && this.sessionManager.validateSession() !== null;
+    }
+
+    getCurrentUser() {
+        return this.currentUser;
+    }
+
+    getCurrentRole() {
+        return this.userRole;
+    }
+
+    hasRole(role) {
+        return this.userRole === role;
+    }
+
+    hasAnyRole(roles) {
+        return roles.includes(this.userRole);
+    }
+
+    hasPermission(permission) {
+        return this.permissionSystem.hasPermission(this.userRole, permission);
+    }
+
+    showAccessDenied(message = 'Access denied. Insufficient permissions.') {
+        this.securityUtils.logSecurityIncident('access_denied', {
+            requiredPermission: message,
+            userRole: this.userRole,
+            userId: this.currentUser?.uid
+        });
+
+        if (typeof window !== 'undefined' && window.UIHelpers) {
+            window.UIHelpers.showToast(message, 'error', { duration: 5000 });
+        }
+    }
+
+    redirectToLogin() {
+        this._showLoginPage();
+    }
+
+    showDashboard() {
+        this._showDashboardPage();
+        this.applyRoleBasedUI();
+    }
+
+    _showDashboardPage() {
+        const loginPage = document.getElementById('login-page');
+        const dashboardPage = document.getElementById('dashboard-page');
+
+        if (loginPage) {
+            loginPage.style.display = 'none';
+        }
+        if (dashboardPage) {
+            dashboardPage.style.display = 'block';
+        }
+
+        // PERMANENT FIX: Ensure loading screen is hidden
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+            loadingScreen.style.display = 'none';
+        }
+    }
+
+    applyRoleBasedUI() {
+        if (!this.isAuthenticated()) return;
+
+        console.log('🎨 Applying role-based UI for:', this.userRole);
+
+        // PERMANENT FIX: Show elements based on role
+        if (this.userRole === 'admin') {
+            // Show all admin elements
+            document.querySelectorAll('.admin-only').forEach(el => {
+                el.style.display = el.dataset.originalDisplay || 'block';
+                el.classList.add('show');
+            });
+
+            // Show master elements for admin too
+            document.querySelectorAll('.master-only').forEach(el => {
+                el.style.display = el.dataset.originalDisplay || 'block';
+                el.classList.add('show');
+            });
+        } else if (this.userRole === 'master') {
+            // Show master elements
+            document.querySelectorAll('.master-only').forEach(el => {
+                el.style.display = el.dataset.originalDisplay || 'block';
+                el.classList.add('show');
+            });
+
+            // Hide admin elements
+            document.querySelectorAll('.admin-only').forEach(el => {
+                el.style.display = 'none';
+                el.classList.remove('show');
+            });
+        } else {
+            // Hide both admin and master elements for regular users
+            document.querySelectorAll('.admin-only, .master-only').forEach(el => {
+                el.style.display = 'none';
+                el.classList.remove('show');
+            });
+        }
+
+        // Show authenticated elements
+        document.querySelectorAll('.authenticated-only').forEach(el => {
+            el.style.display = el.dataset.originalDisplay || 'block';
+        });
+
+        this._updateUserInfoDisplay();
+    }
+
+    async signOut() {
+        try {
+            if (typeof firebase !== 'undefined') {
+                await firebase.auth().signOut();
+            }
+
+            this.sessionManager.destroySession();
+            this.currentUser = null;
+            this.userRole = null;
+            this.redirectToLogin();
+            this._cleanupSecurityMonitors();
+
+            console.log('👋 User signed out');
+        } catch (error) {
+            console.error('Sign out error:', error);
+            if (window.errorHandler) {
+                window.errorHandler.logError(error, 'AuthGuard SignOut Error');
+            }
+        }
+    }
+
+    handleSessionTimeout() {
+        this.securityUtils.logSecurityIncident('session_timeout_handled', {
+            userId: this.currentUser?.uid,
+            role: this.userRole
+        });
+
+        if (typeof window !== 'undefined' && window.UIHelpers) {
+            window.UIHelpers.showToast(
+                'Your session has expired. You will be logged out shortly.',
+                'warning',
+                { duration: 6000 }
+            );
+        }
+
+        setTimeout(() => {
+            this.signOut();
+        }, 2000);
+    }
+
+    async handleAuthError(error) {
+        this.failedAttempts++;
+
+        if (this.failedAttempts >= AUTH_CONFIG.SECURITY.MAX_FAILED_ATTEMPTS) {
+            const lockoutTime = Date.now() + AUTH_CONFIG.SECURITY.LOCKOUT_TIME;
+            localStorage.setItem('account_locked_until', lockoutTime.toString());
+
+            this.securityUtils.logSecurityIncident('account_locked', {
+                attempts: this.failedAttempts,
+                lockoutUntil: new Date(lockoutTime).toISOString()
+            });
+        }
+
+        this.securityUtils.logSecurityIncident('authentication_failed', {
+            error: error.code,
+            message: error.message,
+            attempts: this.failedAttempts
+        });
+    }
+
+    async logActivity(action, details = {}) {
+        try {
+            const activityData = {
+                action,
+                details,
+                userId: this.currentUser?.uid,
+                userRole: this.userRole,
+                timestamp: Date.now(),
+                sessionId: this.sessionManager._getSessionData()?.sessionId
+            };
+
+            this.securityUtils.logSecurityIncident('user_activity', activityData);
+
+            if (window.firebaseService && window.firebaseService.isInitialized) {
+                if (window.activityLogger) {
+                    await window.activityLogger.logActivity(action, details);
+                } else {
+                    await window.firebaseService.db.create(DB_CONFIG.COLLECTIONS.ACTIVITY_LOGS, {
+                        action: action,
+                        details: details,
+                        userId: this.currentUser?.uid || 'system',
+                        userRole: this.userRole || 'unknown',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        sessionId: this.sessionManager._getSessionData()?.sessionId
+                    });
+                }
+            }
+
+        } catch (error) {
+            console.error('Failed to log activity:', error);
+        }
+    }
+
+    getSecurityReport() {
+        return {
+            ...this.securityUtils.getSecurityReport(),
+            sessionInfo: {
+                isActive: this.isAuthenticated(),
+                timeUntilExpiry: this.sessionManager.getTimeUntilExpiry(),
+                isCloseToExpiry: this.sessionManager.isCloseToExpiry()
+            },
+            userInfo: {
+                role: this.userRole,
+                userId: this.currentUser?.uid,
+                email: this.currentUser?.email
+            }
+        };
+    }
+
+    async getClientIP() {
+        try {
+            const response = await fetch('https://api.ipify.org?format=json');
+            const data = await response.json();
+            return data.ip;
+        } catch (error) {
+            return 'unknown';
+        }
+    }
+
+    // Private methods
+    async _handleUserAuthenticated(user) {
+        try {
+            console.log('👤 User authenticated:', user.email);
+
+            const userData = await this._loadUserData(user);
+
+            const sessionData = this.sessionManager.validateSession();
+            if (!sessionData || sessionData.userId !== user.uid) {
+                this.sessionManager.createSession(user.uid, userData);
+            }
+
+            this.currentUser = { ...user, ...userData };
+            this.userRole = userData.role || 'user';
+            this.isInitialized = true;
+
+            if (window.firebaseService && window.firebaseService.isInitialized) {
+                await window.firebaseService.db.create(DB_CONFIG.COLLECTIONS.ACTIVITY_LOGS, {
+                    action: 'login_success',
+                    details: { method: 'firebase_auth', userAgent: navigator.userAgent, ipAddress: await this.getClientIP() },
+                    userId: this.currentUser.uid,
+                    userRole: this.userRole,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    sessionId: this.sessionManager._getSessionData()?.sessionId
+                });
+            } else {
+                console.warn('FirebaseService not ready for login_success activity logging.');
+            }
+
+            console.log('✅ Authentication complete for:', this.userRole);
+        } catch (error) {
+            console.error('Error handling authenticated user:', error);
+            if (window.errorHandler) {
+                window.errorHandler.logError(error, 'AuthGuard HandleUserAuthenticated Error');
+            }
+            throw error;
+        }
+    }
+
+    _handleUserNotAuthenticated() {
+        console.log('❌ User not authenticated');
+        this.currentUser = null;
+        this.userRole = null;
+        this.isInitialized = true;
+        this.sessionManager.destroySession();
+        this._cleanupSecurityMonitors();
+    }
+
+    async _loadUserData(user) {
+        try {
+            if (typeof firebase === 'undefined' || !firebase.firestore) {
+                throw new Error('Firestore not available');
+            }
+
+            const userDoc = await firebase.firestore()
+                .collection('users')
+                .doc(user.uid)
+                .get();
+
+            if (!userDoc.exists) {
+                const newUserData = {
+                    name: user.displayName || user.email.split('@')[0],
+                    email: user.email,
+                    role: 'user',
+                    status: 'active',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                await firebase.firestore()
+                    .collection('users')
+                    .doc(user.uid)
+                    .set(newUserData);
+
+                return newUserData;
+            }
+
+            const userData = userDoc.data();
+
+            if (userData.status === 'inactive' || userData.status === 'locked') {
+                throw new Error(`Account is ${userData.status}`);
+            }
+
+            await firebase.firestore()
+                .collection('users')
+                .doc(user.uid)
+                .update({
+                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+            return userData;
+        } catch (error) {
+            if (window.errorHandler) {
+                window.errorHandler.logError(error, 'AuthGuard LoadUserData Error');
+            }
+            throw error;
+        }
+    }
+
+    _initializeSecurityMonitoring() {
+        let clickCount = 0;
+        let clickTimer = null;
+
+        const clickHandler = () => {
+            clickCount++;
+
+            if (clickTimer) clearTimeout(clickTimer);
+
+            clickTimer = setTimeout(() => {
+                if (clickCount > AUTH_CONFIG.SECURITY.RAPID_CLICK_THRESHOLD) {
+                    this.securityUtils.logSecurityIncident('rapid_clicking_detected', {
+                        clickCount,
+                        timeWindow: AUTH_CONFIG.SECURITY.RAPID_CLICK_WINDOW
+                    });
+                }
+                clickCount = 0;
+            }, AUTH_CONFIG.SECURITY.RAPID_CLICK_WINDOW);
+        };
+
+        document.addEventListener('click', clickHandler, { passive: true });
+        this.securityMonitors.push({ event: 'click', handler: clickHandler });
+
+        this._monitorDevTools();
+        this._monitorPageVisibility();
+        this._monitorKeyboardActivity();
+    }
+
+    _monitorDevTools() {
+        let devtools = false;
+        const threshold = 160;
+
+        const checkDevTools = () => {
+            if (window.outerHeight - window.innerHeight > threshold ||
+                window.outerWidth - window.innerWidth > threshold) {
+                if (!devtools) {
+                    devtools = true;
+                    this.securityUtils.logSecurityIncident('devtools_opened', {
+                        outerDimensions: `${window.outerWidth}x${window.outerHeight}`,
+                        innerDimensions: `${window.innerWidth}x${window.innerHeight}`,
+                        threshold
+                    });
+                }
+            } else {
+                devtools = false;
+            }
+        };
+
+        const devToolsTimer = setInterval(checkDevTools, 1000);
+        this.securityMonitors.push({ timer: devToolsTimer });
+    }
+
+    _monitorPageVisibility() {
+        let hiddenTime = null;
+
+        const visibilityHandler = () => {
+            if (document.hidden) {
+                hiddenTime = Date.now();
+            } else if (hiddenTime) {
+                const timeHidden = Date.now() - hiddenTime;
+
+                if (timeHidden > 5 * 60 * 1000) {
+                    this.securityUtils.logSecurityIncident('long_page_hidden', {
+                        hiddenDuration: timeHidden,
+                        returnTime: new Date().toISOString()
+                    });
+                }
+                hiddenTime = null;
+            }
+        };
+
+        document.addEventListener('visibilitychange', visibilityHandler);
+        this.securityMonitors.push({ event: 'visibilitychange', handler: visibilityHandler });
+    }
+
+    _monitorKeyboardActivity() {
+        let keySequence = [];
+        const suspiciousSequences = [
+            ['F12'],
+            ['Control', 'Shift', 'I'],
+            ['Control', 'Shift', 'J'],
+            ['Control', 'U']
+        ];
+
+        const keyHandler = (event) => {
+            const key = event.key;
+            const modifiers = [];
+
+            if (event.ctrlKey) modifiers.push('Control');
+            if (event.shiftKey) modifiers.push('Shift');
+            if (event.altKey) modifiers.push('Alt');
+            if (event.metaKey) modifiers.push('Meta');
+
+            const keyCombo = [...modifiers, key].join('+');
+            keySequence.push(keyCombo);
+
+            if (keySequence.length > 10) {
+                keySequence.shift();
+            }
+
+            suspiciousSequences.forEach(sequence => {
+                if (this._matchesSequence(keySequence, sequence)) {
+                    this.securityUtils.logSecurityIncident('suspicious_key_sequence', {
+                        sequence: sequence.join('+'),
+                        fullSequence: keySequence.slice(-5)
+                    });
+                }
+            });
+        };
+
+        document.addEventListener('keydown', keyHandler);
+        this.securityMonitors.push({ event: 'keydown', handler: keyHandler });
+    }
+
+                _matchesSequence(haystack, needle) {
+                    if (needle.length > haystack.length) return false;
+
+                    for (let i = 0; i <= haystack.length - needle.length; i++) {
+                        let matches = true;
+                        for (let j = 0; j < needle.length; j++) {
+                            if (haystack[i + j] !== needle[j]) {
+                                matches = false;
+                                break;
+                            }
+                        }
+                        if (matches) return true;
+                    }
+                    return false;
+                }
+
+                _showLoginPage() {
+                    const loginPage = document.getElementById('login-page');
+                    const dashboardPage = document.getElementById('dashboard-page');
+
+                    if (loginPage) {
+                        loginPage.style.display = 'flex';
+                    }
+                    if (dashboardPage) {
+                        dashboardPage.style.display = 'none';
+                    }
+                }
+
+                _showDashboardPage() {
+                    const loginPage = document.getElementById('login-page');
+                    const dashboardPage = document.getElementById('dashboard-page');
+
+                    if (loginPage) {
+                        loginPage.style.display = 'none';
+                    }
+                    if (dashboardPage) {
+                        dashboardPage.style.display = 'block';
+                    }
+                }
+
+                _updateUserInfoDisplay() {
+                    const userNameEl = document.getElementById('user-name');
+                    const userEmailEl = document.getElementById('user-email');
+                    const userRoleEl = document.getElementById('user-role');
+
+                    if (userNameEl && this.currentUser) {
+                        userNameEl.textContent = this.currentUser.name || this.currentUser.displayName || 'User';
+                    }
+                    if (userEmailEl && this.currentUser) {
+                        userEmailEl.textContent = this.currentUser.email || '';
+                    }
+                    if (userRoleEl && this.userRole) {
+                        userRoleEl.textContent = this.userRole.toUpperCase();
+                        userRoleEl.className = `user-role ${this.userRole}`;
+                    }
+                }
+
+                _cleanupSecurityMonitors() {
+                    this.securityMonitors.forEach(monitor => {
+                        if (monitor.event && monitor.handler) {
+                            document.removeEventListener(monitor.event, monitor.handler);
+                        }
+                        if (monitor.timer) {
+                            clearInterval(monitor.timer);
+                        }
+                    });
+                    this.securityMonitors = [];
+                }
+            }
+
+            // ===================================
+            // SECTION 10: ACTIVITY LOGGER
+            // ===================================
+
+            /**
+             * Activity Logger Class
+             */
+            class ActivityLogger {
+                constructor(firebaseService) {
+                    this.firebaseService = firebaseService;
+                    this.db = this.firebaseService.db.db;
+                    this.logStreamListeners = new Map();
+                    this.allLogs = [];
+                }
+
+                async logActivity(action, details = {}) {
+                    try {
+                        const userId = window.authGuard?.getCurrentUser()?.uid || 'anonymous';
+                        const userRole = window.authGuard?.getCurrentRole() || 'unknown';
+                        const sessionId = window.authGuard?.sessionManager?.validateSession()?.sessionId || 'no-session';
+                        const ipAddress = await this._getClientIP();
+                        const userAgent = navigator.userAgent || 'Unknown';
+
+                        const activityData = {
+                            action,
+                            details: { ...details, userAgent, ipAddress },
+                            userId,
+                            userRole,
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                            clientTimestamp: Date.now(),
+                            sessionId,
+                        };
+
+                        const docId = await this.firebaseService.db.create(DB_CONFIG.COLLECTIONS.ACTIVITY_LOGS, activityData);
+                        console.log(`📝 Activity Logged: ${action} by ${userId}`);
+                        return docId;
+                    } catch (error) {
+                        console.error('❌ Failed to log activity:', error);
+                        if (window.authGuard?.securityUtils) {
+                            window.authGuard.securityUtils.logSecurityIncident('activity_log_failed', {
+                                action,
+                                error: error.message,
+                                details: details.action
+                            });
+                        }
+                        throw error;
+                    }
+                }
+
+                async loadActivityDashboard() {
+                    if (!window.authGuard?.hasPermission('reports:view')) {
+                        window.authGuard?.showAccessDenied('You do not have permission to view activity logs.');
+                        return;
+                    }
+
+                    console.log('📊 Loading Activity Dashboard...');
+                    UIHelpers.showLoading('Loading Activity Dashboard...');
+
+                    const targetSection = document.getElementById('reports-section');
+                    if (!targetSection) {
+                        UIHelpers.error('Reports section not found.');
+                        return;
+                    }
+
+                    targetSection.innerHTML = `
+                        <div class="activity-dashboard-panel">
+                            <div class="panel-header">
+                                <div class="panel-title">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                        <polyline points="14,2 14,8 20,8"/>
+                                    </svg>
+                                    Activity & Security Logs
+                                </div>
+                                <div class="panel-controls">
+                                    <button class="enhanced-btn enhanced-btn-secondary" id="refresh-logs-btn">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="23,4 23,10 17,10"/>
+                                            <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10"/>
+                                        </svg>
+                                        Refresh
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="activity-table-container data-table-container">
+                                <div class="table-wrapper">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Timestamp</th>
+                                                <th>Action</th>
+                                                <th>User</th>
+                                                <th>Role</th>
+                                                <th>Details</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="activity-logs-table-body">
+                                            <tr><td colspan="5" class="loading-row">Loading activity logs...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    document.getElementById('refresh-logs-btn')?.addEventListener('click', () => this.populateActivityDashboard());
+                    await this.populateActivityDashboard();
+                    UIHelpers.hideLoading();
+                }
+
+                async populateActivityDashboard() {
+                    UIHelpers.showLoading('Fetching logs...');
+                    try {
+                        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                        const logs = await this.firebaseService.db.get(DB_CONFIG.COLLECTIONS.ACTIVITY_LOGS, null, {
+                            filters: [{ field: 'timestamp', operator: '>', value: twentyFourHoursAgo }],
+                            orderBy: [{ field: 'timestamp', direction: 'desc' }],
+                            limit: 200
+                        });
+                        this.allLogs = logs;
+                        this._renderLogsTable(logs);
+                    } catch (error) {
+                        console.error('❌ Error populating activity dashboard:', error);
+                        UIHelpers.error('Failed to load activity dashboard data.');
+                    } finally {
+                        UIHelpers.hideLoading();
+                    }
+                }
+
+                _renderLogsTable(logs) {
+                    const tableBody = document.getElementById('activity-logs-table-body');
+                    if (!tableBody) return;
+
+                    if (logs.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="5" class="loading-row">No activity logs found.</td></tr>';
+                        return;
+                    }
+
+                    tableBody.innerHTML = logs.map(log => {
+                        const timestamp = log.timestamp ? (log.timestamp.toDate ? log.timestamp.toDate() : new Date(log.timestamp)) : new Date(0);
+                        const formattedTimestamp = DataUtils.formatDate(timestamp, { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        const details = JSON.stringify(log.details || {});
+
+                        return `
+                            <tr>
+                                <td>${formattedTimestamp}</td>
+                                <td>${window.sanitizer?.sanitize(log.action, 'text') || log.action}</td>
+                                <td>${window.sanitizer?.sanitize(log.userId, 'text') || log.userId}</td>
+                                <td>${window.sanitizer?.sanitize(log.userRole || 'unknown', 'text') || log.userRole}</td>
+                                <td title="${window.sanitizer?.sanitize(details, 'text') || details}">${(window.sanitizer?.sanitize(details.substring(0, 50) + '...', 'text') || details.substring(0, 50) + '...')}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                async getRecentActivities(limit = 10) {
+                    try {
+                        const logs = await this.firebaseService.db.get(DB_CONFIG.COLLECTIONS.ACTIVITY_LOGS, null, {
+                            orderBy: [{ field: 'timestamp', direction: 'desc' }],
+                            limit: limit
+                        });
+                        return logs;
+                    } catch (error) {
+                        console.error('❌ Error getting recent activities:', error);
+                        return [];
+                    }
+                }
+
+                async _getClientIP() {
+                    try {
+                        const response = await fetch('https://api.ipify.org?format=json');
+                        const data = await response.json();
+                        return data.ip;
+                    } catch (error) {
+                        return 'unknown';
+                    }
+                }
+            }
+
+            // ===================================
+            // SECTION 11: ADMIN MANAGER
+            // ===================================
+
+            /**
+             * Master Manager Class
+             */
+            class MasterManager {
+                constructor(firebaseService) {
+                    this.firebaseService = firebaseService;
+                    this.db = this.firebaseService.db.db;
+                    this.auth = this.firebaseService.db.auth;
+                    this.allMasters = [];
+                    this.allUsers = [];
+                }
+
+                async loadManagementPanel() {
+                    if (!window.authGuard?.hasRole('admin')) {
+                        window.authGuard?.showAccessDenied('Only admins can manage masters');
+                        return;
+                    }
+
+                    console.log('🔧 Loading Master Management Panel...');
+                    UIHelpers.showLoading('Loading Masters...');
+
+                    try {
+                        const [usersSnapshot, leadsSnapshot] = await Promise.all([
+                            this.firebaseService.db.get(DB_CONFIG.COLLECTIONS.USERS),
+                            this.firebaseService.db.get(DB_CONFIG.COLLECTIONS.LEADS)
+                        ]);
+
+                        this.allUsers = usersSnapshot;
+                        this.allMasters = usersSnapshot.filter(user => user.role === 'master');
+
+                        const mastersWithStats = await this._calculateMasterStats(this.allMasters, this.allUsers, leadsSnapshot);
+
+                        this._renderMasterManagementPanel(mastersWithStats);
+                        console.log('✅ Master Management Panel loaded.');
+
+                    } catch (error) {
+                        console.error('❌ Error loading master management:', error);
+                        UIHelpers.error('Failed to load master management panel: ' + error.message);
+                    } finally {
+                        UIHelpers.hideLoading();
+                    }
+                }
+
+                _renderMasterManagementPanel(masters) {
+                    const targetSection = document.getElementById('users-section');
+                    if (!targetSection) return;
+
+                    targetSection.innerHTML = `
+                        <div class="section-header">
+                            <h2>Master Management</h2>
+                            <p>Manage your master users and their teams</p>
+                        </div>
+
+                        <div class="masters-management-container">
+                            <div class="panel-header">
+                                <div class="panel-controls">
+                                    <button class="btn btn-primary" id="add-master-btn">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="12" y1="5" x2="12" y2="19"/>
+                                            <line x1="5" y1="12" x2="19" y2="12"/>
+                                        </svg>
+                                        Add Master
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="masters-grid">
+                                ${masters.length > 0 ? masters.map(master => this._renderMasterCard(master)).join('') : '<div class="empty-state"><h3>No Masters Found</h3><p>Click "Add Master" to create your first master user.</p></div>'}
+                            </div>
+                        </div>
+                    `;
+
+                    // Re-attach event listeners
+                    document.getElementById('add-master-btn')?.addEventListener('click', () => this.showCreateMasterModal());
+                }
+
+                _renderMasterCard(master) {
+                    const statusClass = master.status === 'active' ? 'success' : 'danger';
+                    const lastActiveText = master.lastActive ? DataUtils.formatTimeAgo(master.lastActive) : 'Never logged in';
+
+                    return `
+                        <div class="master-card" data-master-id="${master.id}">
+                            <div class="master-header">
+                                <div class="master-avatar">
+                                    ${(master.name || master.email || 'M').charAt(0).toUpperCase()}
+                                </div>
+                                <div class="master-info">
+                                    <h3>${DataUtils.sanitizeHtml(master.name || 'Unnamed Master')}</h3>
+                                    <p>${DataUtils.sanitizeHtml(master.email)}</p>
+                                    <div class="master-badge">Master</div>
+                                </div>
+                            </div>
+
+                            <div class="master-stats">
+                                <div class="stat-item">
+                                    <div class="stat-number">${master.teamCount || 0}</div>
+                                    <div class="stat-label">Team Size</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">${master.activeLeads || 0}</div>
+                                    <div class="stat-label">Active Leads</div>
+                                </div>
+                            </div>
+
+                            <div class="master-footer">
+                                <div class="status-info">
+                                    <span class="status-badge ${statusClass}">
+                                        ${master.status === 'active' ? 'Active' : 'Inactive'}
+                                    </span>
+                                    <small>Last active: ${lastActiveText}</small>
+                                </div>
+                                <div class="master-actions">
+                                    <button class="action-btn edit" onclick="window.adminManager?.masterManager?.editMaster('${master.id}')">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                        Edit
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                async _calculateMasterStats(masters, allUsers, allLeads) {
+                    return masters.map(master => {
+                        const teamMembers = allUsers.filter(user => user.linkedMaster === master.id);
+                        const teamMemberIds = teamMembers.map(member => member.id);
+                        teamMemberIds.push(master.id);
+
+                        const masterLeads = allLeads.filter(lead =>
+                            teamMemberIds.includes(lead.assignedTo) ||
+                            teamMemberIds.includes(lead.createdBy)
+                        );
+
+                        const activeLeads = masterLeads.filter(lead =>
+                            !['closed', 'dropped', 'notinterested'].includes(lead.status?.toLowerCase())
+                        ).length;
+
+                        return {
+                            ...master,
+                            teamCount: teamMembers.length,
+                            teamMembers: teamMembers,
+                            totalLeads: masterLeads.length,
+                            activeLeads: activeLeads,
+                            lastActive: master.lastLogin ? new Date(master.lastLogin.seconds * 1000) : null
+                        };
+                    });
+                }
+
+                showCreateMasterModal() {
+                    UIHelpers.showModal({
+                        title: 'Create New Master',
+                        content: `
+                            <form id="create-master-form" class="enhanced-form">
+                                <div class="enhanced-form-section">
+                                    <div class="enhanced-form-grid">
+                                        <div class="enhanced-form-group">
+                                            <label>Full Name *</label>
+                                            <input type="text" id="create-master-name" required>
+                                        </div>
+                                        <div class="enhanced-form-group">
+                                            <label>Email Address *</label>
+                                            <input type="email" id="create-master-email" required>
+                                        </div>
+                                        <div class="enhanced-form-group">
+                                            <label>Initial Password *</label>
+                                            <input type="password" id="create-master-password" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        `,
+                        size: 'medium',
+                        buttons: [
+                            {
+                                text: 'Cancel',
+                                className: 'btn-secondary',
+                                action: 'cancel'
+                            },
+                            {
+                                text: 'Create Master',
+                                className: 'btn-primary',
+                                action: 'submit',
+                                primary: true,
+                                onClick: async (formData, modal) => {
+                                    const success = await this.createMaster(formData);
+                                    return success;
+                                }
+                            }
+                        ]
+                    });
+                }
+
+                async createMaster(formData) {
+                    UIHelpers.showLoading('Creating master...');
+                    try {
+                        const name = formData['create-master-name']?.trim();
+                        const email = formData['create-master-email']?.trim();
+                        const password = formData['create-master-password'];
+
+                        if (!name || !email || !password) {
+                            UIHelpers.warning('All fields are required.');
+                            return false;
+                        }
+
+                        const result = await this.firebaseService.cf.call('createUser', {
+                            email: window.sanitizer?.sanitize(email, 'email') || email,
+                            password: password,
+                            name: window.sanitizer?.sanitize(name, 'name') || name,
+                            role: 'master'
+                        });
+
+                        if (result.success) {
+                            await window.activityLogger?.logActivity('create_master', {
+                                newMasterId: result.userId,
+                                newMasterEmail: email
+                            });
+                            UIHelpers.success('Master created successfully!');
+                            await this.loadManagementPanel();
+                            return true;
+                        } else {
+                            UIHelpers.error('Failed to create master: ' + (result.message || 'Unknown error'));
+                            return false;
+                        }
+                    } catch (error) {
+                        console.error('❌ Error creating master:', error);
+                        UIHelpers.error('Error creating master: ' + error.message);
+                        return false;
+                    } finally {
+                        UIHelpers.hideLoading();
+                    }
+                }
+
+                async editMaster(masterId) {
+                    console.log('Edit master:', masterId);
+                    // Implementation would go here
+                }
+            }
+
+            /**
+             * Admin Manager Class
+             */
+            class AdminManager {
+                constructor() {
+                    this.firebaseService = null;
+                    this.db = null;
+                    this.masterManager = null;
+                }
+
+                init(firebaseService) {
+                    this.firebaseService = firebaseService;
+                    this.db = this.firebaseService.db.db;
+                    this.masterManager = new MasterManager(this.firebaseService);
+                    console.log('✅ AdminManager initialized with FirebaseService.');
+                }
+
+                async loadMasterManagementPanel() {
+                    if (!this.masterManager) {
+                        console.error('MasterManager is not initialized.');
+                        UIHelpers.error('Admin functions are not ready. Please refresh.');
+                        return;
+                    }
+                    await this.masterManager.loadManagementPanel();
+                }
+            }
+
+            // ===================================
+            // SECTION 12: LEAD MANAGER
+            // ===================================
+
+            /**
+             * Lead Manager Class
+             */
+            class LeadManager {
+                constructor(firebaseService) {
+                    this.firebaseService = firebaseService;
+                    this.leads = [];
+                    this.filteredLeads = [];
+                    this.currentFilters = {};
+
+                    this.fetchLeads = this.fetchLeads.bind(this);
+                    this.renderLeads = this.renderLeads.bind(this);
+                    this.addLead = this.addLead.bind(this);
+                    this.updateLead = this.updateLead.bind(this);
+                    this.deleteLead = this.deleteLead.bind(this);
+                }
+
+                async fetchLeads() {
+                    try {
+                        const user = window.authGuard?.getCurrentUser();
+                        const role = window.authGuard?.getCurrentRole();
+
+                        if (!user) {
+                            throw new Error('User not authenticated');
+                        }
+
+                        const leads = await this.firebaseService.ops.getLeadsForUser(user.uid, role);
+                        this.leads = leads;
+                        this.filteredLeads = [...leads];
+                        return leads;
+                    } catch (error) {
+                        console.error('❌ Error fetching leads:', error);
+                        UIHelpers.error('Failed to fetch leads: ' + error.message);
+                        return [];
+                    }
+                }
+
+                renderLeads(containerId = 'leads-table-body') {
+                    const container = document.getElementById(containerId);
+                    if (!container) {
+                        console.error(`Container ${containerId} not found`);
+                        return;
+                    }
+
+                    if (this.filteredLeads.length === 0) {
+                        container.innerHTML = '<tr><td colspan="6" class="loading-row">No leads found</td></tr>';
+                        return;
+                    }
+
+                    container.innerHTML = this.filteredLeads.map(lead => this._renderLeadRow(lead)).join('');
+                }
+
+                _renderLeadRow(lead) {
+                    const createdDate = lead.createdAt ? DataUtils.formatDate(lead.createdAt.toDate ? lead.createdAt.toDate() : lead.createdAt) : 'N/A';
+                    const statusClass = this._getStatusClass(lead.status);
+                    const statusText = this._getStatusText(lead.status);
+
+                    return `
+                        <tr data-lead-id="${lead.id}">
+                            <td><strong>${window.sanitizer?.sanitize(lead.name || 'Unnamed Lead', 'text') || lead.name || 'Unnamed Lead'}</strong></td>
+                            <td>${window.sanitizer?.sanitize(lead.phone || 'No phone', 'text') || lead.phone || 'No phone'}</td>
+                            <td>
+                                <span class="status-badge ${statusClass}">
+                                    ${statusText}
+                                </span>
+                            </td>
+                            <td>${window.sanitizer?.sanitize(lead.source || 'Unknown', 'text') || lead.source || 'Unknown'}</td>
+                            <td>${createdDate}</td>
+                            <td>
+                                <button class="action-btn view" onclick="window.leadManager?.viewLead('${lead.id}')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                    View
+                                </button>
+                                <button class="action-btn edit" onclick="window.leadManager?.editLead('${lead.id}')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                    </svg>
+                                    Edit
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }
+
+                async addLead(leadData) {
+                    try {
+                        UIHelpers.showLoading('Adding lead...');
+
+                        const sanitizedData = window.sanitizer?.sanitizeLeadData(leadData);
+                        if (sanitizedData && !sanitizedData.isValid) {
+                            UIHelpers.error('Validation failed: ' + Object.values(sanitizedData.errors).join(', '));
+                            return false;
+                        }
+
+                        const dataToSave = sanitizedData?.sanitizedData || leadData;
+                        const leadId = await this.firebaseService.db.create(DB_CONFIG.COLLECTIONS.LEADS, {
+                            ...dataToSave,
+                            createdBy: window.authGuard?.getCurrentUser()?.uid,
+                            assignedTo: dataToSave.assignedTo || window.authGuard?.getCurrentUser()?.uid
+                        });
+
+                        await window.activityLogger?.logActivity('create_lead', {
+                            leadId: leadId,
+                            leadName: dataToSave.name
+                        });
+
+                        UIHelpers.success('Lead added successfully!');
+                        await this.fetchLeads();
+                        this.renderLeads();
+                        return true;
+                    } catch (error) {
+                        console.error('❌ Error adding lead:', error);
+                        UIHelpers.error('Failed to add lead: ' + error.message);
+                        return false;
+                    } finally {
+                        UIHelpers.hideLoading();
+                    }
+                }
+
+                async updateLead(leadId, leadData) {
+                    try {
+                        UIHelpers.showLoading('Updating lead...');
+
+                        const sanitizedData = window.sanitizer?.sanitizeLeadData(leadData);
+                        if (sanitizedData && !sanitizedData.isValid) {
+                            UIHelpers.error('Validation failed: ' + Object.values(sanitizedData.errors).join(', '));
+                            return false;
+                        }
+
+                        const dataToSave = sanitizedData?.sanitizedData || leadData;
+                        await this.firebaseService.db.update(DB_CONFIG.COLLECTIONS.LEADS, leadId, dataToSave);
+
+                        await window.activityLogger?.logActivity('update_lead', {
+                            leadId: leadId,
+                            changes: Object.keys(dataToSave)
+                        });
+
+                        UIHelpers.success('Lead updated successfully!');
+                        await this.fetchLeads();
+                        this.renderLeads();
+                        return true;
+                    } catch (error) {
+                        console.error('❌ Error updating lead:', error);
+                        UIHelpers.error('Failed to update lead: ' + error.message);
+                        return false;
+                    } finally {
+                        UIHelpers.hideLoading();
+                    }
+                }
+
+                async deleteLead(leadId) {
+                    try {
+                        const confirmed = await UIHelpers.confirmDelete('this lead');
+                        if (!confirmed) return false;
+
+                        UIHelpers.showLoading('Deleting lead...');
+
+                        await this.firebaseService.db.delete(DB_CONFIG.COLLECTIONS.LEADS, leadId);
+
+                        await window.activityLogger?.logActivity('delete_lead', {
+                            leadId: leadId
+                        });
+
+                        UIHelpers.success('Lead deleted successfully!');
+                        await this.fetchLeads();
+                        this.renderLeads();
+                        return true;
+                    } catch (error) {
+                        console.error('❌ Error deleting lead:', error);
+                        UIHelpers.error('Failed to delete lead: ' + error.message);
+                        return false;
+                    } finally {
+                        UIHelpers.hideLoading();
+                    }
+                }
+
+                async viewLead(leadId) {
+                    const lead = this.leads.find(l => l.id === leadId);
+                    if (!lead) {
+                        UIHelpers.error('Lead not found');
+                        return;
+                    }
+
+                    UIHelpers.showModal({
+                        title: `Lead Details - ${lead.name}`,
+                        content: this._generateLeadDetailsHTML(lead),
+                        size: 'large',
+                        buttons: [
+                            {
+                                text: 'Close',
+                                className: 'btn-secondary',
+                                action: 'close'
+                            },
+                            {
+                                text: 'Edit Lead',
+                                className: 'btn-primary',
+                                onClick: () => {
+                                    this.editLead(leadId);
+                                }
+                            }
+                        ]
+                    });
+                }
+
+                async editLead(leadId) {
+                    const lead = this.leads.find(l => l.id === leadId);
+                    if (!lead) {
+                        UIHelpers.error('Lead not found');
+                        return;
+                    }
+
+                    UIHelpers.showModal({
+                        title: `Edit Lead - ${lead.name}`,
+                        content: this._generateLeadFormHTML(lead),
+                        size: 'large',
+                        buttons: [
+                            {
+                                text: 'Cancel',
+                                className: 'btn-secondary',
+                                action: 'cancel'
+                            },
+                            {
+                                text: 'Save Changes',
+                                className: 'btn-primary',
+                                primary: true,
+                                onClick: async (formData) => {
+                                    const success = await this.updateLead(leadId, formData);
+                                    return success;
+                                }
+                            }
+                        ]
+                    });
+                }
+
+                _generateLeadDetailsHTML(lead) {
+                    return `
+                        <div class="lead-details-container">
+                            <div class="lead-section">
+                                <h3>Contact Information</h3>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Name:</label>
+                                        <span>${window.sanitizer?.sanitize(lead.name || 'N/A', 'text') || lead.name || 'N/A'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Phone:</label>
+                                        <span>${window.sanitizer?.sanitize(lead.phone || 'N/A', 'text') || lead.phone || 'N/A'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Email:</label>
+                                        <span>${window.sanitizer?.sanitize(lead.email || 'N/A', 'email') || lead.email || 'N/A'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Status:</label>
+                                        <span class="status-badge ${this._getStatusClass(lead.status)}">${this._getStatusText(lead.status)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="lead-section">
+                                <h3>Lead Information</h3>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Source:</label>
+                                        <span>${window.sanitizer?.sanitize(lead.source || 'N/A', 'text') || lead.source || 'N/A'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Property Type:</label>
+                                        <span>${window.sanitizer?.sanitize(lead.propertyType || 'N/A', 'text') || lead.propertyType || 'N/A'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Budget:</label>
+                                        <span>${window.sanitizer?.sanitize(lead.budget || 'N/A', 'text') || lead.budget || 'N/A'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Location:</label>
+                                        <span>${window.sanitizer?.sanitize(lead.location || 'N/A', 'text') || lead.location || 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            ${lead.requirements ? `
+                            <div class="lead-section">
+                                <h3>Requirements</h3>
+                                <p>${window.sanitizer?.sanitize(lead.requirements, 'multiline') || lead.requirements}</p>
+                            </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+
+                _generateLeadFormHTML(lead = {}) {
+                    return `
+                        <form id="lead-form" class="lead-form">
+                            <div class="form-section">
+                                <div class="section-title">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                    </svg>
+                                    Contact Information
+                                </div>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label>Name *</label>
+                                        <input type="text" name="name" value="${lead.name || ''}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Phone *</label>
+                                        <input type="tel" name="phone" value="${lead.phone || ''}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Email</label>
+                                        <input type="email" name="email" value="${lead.email || ''}">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Alternate Phone</label>
+                                        <input type="tel" name="altPhone" value="${lead.altPhone || ''}">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-section">
+                                <div class="section-title">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 9.5L12 4l9 5.5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-11z"/>
+                                    </svg>
+                                    Lead Details
+                                </div>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label>Status</label>
+                                        <select name="status">
+                                            ${VALIDATION_CONFIG.LEAD_OPTIONS.status.map(status =>
+                                                `<option value="${status}" ${lead.status === status ? 'selected' : ''}>${this._getStatusText(status)}</option>`
+                                            ).join('')}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Source</label>
+                                        <select name="source">
+                                            <option value="">Select Source</option>
+                                            ${VALIDATION_CONFIG.LEAD_OPTIONS.source.map(source =>
+                                                `<option value="${source}" ${lead.source === source ? 'selected' : ''}>${source}</option>`
+                                            ).join('')}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Property Type</label>
+                                        <select name="propertyType">
+                                            <option value="">Select Property Type</option>
+                                            ${VALIDATION_CONFIG.LEAD_OPTIONS.propertyType.map(type =>
+                                                `<option value="${type}" ${lead.propertyType === type ? 'selected' : ''}>${type}</option>`
+                                            ).join('')}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Budget</label>
+                                        <select name="budget">
+                                            <option value="">Select Budget</option>
+                                            ${VALIDATION_CONFIG.LEAD_OPTIONS.budget.map(budget =>
+                                                `<option value="${budget}" ${lead.budget === budget ? 'selected' : ''}>${budget}</option>`
+                                            ).join('')}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Priority</label>
+                                        <select name="priority">
+                                            ${VALIDATION_CONFIG.LEAD_OPTIONS.priority.map(priority =>
+                                                `<option value="${priority}" ${lead.priority === priority ? 'selected' : ''}>${priority}</option>`
+                                            ).join('')}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Location</label>
+                                        <input type="text" name="location" value="${lead.location || ''}">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-section">
+                                <div class="section-title">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    </svg>
+                                    Additional Information
+                                </div>
+                                <div class="form-group full-width">
+                                    <label>Requirements</label>
+                                    <textarea name="requirements" rows="4">${lead.requirements || ''}</textarea>
+                                </div>
+                            </div>
+                        </form>
+                    `;
+                }
+
+                _getStatusClass(status) {
+                    const statusMap = {
+                        'newLead': 'status-new',
+                        'contacted': 'status-contacted',
+                        'interested': 'status-interested',
+                        'followup': 'status-followup',
+                        'visit': 'status-visit',
+                        'booked': 'status-booked',
+                        'closed': 'status-closed',
+                        'notinterested': 'status-notinterested',
+                        'dropped': 'status-dropped'
+                    };
+                    return statusMap[status] || 'status-new';
+                }
+
+                _getStatusText(status) {
+                    const statusTextMap = {
+                        'newLead': 'New Lead',
+                        'contacted': 'Contacted',
+                        'interested': 'Interested',
+                        'followup': 'Follow Up',
+                        'visit': 'Visit Scheduled',
+                        'booked': 'Booked',
+                        'closed': 'Closed',
+                        'notinterested': 'Not Interested',
+                        'dropped': 'Dropped'
+                    };
+                    return statusTextMap[status] || 'New Lead';
+                }
+
+                filterLeads(filters) {
+                    this.currentFilters = filters;
+                    this.filteredLeads = this.leads.filter(lead => {
+                        return Object.entries(filters).every(([key, value]) => {
+                            if (!value) return true;
+                            return lead[key] && lead[key].toString().toLowerCase().includes(value.toLowerCase());
+                        });
+                    });
+                    this.renderLeads();
+                }
+
+                searchLeads(searchTerm) {
+                    if (!searchTerm) {
+                        this.filteredLeads = [...this.leads];
+                    } else {
+                        const term = searchTerm.toLowerCase();
+                        this.filteredLeads = this.leads.filter(lead =>
+                            (lead.name && lead.name.toLowerCase().includes(term)) ||
+                            (lead.phone && lead.phone.includes(term)) ||
+                            (lead.email && lead.email.toLowerCase().includes(term)) ||
+                            (lead.location && lead.location.toLowerCase().includes(term))
+                        );
+                    }
+                    this.renderLeads();
+                }
+            }
+
+            // ===================================
+            // SECTION 13: CRM APPLICATION MAIN CLASS
+            // ===================================
+
+            /**
+             * Main CRM Application Class
+             */
+            /**
+             * Main CRM Application Class
+             */
+            class CRMApplication {
+                constructor() {
+                    this.isInitialized = false;
+                    this.currentSection = 'overview';
+                    this.services = {};
+                    this.managers = {};
+
+                    // Bind methods
+                    this.init = this.init.bind(this);
+                    this.loadDashboardData = this.loadDashboardData.bind(this);
+                    this.switchSection = this.switchSection.bind(this);
+                }
+
+                /**
+                 * Initialize the CRM Application
+                 */
+                async init() {
+                    try {
+                        console.log('🚀 Initializing CRM Application...');
+                        UIHelpers.showLoading('global', { message: 'Initializing CRM Application...' });
+
+                        // Initialize core services
+                        await this._initializeServices();
+
+                        // Initialize managers
+                        this._initializeManagers();
+
+                        // Setup UI event listeners
+                        this._setupEventListeners();
+
+                        // Setup navigation
+                        this._setupNavigation();
+
+                        // Initialize authentication
+                        const isAuthenticated = await window.authGuard.init();
+
+                        if (isAuthenticated) {
+                            window.authGuard.showDashboard();
+                            await this.loadDashboardData();
+                        } else {
+                            window.authGuard.redirectToLogin();
+                            this._setupLoginForm();
+                        }
+
+                        this.isInitialized = true;
+                        console.log('✅ CRM Application initialized successfully');
+
+                    } catch (error) {
+                        console.error('❌ Failed to initialize CRM Application:', error);
+                        UIHelpers.error('Failed to initialize application: ' + error.message);
+                        window.errorHandler?.logError(error, 'CRM Application Initialization');
+                    } finally {
+                        UIHelpers.hideLoading('global');
+
+                        // Ensure loading screen is hidden
+                        const loadingScreen = document.getElementById('loading-screen');
+                        if (loadingScreen) {
+                            loadingScreen.style.display = 'none';
+                        }
+                    }
+                }
+
+                /**
+                 * Initialize core services
+                 */
+                async _initializeServices() {
+                    // Initialize Firebase Service
+                    this.services.firebase = new FirebaseService();
+                    await this.services.firebase.init();
+
+                    // Make services globally available
+                    window.firebaseService = this.services.firebase;
+
+                    // Initialize Activity Logger
+                    if (window.firebaseService.isInitialized) {
+                        window.activityLogger = new ActivityLogger(this.services.firebase);
+                    }
+
+                    console.log('✅ Core services initialized');
+                }
+
+                /**
+                 * Initialize application managers
+                 */
+                _initializeManagers() {
+                    // Initialize Lead Manager
+                    this.managers.lead = new LeadManager(this.services.firebase);
+                    window.leadManager = this.managers.lead;
+
+                    // Initialize Admin Manager
+                    this.managers.admin = new AdminManager();
+                    this.managers.admin.init(this.services.firebase);
+                    window.adminManager = this.managers.admin;
+
+                    console.log('✅ Application managers initialized');
+                }
+
+                /**
+                 * Setup global event listeners
+                 */
+                _setupEventListeners() {
+                    // Logout button
+                    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+                        await window.authGuard.signOut();
+                    });
+
+                    // Search functionality
+                    document.getElementById('leads-search')?.addEventListener('input',
+                        DataUtils.debounce((e) => {
+                            this.managers.lead.searchLeads(e.target.value);
+                        }, 300)
+                    );
+
+                    // Refresh button
+                    document.addEventListener('click', (e) => {
+                        if (e.target.closest('.refresh-btn')) {
+                            this.loadDashboardData();
+                        }
+                    });
+
+                    console.log('✅ Event listeners setup complete');
+                }
+
+                /**
+                 * Setup navigation system
+                 */
+                _setupNavigation() {
+                    const navItems = document.querySelectorAll('.nav-item');
+                    navItems.forEach(item => {
+                        item.addEventListener('click', () => {
+                            const section = item.getAttribute('data-section');
+                            if (section) {
+                                this.switchSection(section);
+                            }
+                        });
+                    });
+
+                    console.log('✅ Navigation setup complete');
+                }
+
+                /**
+                 * Setup login form
+                 */
+                _setupLoginForm() {
+                    const loginForm = document.getElementById('login-form');
+                    const togglePasswordBtn = document.getElementById('toggle-password');
+                    const passwordInput = document.getElementById('password');
+
+                    // Toggle password visibility
+                    togglePasswordBtn?.addEventListener('click', () => {
+                        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                        passwordInput.setAttribute('type', type);
+
+                        const icon = type === 'password' ?
+                            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' :
+                            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+                        togglePasswordBtn.innerHTML = icon;
+                    });
+
+                    // Login form submission
+                    loginForm?.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        await this._handleLogin(e);
+                    });
+
+                    console.log('✅ Login form setup complete');
+                }
+
+                /**
+                 * Handle login form submission
+                 */
+                async _handleLogin(e) {
+                    const formData = new FormData(e.target);
+                    const email = formData.get('email');
+                    const password = formData.get('password');
+                    const errorDiv = document.getElementById('error-message');
+                    const loginBtn = document.getElementById('login-btn');
+                    const btnText = loginBtn.querySelector('.btn-text');
+                    const btnSpinner = loginBtn.querySelector('.btn-spinner');
+
+                    try {
+                        // Show loading state
+                        loginBtn.disabled = true;
+                        btnText.style.display = 'none';
+                        btnSpinner.style.display = 'block';
+                        errorDiv.style.display = 'none';
+
+                        // Validate inputs
+                        if (!email || !password) {
+                            throw new Error('Please enter both email and password');
+                        }
+
+                        if (!FormValidation.validateEmail(email)) {
+                            throw new Error('Please enter a valid email address');
+                        }
+
+                        // Attempt login
+                        await firebase.auth().signInWithEmailAndPassword(email, password);
+
+                        // Success - AuthGuard will handle the rest
+                        console.log('✅ Login successful');
+
+                    } catch (error) {
+                        console.error('❌ Login failed:', error);
+
+                        let errorMessage = 'Login failed. Please try again.';
+                        if (error.code === 'auth/user-not-found') {
+                            errorMessage = 'No account found with this email address.';
+                        } else if (error.code === 'auth/wrong-password') {
+                            errorMessage = 'Incorrect password. Please try again.';
+                        } else if (error.code === 'auth/too-many-requests') {
+                            errorMessage = 'Too many failed attempts. Please try again later.';
+                        } else if (error.message) {
+                            errorMessage = error.message;
+                        }
+
+                        errorDiv.textContent = errorMessage;
+                        errorDiv.style.display = 'block';
+
+                        // Log failed attempt
+                        await window.authGuard?.handleAuthError(error);
+
+                    } finally {
+                        // Reset button state
+                        loginBtn.disabled = false;
+                        btnText.style.display = 'inline';
+                        btnSpinner.style.display = 'none';
+                    }
+                }
+
+                /**
+                 * Load dashboard data
+                 */
+                async loadDashboardData() {
+                    try {
+                        console.log('📊 Loading dashboard data...');
+                        UIHelpers.showLoading('global', { message: 'Refreshing dashboard...' });
+
+                        const user = window.authGuard?.getCurrentUser();
+                        const role = window.authGuard?.getCurrentRole();
+
+                        if (!user) {
+                            throw new Error('User not authenticated');
+                        }
+
+                        // Load leads data
+                        await this.managers.lead.fetchLeads();
+                        this.managers.lead.renderLeads();
+
+                        // Load statistics
+                        await this._loadStatistics();
+
+                        // Load recent activity
+                        await this._loadRecentActivity();
+
+                        console.log('✅ Dashboard data loaded successfully');
+
+                    } catch (error) {
+                        console.error('❌ Error loading dashboard data:', error);
+                        UIHelpers.error('Failed to load dashboard data: ' + error.message);
+                    } finally {
+                        UIHelpers.hideLoading('global');
+                    }
+                }
+
+                /**
+                 * Load dashboard statistics
+                 */
+                async _loadStatistics() {
+                    try {
+                        const user = window.authGuard?.getCurrentUser();
+                        const role = window.authGuard?.getCurrentRole();
+
+                        if (!user) return;
+
+                        const stats = await this.services.firebase.ops.getUserStats(user.uid, role);
+
+                        // Update stat cards
+                        document.getElementById('total-leads').textContent = stats.totalLeads || 0;
+                        document.getElementById('active-leads').textContent = stats.activeLeads || 0;
+                        document.getElementById('pending-followups').textContent = stats.pendingFollowups || 0;
+                        document.getElementById('overdue-tasks').textContent = stats.overdueTasks || 0;
+
+                        // Update trends (simplified)
+                        document.getElementById('total-leads-trend').innerHTML = `
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/>
+                            </svg>
+                            ${stats.totalLeads > 0 ? 'Growing' : 'No Data'}
+                        `;
+
+                    } catch (error) {
+                        console.error('❌ Error loading statistics:', error);
+                    }
+                }
+
+                /**
+                 * Load recent activity
+                 */
+                async _loadRecentActivity() {
+                    try {
+                        const activities = await window.activityLogger?.getRecentActivities(5) || [];
+                        const activityList = document.getElementById('activity-list');
+
+                        if (!activityList) return;
+
+                        if (activities.length === 0) {
+                            activityList.innerHTML = '<div class="no-data">No recent activity</div>';
+                            return;
+                        }
+
+                        activityList.innerHTML = activities.map(activity => `
+                            <div class="premium-activity-item">
+                                <div class="activity-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                </div>
+                                <div class="activity-content">
+                                    <p>${this._getActivityDescription(activity.action)}</p>
+                                    <small>${DataUtils.formatTimeAgo(activity.timestamp)}</small>
+                                </div>
+                            </div>
+                        `).join('');
+
+                    } catch (error) {
+                        console.error('❌ Error loading recent activity:', error);
+                    }
+                }
+
+                /**
+                 * Get human-readable activity description
+                 */
+                _getActivityDescription(action) {
+                    const descriptions = {
+                        'login_success': 'Logged into the system',
+                        'create_lead': 'Created a new lead',
+                        'update_lead': 'Updated a lead',
+                        'delete_lead': 'Deleted a lead',
+                        'create_master': 'Created a new master user',
+                        'update_master': 'Updated master user',
+                        'view_reports': 'Viewed reports',
+                        'export_data': 'Exported data'
+                    };
+                    return descriptions[action] || action.replace(/_/g, ' ');
+                }
+
+                /**
+                 * Switch between dashboard sections
+                 */
+                switchSection(sectionName) {
+                    try {
+                        // Update navigation
+                        document.querySelectorAll('.nav-item').forEach(item => {
+                            item.classList.remove('active');
+                            if (item.getAttribute('data-section') === sectionName) {
+                                item.classList.add('active');
+                            }
+                        });
+
+                        // Hide all sections
+                        document.querySelectorAll('.content-section').forEach(section => {
+                            section.classList.remove('active');
+                        });
+
+                        // Show target section
+                        const targetSection = document.getElementById(`${sectionName}-section`);
+                        if (targetSection) {
+                            targetSection.classList.add('active');
+                            this.currentSection = sectionName;
+
+                            // Load section-specific data
+                            this._loadSectionData(sectionName);
+                        }
+
+                        console.log(`✅ Switched to section: ${sectionName}`);
+
+                    } catch (error) {
+                        console.error('❌ Error switching section:', error);
+                        UIHelpers.error('Failed to switch section: ' + error.message);
+                    }
+                }
+
+                /**
+                 * Load section-specific data
+                 */
+                async _loadSectionData(sectionName) {
+                    try {
+                        switch (sectionName) {
+                            case 'overview':
+                                await this.loadDashboardData();
+                                break;
+                            case 'leads':
+                                await this.managers.lead.fetchLeads();
+                                this.managers.lead.renderLeads();
+                                break;
+                            case 'users':
+                                if (window.authGuard?.hasRole('admin')) {
+                                    await this.managers.admin.loadMasterManagementPanel();
+                                }
+                                break;
+                            case 'reports':
+                                if (window.authGuard?.hasPermission('reports:view')) {
+                                    await window.activityLogger?.loadActivityDashboard();
+                                }
+                                break;
+                            default:
+                                console.log(`No specific data loading for section: ${sectionName}`);
+                        }
+                    } catch (error) {
+                        console.error(`❌ Error loading data for section ${sectionName}:`, error);
+                    }
+                }
+
+                /**
+                 * Get status text for leads
+                 */
+                getStatusText(status) {
+                    return this.managers.lead._getStatusText(status);
+                }
+            }
+
+            // ===================================
+            // SECTION 14: GLOBAL INSTANCES & INITIALIZATION
+            // ===================================
+
+            // Create global instances
+            window.DataUtils = DataUtils;
+            window.FormValidation = FormValidation;
+            window.errorHandler = new ErrorHandler();
+            window.sanitizer = new DataSanitizer();
+            window.securityUtils = new SecurityUtils();
+            window.authGuard = new AuthGuard();
+
+            // Initialize UI managers BEFORE CRM app
+            window.modalManager = new ModalManager();
+            window.toastManager = new ToastManager();
+            window.loadingManager = new LoadingManager();
+            window.ConfirmationManager = ConfirmationManager;
+
+            // Initialize error handler with security utils
+            window.errorHandler.init(window.securityUtils);
+
+            // Create main CRM application instance
+            window.crmApp = new CRMApplication();
+
+            // Legacy global function for activity logging
+            async function logActivity(action, details = {}) {
+                try {
+                    if (window.activityLogger) {
+                        return await window.activityLogger.logActivity(action, details);
+                    } else if (window.firebaseService?.isInitialized) {
+                        return await window.firebaseService.ops.logActivity(action, details);
+                    } else {
+                        console.warn('Activity logger not available:', action, details);
+                        return null;
+                    }
+                } catch (error) {
+                    console.error('Failed to log activity:', error);
+                }
+            }
+
+            window.logActivity = logActivity;
+
+            // ===================================
+            // SECTION 15: APPLICATION STARTUP
+            // ===================================
+
+            // Wait for DOM to be ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializeApplication);
+            } else {
+                initializeApplication();
+            }
+
+            /**
+             * Initialize the application
+             */
+            async function initializeApplication() {
+                try {
+                    console.log('🚀 Starting CRM Application...');
+
+                    // Show security indicator
+                    const securityBadge = document.getElementById('security-badge');
+                    if (securityBadge) {
+                        securityBadge.style.display = 'flex';
+                    }
+
+                    // Initialize the main CRM application
+                    await window.crmApp.init();
+
+                    console.log('✅ CRM Application started successfully');
+
+                } catch (error) {
+                    console.error('❌ Failed to start CRM Application:', error);
+
+                    // Show error to user
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'startup-error';
+                    errorDiv.innerHTML = `
+                        <div style="
+                            position: fixed;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            background: white;
+                            padding: 40px;
+                            border-radius: 12px;
+                            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+                            text-align: center;
+                            z-index: 10000;
+                        ">
+                            <h2 style="color: #ef4444; margin-bottom: 16px;">Application Error</h2>
+                            <p style="color: #6b7280; margin-bottom: 24px;">Failed to start the CRM application.</p>
+                            <button onclick="location.reload()" style="
+                                background: #6366f1;
+                                color: white;
+                                border: none;
+                                padding: 12px 24px;
+                                border-radius: 8px;
+                                cursor: pointer;
+                            ">Reload Page</button>
+                        </div>
+                    `;
+                    document.body.appendChild(errorDiv);
+                } finally {
+                    // PERMANENT FIX: Always hide loading screen
+                    const loadingScreen = document.getElementById('loading-screen');
+                    if (loadingScreen) {
+                        loadingScreen.style.display = 'none';
+                    }
+                }
+            }
+
+            // Debug helpers (only in development)
+            if (window.location.hostname === 'localhost' || window.location.hostname.includes('dev')) {
+                window.DEBUG = {
+                    crmApp: window.crmApp,
+                    authGuard: window.authGuard,
+                    firebaseService: window.firebaseService,
+                    leadManager: window.leadManager,
+                    adminManager: window.adminManager,
+                    activityLogger: window.activityLogger,
+
+                    // Helper functions
+                    login: (email, password) => firebase.auth().signInWithEmailAndPassword(email, password),
+                    logout: () => window.authGuard.signOut(),
+                    getUser: () => window.authGuard.getCurrentUser(),
+                    getRole: () => window.authGuard.getCurrentRole(),
+                    loadDashboard: () => window.crmApp.loadDashboardData(),
+                    switchTo: (section) => window.crmApp.switchSection(section)
+                };
+
+                console.log('🔧 Debug helpers available at window.DEBUG');
+            }
+
+            console.log('✅ Real Estate CRM - Complete Application Loaded');
+            console.log('🔧 Version: 3.0 (Consolidated)');
+            console.log('🛡️ Security: Enhanced monitoring and validation active');
+            console.log('📱 UI: Modern component system with accessibility');
+            console.log('🔥 Firebase: Advanced caching and real-time sync');
+            console.log('📊 Features: Lead management, user management, activity logging, reports');
