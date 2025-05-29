@@ -3,8 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real Estate CRM - Admin Panel</title>
+    <title>Real Estate CRM - Professional Admin Panel</title>
+
+    <!-- Original Styles -->
     <link rel="stylesheet" href="styles.css">
+    <!-- Enhanced Professional Styles -->
+    <link rel="stylesheet" href="enhanced-styles.css">
+
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' https://www.gstatic.com https://cdnjs.cloudflare.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -12,48 +22,38 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-<!-- Loading Screen -->
+<!-- Enhanced Loading Screen -->
 <div id="loading-screen" class="loading-screen">
     <div class="loading-spinner"></div>
-    <p>Loading Admin Panel...</p>
+    <p>Loading Professional CRM...</p>
+    <div class="loading-progress">
+        <div class="progress-bar"></div>
+    </div>
 </div>
 
-<!-- Login Page -->
+<!-- Enhanced Login Page -->
 <div id="login-page" class="page login-page">
-    <div class="login-container">
-        <div class="login-header">
-            <div class="logo">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <div class="enhanced-login-container">
+        <div class="enhanced-login-header">
+            <div class="enhanced-logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 9.5L12 4l9 5.5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-11z"/>
                     <polyline points="9,22 9,12 15,12 15,22"/>
                 </svg>
             </div>
             <h1>Real Estate CRM</h1>
-            <p>Admin Panel Login</p>
+            <p>Professional Admin Panel</p>
         </div>
 
-        <form id="login-form" class="login-form">
-            <div class="input-group">
+        <form id="login-form" class="enhanced-login-form">
+            <div class="enhanced-input-group">
+                <input type="email" id="email" name="email" required placeholder=" " autocomplete="email">
                 <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" required placeholder="Enter your email" autocomplete="email">
-                <span class="input-icon">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                        <polyline points="22,6 12,13 2,6"/>
-                    </svg>
-                </span>
             </div>
 
-            <div class="input-group">
+            <div class="enhanced-input-group">
+                <input type="password" id="password" name="password" required placeholder=" " autocomplete="current-password">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required placeholder="Enter your password" autocomplete="current-password">
-                <span class="input-icon">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                        <circle cx="12" cy="16" r="1"/>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                    </svg>
-                </span>
                 <button type="button" id="toggle-password" class="toggle-password">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -71,8 +71,8 @@
                 <a href="#" class="forgot-password">Forgot Password?</a>
             </div>
 
-            <button type="submit" id="login-btn" class="login-btn">
-                <span class="btn-text">Sign In</span>
+            <button type="submit" id="login-btn" class="enhanced-login-btn">
+                <span class="btn-text">Sign In Securely</span>
                 <div class="btn-spinner" style="display: none;">
                     <div class="spinner"></div>
                 </div>
@@ -82,13 +82,17 @@
         </form>
 
         <div class="login-footer">
+            <div class="security-badge">
+                🔒 Enterprise Security
+            </div>
             <p>&copy; 2025 Real Estate CRM. All rights reserved.</p>
         </div>
     </div>
 </div>
 
-<!-- Dashboard Page -->
+<!-- Enhanced Dashboard Page -->
 <div id="dashboard-page" class="page dashboard-page" style="display: none;">
+    <!-- Enhanced Navigation -->
     <nav class="navbar">
         <div class="nav-brand">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -119,13 +123,13 @@
                 Leads
             </button>
 
-            <!-- Users menu - only for admin and master -->
+            <!-- Enhanced Users menu - only for admin and master -->
             <button class="nav-item admin-only master-only" data-section="users" style="display: none;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
                 </svg>
-                Users
+                Master Management
             </button>
 
             <!-- Team Management - only for masters -->
@@ -139,7 +143,7 @@
                 Team Management
             </button>
 
-            <!-- Reports menu - only for admin and master -->
+            <!-- Enhanced Reports menu - only for admin and master -->
             <button class="nav-item admin-only master-only" data-section="reports" style="display: none;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -148,7 +152,16 @@
                     <line x1="16" y1="17" x2="8" y2="17"/>
                     <polyline points="10,9 9,9 8,9"/>
                 </svg>
-                Reports
+                Activity & Reports
+            </button>
+
+            <!-- Settings - Admin only -->
+            <button class="nav-item admin-only" data-section="settings" style="display: none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
+                </svg>
+                System Settings
             </button>
         </div>
 
@@ -170,118 +183,180 @@
     </nav>
 
     <main class="main-content">
-        <!-- Overview Section -->
+        <!-- Enhanced Overview Section -->
         <section id="overview-section" class="content-section active">
             <div class="section-header">
-                <h2>Dashboard Overview</h2>
+                <h2>Professional Dashboard</h2>
                 <p class="role-specific-text">
-                    <span class="admin-only" style="display: none;">Welcome to your Real Estate CRM Admin Panel - Full System Access</span>
-                    <span class="master-only" style="display: none;">Welcome to your Real Estate CRM - Master Dashboard with Team Management</span>
-                    <span class="user-only" style="display: none;">Welcome to your Real Estate CRM - User Dashboard</span>
+                    <span class="admin-only" style="display: none;">Complete system oversight with advanced analytics and security monitoring</span>
+                    <span class="master-only" style="display: none;">Team performance dashboard with comprehensive lead management</span>
+                    <span class="user-only" style="display: none;">Your personal workspace for lead management and productivity</span>
                 </p>
             </div>
 
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon blue">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                            <circle cx="9" cy="7" r="4"/>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <h3 id="total-leads">0</h3>
-                        <p>
-                            <span class="admin-only" style="display: none;">Total Leads</span>
-                            <span class="master-only" style="display: none;">Team Leads</span>
-                            <span class="user-only" style="display: none;">My Leads</span>
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Users stat - only for admin and master -->
-                <div class="stat-card admin-only master-only" style="display: none;">
-                    <div class="stat-icon green">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <h3 id="total-users">0</h3>
-                        <p>
-                            <span class="admin-only" style="display: none;">Total Users</span>
-                            <span class="master-only" style="display: none;">Team Members</span>
-                        </p>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon purple">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 9.5L12 4l9 5.5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-11z"/>
-                            <polyline points="9,22 9,12 15,12 15,22"/>
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <h3 id="new-leads-today">0</h3>
-                        <p>New Leads Today</p>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon orange">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="18" y1="20" x2="18" y2="10"/>
-                            <line x1="12" y1="20" x2="12" y2="4"/>
-                            <line x1="6" y1="20" x2="6" y2="14"/>
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <h3 id="conversion-rate">0%</h3>
-                        <p>Conversion Rate</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="recent-activity">
-                <h3>Recent Activity</h3>
-                <div id="activity-list" class="activity-list">
-                    <div class="activity-item">
-                        <div class="activity-icon">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <!-- Enhanced Stats Grid with New Metrics -->
+            <div class="enhanced-stats-grid">
+                <div class="enhanced-stat-card active-leads">
+                    <div class="enhanced-stat-header">
+                        <div class="enhanced-stat-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                                 <circle cx="9" cy="7" r="4"/>
                                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                                 <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                             </svg>
                         </div>
-                        <div class="activity-content">
-                            <p>Loading recent activity...</p>
-                            <span class="activity-time">Now</span>
+                    </div>
+                    <div class="enhanced-stat-number" id="active-leads-count">0</div>
+                    <div class="enhanced-stat-label">Active Leads</div>
+                    <div class="enhanced-stat-trend trend-up">
+                        <polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/>
+                        <polyline points="17,6 23,6 23,12"/>
+                        </svg>
+                        <span id="active-leads-trend">Loading...</span>
+                    </div>
+                </div>
+
+                <div class="enhanced-stat-card pending-followups">
+                    <div class="enhanced-stat-header">
+                        <div class="enhanced-stat-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12,6 12,12 16,14"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="enhanced-stat-number" id="pending-followups-count">0</div>
+                    <div class="enhanced-stat-label">Pending Follow-ups</div>
+                    <div class="enhanced-stat-trend trend-up">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12,6 12,12 16,14"/>
+                        </svg>
+                        <span id="followups-trend">Loading...</span>
+                    </div>
+                </div>
+
+                <div class="enhanced-stat-card overdue-tasks">
+                    <div class="enhanced-stat-header">
+                        <div class="enhanced-stat-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                <line x1="12" y1="9" x2="12" y2="13"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="enhanced-stat-number" id="overdue-tasks-count">0</div>
+                    <div class="enhanced-stat-label">Overdue Tasks</div>
+                    <div class="enhanced-stat-trend trend-down">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        </svg>
+                        <span id="overdue-trend">Loading...</span>
+                    </div>
+                </div>
+
+                <div class="enhanced-stat-card today-tasks">
+                    <div class="enhanced-stat-header">
+                        <div class="enhanced-stat-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="enhanced-stat-number" id="today-tasks-count">0</div>
+                    <div class="enhanced-stat-label">Today's Tasks</div>
+                    <div class="enhanced-stat-trend trend-up">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20,6 9,17 4,12"/>
+                        </svg>
+                        <span id="today-trend">Loading...</span>
+                    </div>
+                </div>
+
+                <!-- Users stat - only for admin and master -->
+                <div class="enhanced-stat-card admin-only master-only" style="display: none;">
+                    <div class="enhanced-stat-header">
+                        <div class="enhanced-stat-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="enhanced-stat-number" id="total-users">0</div>
+                    <div class="enhanced-stat-label">
+                        <span class="admin-only" style="display: none;">Total Users</span>
+                        <span class="master-only" style="display: none;">Team Members</span>
+                    </div>
+                    <div class="enhanced-stat-trend trend-up">
+                        <span id="users-trend">Loading...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Recent Activity -->
+            <div class="recent-activity">
+                <div class="activity-header">
+                    <h3>Recent Activity</h3>
+                    <div class="activity-controls">
+                        <button class="enhanced-btn enhanced-btn-secondary" onclick="loadDashboardData()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23,4 23,10 17,10"/>
+                                <polyline points="1,20 1,14 7,14"/>
+                                <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10"/>
+                                <path d="M3.51,15a9,9,0,0,0,14.85,3.36L23,14"/>
+                            </svg>
+                            Refresh
+                        </button>
+                        <button class="enhanced-btn enhanced-btn-primary admin-only master-only" onclick="activityLogger.loadActivityDashboard(); showSection('reports');" style="display: none;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                            </svg>
+                            View All Activity
+                        </button>
+                    </div>
+                </div>
+                <div id="activity-list" class="activity-list">
+                    <div class="enhanced-activity-item">
+                        <div class="activity-item-icon general">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="16" x2="12" y2="12"/>
+                                <line x1="12" y1="8" x2="12.01" y2="8"/>
+                            </svg>
+                        </div>
+                        <div class="activity-item-content">
+                            <div class="activity-item-header">
+                                <div class="activity-item-title">Loading recent activity...</div>
+                            </div>
+                            <div class="activity-item-time">Now</div>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Leads Section -->
+        <!-- Enhanced Leads Section -->
         <section id="leads-section" class="content-section">
             <!-- Content will be dynamically loaded -->
         </section>
 
-        <!-- Users Section -->
+        <!-- Enhanced Users/Master Management Section -->
         <section id="users-section" class="content-section">
             <!-- Content will be dynamically loaded -->
         </section>
 
-        <!-- Team Management Section - Master only -->
+        <!-- Enhanced Team Management Section - Master only -->
         <section id="team-section" class="content-section master-only" style="display: none;">
             <div class="section-header">
                 <h2>Team Management</h2>
-                <p>Manage your team members and invitations</p>
+                <p>Manage your team members and performance</p>
             </div>
             <div class="coming-soon">
                 <div class="coming-soon-icon">
@@ -292,42 +367,497 @@
                         <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                     </svg>
                 </div>
-                <h3>Team Management Coming Soon</h3>
-                <p>Advanced team management features are being developed.</p>
+                <h3>Advanced Team Management</h3>
+                <p>Comprehensive team management features with performance tracking, user assignments, and detailed analytics are coming soon.</p>
             </div>
         </section>
 
-        <!-- Reports Section - Admin and Master only -->
+        <!-- Enhanced Reports & Activity Section -->
         <section id="reports-section" class="content-section admin-only master-only" style="display: none;">
-            <div class="section-header">
-                <h2>Reports & Analytics</h2>
-                <p>
-                    <span class="admin-only" style="display: none;">System-wide reports and analytics</span>
-                    <span class="master-only" style="display: none;">Team performance reports and analytics</span>
-                </p>
-            </div>
+            <!-- Content will be dynamically loaded by activity-logger.js -->
+        </section>
 
+        <!-- System Settings Section - Admin only -->
+        <section id="settings-section" class="content-section admin-only" style="display: none;">
+            <div class="section-header">
+                <h2>System Settings</h2>
+                <p>Configure system-wide settings and preferences</p>
+            </div>
             <div class="coming-soon">
                 <div class="coming-soon-icon">
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14,2 14,8 20,8"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
-                        <polyline points="10,9 9,9 8,9"/>
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
                     </svg>
                 </div>
-                <h3>Reports Coming Soon</h3>
-                <p>Advanced reporting and analytics features are being developed.</p>
+                <h3>System Configuration</h3>
+                <p>Advanced system settings including security policies, user permissions, email templates, and system maintenance tools.</p>
             </div>
         </section>
     </main>
 </div>
 
-<!-- Load Scripts -->
+<!-- Enhanced Toast Container -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- Real-time Notification Container -->
+<div id="notification-container" class="notification-container"></div>
+
+<!-- Connection Status Indicator -->
+<div id="connection-status" class="connection-status" style="display: none;">
+    <div class="status-content">
+        <div class="status-icon"></div>
+        <span class="status-text">Checking connection...</span>
+    </div>
+</div>
+
+<!-- Security Alert Banner -->
+<div id="security-banner" class="security-banner" style="display: none;">
+    🔒 Enhanced Security Active - All activities are monitored and logged
+</div>
+
+<!-- Enhanced Loading Spinner -->
+<div id="global-loading-spinner" class="enhanced-modal" style="display: none;">
+    <div class="loading-spinner-content">
+        <div class="enhanced-loading-spinner"></div>
+        <p>Processing your request...</p>
+    </div>
+</div>
+
+<!-- Load Scripts in Correct Order -->
 <script src="sanitizer.js"></script>
 <script src="auth-guard.js"></script>
+<script src="admin-functions.js"></script>
+<script src="activity-logger.js"></script>
 <script src="script.js"></script>
+
+<!-- Enhanced JavaScript for New Features -->
+<script>
+    // Enhanced Dashboard Initialization
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🚀 Enhanced Professional CRM Initializing...');
+
+        // Initialize enhanced features
+        initializeEnhancedFeatures();
+
+        // Setup connection monitoring
+        setupConnectionMonitoring();
+
+        // Initialize security monitoring
+        initializeSecurityMonitoring();
+    });
+
+    function initializeEnhancedFeatures() {
+        // Enhanced login form with better UX
+        setupEnhancedLogin();
+
+        // Real-time dashboard updates
+        setupRealTimeDashboard();
+
+        // Enhanced navigation
+        setupEnhancedNavigation();
+
+        // Professional tooltips
+        setupTooltips();
+    }
+
+    function setupEnhancedLogin() {
+        // Enhanced password toggle
+        const togglePassword = document.getElementById('toggle-password');
+        const passwordInput = document.getElementById('password');
+
+        if (togglePassword && passwordInput) {
+            togglePassword.addEventListener('click', function() {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+
+                // Update icon
+                const icon = this.querySelector('svg');
+                if (type === 'text') {
+                    icon.innerHTML = `
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                        <line x1="1" y1="1" x2="23" y2="23"/>
+                    `;
+                } else {
+                    icon.innerHTML = `
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    `;
+                }
+            });
+        }
+
+        // Enhanced form validation
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            const inputs = loginForm.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.closest('.enhanced-input-group').classList.add('focused');
+                });
+
+                input.addEventListener('blur', function() {
+                    if (!this.value) {
+                        this.closest('.enhanced-input-group').classList.remove('focused');
+                    }
+                });
+            });
+        }
+    }
+
+    function setupRealTimeDashboard() {
+        // Auto-refresh dashboard every 5 minutes
+        setInterval(() => {
+            if (authGuard.isAuthenticated() && document.getElementById('overview-section').classList.contains('active')) {
+                loadDashboardData();
+            }
+        }, 300000); // 5 minutes
+    }
+
+    function setupEnhancedNavigation() {
+        // Add hover effects and animations
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateX(4px)';
+            });
+
+            item.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateX(0)';
+            });
+        });
+    }
+
+    function setupTooltips() {
+        // Add tooltips to important elements
+        const tooltipElements = document.querySelectorAll('[data-tooltip]');
+        tooltipElements.forEach(element => {
+            element.classList.add('enhanced-tooltip');
+        });
+    }
+
+    function setupConnectionMonitoring() {
+        const connectionStatus = document.getElementById('connection-status');
+
+        function updateConnectionStatus(online) {
+            if (connectionStatus) {
+                const statusText = connectionStatus.querySelector('.status-text');
+                const statusIcon = connectionStatus.querySelector('.status-icon');
+
+                if (online) {
+                    statusText.textContent = 'Connected';
+                    connectionStatus.className = 'connection-status online';
+                    setTimeout(() => {
+                        connectionStatus.style.display = 'none';
+                    }, 3000);
+                } else {
+                    statusText.textContent = 'Connection lost - Working offline';
+                    connectionStatus.className = 'connection-status offline';
+                    connectionStatus.style.display = 'flex';
+                }
+            }
+        }
+
+        window.addEventListener('online', () => updateConnectionStatus(true));
+        window.addEventListener('offline', () => updateConnectionStatus(false));
+
+        // Initial check
+        updateConnectionStatus(navigator.onLine);
+    }
+
+    function initializeSecurityMonitoring() {
+        // Show security banner for admins
+        setTimeout(() => {
+            if (authGuard.hasRole('admin')) {
+                const securityBanner = document.getElementById('security-banner');
+                if (securityBanner) {
+                    securityBanner.style.display = 'block';
+                    setTimeout(() => {
+                        securityBanner.style.display = 'none';
+                    }, 10000); // Hide after 10 seconds
+                }
+            }
+        }, 2000);
+
+        // Monitor for suspicious activity
+        let rapidClickCount = 0;
+        let rapidClickTimer = null;
+
+        document.addEventListener('click', function() {
+            rapidClickCount++;
+
+            if (rapidClickTimer) {
+                clearTimeout(rapidClickTimer);
+            }
+
+            rapidClickTimer = setTimeout(() => {
+                if (rapidClickCount > 20) {
+                    logActivity('rapid_clicking_detected', {
+                        clickCount: rapidClickCount,
+                        timeWindow: '10 seconds'
+                    });
+                }
+                rapidClickCount = 0;
+            }, 10000);
+        });
+    }
+
+    // Enhanced Dashboard Data Loading
+    async function loadDashboardData() {
+        if (!authGuard.isAuthenticated()) return;
+
+        console.log('📊 Loading enhanced dashboard data...');
+
+        try {
+            await Promise.all([
+                loadEnhancedOverviewStats(),
+                loadEnhancedRecentActivity()
+            ]);
+
+            console.log('✅ Enhanced dashboard data loaded');
+        } catch (error) {
+            console.error('❌ Error loading enhanced dashboard data:', error);
+            showEnhancedToast('Failed to load dashboard data', 'error');
+        }
+    }
+
+    async function loadEnhancedOverviewStats() {
+        try {
+            const role = authGuard.getCurrentRole();
+            const currentUserId = authGuard.getCurrentUser()?.uid;
+
+            let leadsQuery = db.collection('leads');
+            let usersQuery = db.collection('users');
+
+            // Apply role-based filtering
+            if (role === 'user' && currentUserId) {
+                leadsQuery = leadsQuery.where('assignedTo', '==', currentUserId);
+            } else if (role === 'master' && currentUserId) {
+                const teamMembersSnapshot = await db.collection('users')
+                    .where('linkedMaster', '==', currentUserId)
+                    .get();
+
+                const teamMemberIds = teamMembersSnapshot.docs.map(doc => doc.id);
+                teamMemberIds.push(currentUserId);
+
+                if (teamMemberIds.length > 0) {
+                    leadsQuery = leadsQuery.where('assignedTo', 'in', teamMemberIds);
+                    usersQuery = usersQuery.where('linkedMaster', '==', currentUserId);
+                }
+            }
+
+            const [leadsSnapshot, usersSnapshot] = await Promise.all([
+                leadsQuery.get(),
+                authGuard.hasAnyRole(['admin', 'master']) ? usersQuery.get() : Promise.resolve({ docs: [] })
+            ]);
+
+            const leads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Calculate enhanced metrics
+            const activeLeads = leads.filter(lead =>
+                !['closed', 'dropped', 'notinterested'].includes(lead.status?.toLowerCase())
+            ).length;
+
+            const pendingFollowups = leads.filter(lead =>
+                lead.status?.toLowerCase() === 'followup'
+            ).length;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const overdueTasks = leads.filter(lead => {
+                if (!lead.followupDate) return false;
+                const followupDate = new Date(lead.followupDate.seconds * 1000);
+                return followupDate < today && !['closed', 'dropped'].includes(lead.status?.toLowerCase());
+            }).length;
+
+            const todayTasks = leads.filter(lead => {
+                if (!lead.followupDate) return false;
+                const followupDate = new Date(lead.followupDate.seconds * 1000);
+                return followupDate.toDateString() === today.toDateString();
+            }).length;
+
+            const totalUsers = authGuard.hasAnyRole(['admin', 'master']) ? users.length : 0;
+
+            // Update UI with enhanced animations
+            updateEnhancedStatCard('active-leads-count', activeLeads, '↗ Active');
+            updateEnhancedStatCard('pending-followups-count', pendingFollowups, pendingFollowups > 0 ? '⏰ Urgent' : '✅ Up to date');
+            updateEnhancedStatCard('overdue-tasks-count', overdueTasks, overdueTasks > 0 ? '🚨 Needs attention' : '✅ On track');
+            updateEnhancedStatCard('today-tasks-count', todayTasks, `📅 Scheduled today`);
+            updateEnhancedStatCard('total-users', totalUsers, '👥 Team strong');
+
+            // Store for other functions
+            window.enhancedDashboardData = { leads, users, activeLeads, pendingFollowups, overdueTasks, todayTasks };
+
+        } catch (error) {
+            console.error('❌ Error loading enhanced overview stats:', error);
+            updateEnhancedStatCard('active-leads-count', '-', 'Error loading');
+            updateEnhancedStatCard('pending-followups-count', '-', 'Error loading');
+            updateEnhancedStatCard('overdue-tasks-count', '-', 'Error loading');
+            updateEnhancedStatCard('today-tasks-count', '-', 'Error loading');
+        }
+    }
+
+    async function loadEnhancedRecentActivity() {
+        try {
+            const activityList = document.getElementById('activity-list');
+            if (!activityList) return;
+
+            const data = window.enhancedDashboardData;
+            if (!data || !data.leads) return;
+
+            const recentLeads = data.leads
+                .sort((a, b) => {
+                    const dateA = new Date(a.createdAt ? a.createdAt.seconds * 1000 : 0);
+                    const dateB = new Date(b.createdAt ? b.createdAt.seconds * 1000 : 0);
+                    return dateB - dateA;
+                })
+                .slice(0, 5);
+
+            if (recentLeads.length === 0) {
+                activityList.innerHTML = `
+                    <div class="enhanced-activity-item">
+                        <div class="activity-item-icon general">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="16" x2="12" y2="12"/>
+                                <line x1="12" y1="8" x2="12.01" y2="8"/>
+                            </svg>
+                        </div>
+                        <div class="activity-item-content">
+                            <div class="activity-item-header">
+                                <div class="activity-item-title">No recent activity</div>
+                            </div>
+                            <div class="activity-item-details">Start by adding some leads to see activity here</div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            activityList.innerHTML = recentLeads.map(lead => {
+                const createdAt = new Date(lead.createdAt ? lead.createdAt.seconds * 1000 : 0);
+                const timeAgo = getEnhancedTimeAgo(createdAt);
+
+                return `
+                    <div class="enhanced-activity-item">
+                        <div class="activity-item-icon create">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                        </div>
+                        <div class="activity-item-content">
+                            <div class="activity-item-header">
+                                <div class="activity-item-title">New lead: <strong>${SecurityUtils.sanitizeInput(lead.name || 'Unnamed Lead')}</strong></div>
+                                <div class="activity-item-time">${timeAgo}</div>
+                            </div>
+                            <div class="activity-item-details">
+                                ${SecurityUtils.sanitizeInput(lead.phone || 'No phone')} •
+                                <span class="enhanced-status-badge ${(lead.status || 'newlead').toLowerCase()}">
+                                    ${getStatusText(lead.status)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+        } catch (error) {
+            console.error('❌ Error loading enhanced recent activity:', error);
+        }
+    }
+
+    // Enhanced Utility Functions
+    function updateEnhancedStatCard(elementId, value, trendText) {
+        const numberElement = document.getElementById(elementId);
+        const trendElement = document.getElementById(elementId.replace('-count', '-trend'));
+
+        if (numberElement) {
+            // Animate number change
+            const currentValue = parseInt(numberElement.textContent) || 0;
+            const newValue = parseInt(value) || 0;
+
+            if (currentValue !== newValue) {
+                animateNumber(numberElement, currentValue, newValue, 1000);
+            }
+        }
+
+        if (trendElement && trendText) {
+            trendElement.textContent = trendText;
+        }
+    }
+
+    function animateNumber(element, start, end, duration) {
+        const startTime = performance.now();
+        const difference = end - start;
+
+        function step(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            const current = Math.round(start + (difference * progress));
+            element.textContent = current;
+
+            if (progress < 1) {
+                requestAnimationFrame(step);
+            }
+        }
+
+        requestAnimationFrame(step);
+    }
+
+    function showEnhancedToast(message, type = 'info', duration = 4000) {
+        const toast = document.createElement('div');
+        toast.className = `enhanced-toast ${type}`;
+
+        const iconMap = {
+            success: '✓',
+            error: '✗',
+            warning: '⚠',
+            info: 'ℹ'
+        };
+
+        toast.innerHTML = `
+            <div class="enhanced-toast-icon">
+                ${iconMap[type] || 'ℹ'}
+            </div>
+            <div class="enhanced-toast-content">
+                <div class="enhanced-toast-title">${type.charAt(0).toUpperCase() + type.slice(1)}</div>
+                <div class="enhanced-toast-message">${SecurityUtils.sanitizeInput(message)}</div>
+            </div>
+        `;
+
+        document.body.appendChild(toast);
+
+        // Auto remove
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, duration);
+    }
+
+    function getEnhancedTimeAgo(date) {
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
+
+        if (diffInSeconds < 60) return 'Just now';
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+        if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+
+        return date.toLocaleDateString();
+    }
+
+    // Override global toast function
+    window.showToast = showEnhancedToast;
+
+    console.log('✅ Enhanced Professional CRM Interface Loaded');
+</script>
 
 </body>
 </html>
