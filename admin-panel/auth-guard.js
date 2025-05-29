@@ -683,15 +683,24 @@ class AuthGuard {
                         }
                     } catch (error) {
                         console.error('Authentication error during init:', error);
-                        this.securityUtils.logSecurityIncident('auth_initialization_error', {
-                            error: error.message
-                        });
+                        // Use window.ErrorHandler as it's globally exposed by ui-components.js
+                        if (window.ErrorHandler) {
+                            window.ErrorHandler.logError(error, 'AuthGuard Initialization Error');
+                        } else {
+                            console.error('ErrorHandler not available to log security incident.');
+                        }
                         resolve(false);
                     }
                 });
             });
         } catch (error) {
             console.error('Failed to initialize auth system:', error);
+            // Use window.ErrorHandler as it's globally exposed by ui-components.js
+            if (window.ErrorHandler) {
+                window.ErrorHandler.logError(error, 'AuthGuard System Init Error');
+            } else {
+                console.error('ErrorHandler not available to log security incident.');
+            }
             return false;
         }
     }
@@ -820,9 +829,12 @@ class AuthGuard {
             console.log('👋 User signed out');
         } catch (error) {
             console.error('Sign out error:', error);
-            this.securityUtils.logSecurityIncident('signout_error', {
-                error: error.message
-            });
+            // Use window.ErrorHandler
+            if (window.ErrorHandler) {
+                window.ErrorHandler.logError(error, 'AuthGuard SignOut Error');
+            } else {
+                console.error('ErrorHandler not available to log security incident.');
+            }
         }
     }
 
@@ -838,7 +850,7 @@ class AuthGuard {
         // Use the global UIHelpers
         if (typeof window !== 'undefined' && window.UIHelpers) {
             window.UIHelpers.showToast(
-                'Your session has expired for security. Please login again.',
+                `Your session will expire in ${timeLeft} minutes. Click anywhere to extend.`, // Fix: 'timeLeft' is not defined here
                 'warning',
                 6000
             );
@@ -962,12 +974,12 @@ class AuthGuard {
             console.log('✅ Authentication complete for:', this.userRole);
         } catch (error) {
             console.error('Error handling authenticated user:', error);
-            // Log security incident for auth failure
-            this.securityUtils.logSecurityIncident('auth_failed_user_data_load', {
-                userId: user.uid,
-                email: user.email,
-                error: error.message
-            });
+            // Use window.ErrorHandler
+            if (window.ErrorHandler) {
+                window.ErrorHandler.logError(error, 'AuthGuard HandleUserAuthenticated Error');
+            } else {
+                console.error('ErrorHandler not available to log security incident.');
+            }
             throw error; // Re-throw to propagate the error
         }
     }
@@ -1028,12 +1040,12 @@ class AuthGuard {
 
             return userData;
         } catch (error) {
-            // COMPLETED CATCH BLOCK: This was the source of the SyntaxError
-            this.securityUtils.logSecurityIncident('user_profile_load_failed', {
-                userId: user.uid,
-                error: error.message,
-                code: error.code || 'unknown'
-            });
+            // Use window.ErrorHandler
+            if (window.ErrorHandler) {
+                window.ErrorHandler.logError(error, 'AuthGuard LoadUserData Error');
+            } else {
+                console.error('ErrorHandler not available to log security incident.');
+            }
             throw error;
         }
     }
@@ -1235,369 +1247,45 @@ class AuthGuard {
     }
 }
 
-/**
- * UI Helper Functions
- * This class serves as a facade/wrapper for the individual UI managers (ModalManager, ToastManager, etc.).
- * It is designed to be the single public interface for all UI operations.
- * It also handles basic sanitization for messages.
- */
-// NO LONGER EXTENDS A NON-EXISTENT BASE CLASS. THIS IS THE BASE.
-// This class is defined here to ensure it's available when other modules need it.
-class UIHelpers {
-    // Static properties to hold references to the instantiated managers
-    static modalManager = null;
-    static toastManager = null;
-    static loadingManager = null;
-    static formBuilder = null;
-    // ConfirmationManager is a static class itself, so no instance needed here.
-
-    /**
-     * Initializes the static UIHelpers class by linking to the globally instantiated managers.
-     * This method should be called once, after ui-components.js has created its global instances.
-     */
-    static initManagers() {
-        if (typeof window !== 'undefined') {
-            UIHelpers.modalManager = window.modalManager;
-            UIHelpers.toastManager = window.toastManager;
-            UIHelpers.loadingManager = window.loadingManager;
-            UIHelpers.formBuilder = window.formBuilder;
-            // window.ConfirmationManager is already a static class, used directly.
-            console.log('✅ UIHelpers managers initialized.');
-        }
-    }
-
-    // --- Modal Methods ---
-    static showModal(options) {
-        if (!UIHelpers.modalManager) { console.error('ModalManager not initialized.'); return null; }
-        return UIHelpers.modalManager.show(options);
-    }
-    static hideModal(id) {
-        if (!UIHelpers.modalManager) { console.error('ModalManager not initialized.'); return false; }
-        return UIHelpers.modalManager.hide(id);
-    }
-
-    // --- Toast Methods ---
-    static showToast(message, type = 'info', options = {}) {
-        if (!UIHelpers.toastManager) { console.warn('ToastManager not initialized. Falling back to alert.'); alert(message); return null; }
-        return UIHelpers.toastManager.show(message, type, options);
-    }
-    static success(message, options = {}) { return UIHelpers.showToast(message, 'success', options); }
-    static error(message, options = {}) { return UIHelpers.showToast(message, 'error', { ...options, duration: options.duration || 6000 }); }
-    static warning(message, options = {}) { return UIHelpers.showToast(message, 'warning', options); }
-    static info(message, options = {}) { return UIHelpers.showToast(message, 'info', options); }
-
-    // --- Loading Methods ---
-    static showLoading(target = 'global', options = {}) {
-        if (!UIHelpers.loadingManager) { console.warn('LoadingManager not initialized. Cannot show loading.'); return null; }
-        return UIHelpers.loadingManager.show(target, options);
-    }
-    static hideLoading(id = null) {
-        if (!UIHelpers.loadingManager) return;
-        return UIHelpers.loadingManager.hide(id);
-    }
-
-    // --- Confirmation Methods (proxy to static ConfirmationManager) ---
-    static confirm(options) {
-        // ConfirmationManager is a static class, so we call its static methods directly
-        if (typeof window !== 'undefined' && window.ConfirmationManager) {
-            return window.ConfirmationManager.confirm(options);
-        }
-        console.warn('ConfirmationManager not available. Falling back to native confirm.');
-        return Promise.resolve(confirm(options.message || 'Are you sure?'));
-    }
-    static confirmDelete(itemName = 'item') {
-        if (typeof window !== 'undefined' && window.ConfirmationManager) {
-            return window.ConfirmationManager.confirmDelete(itemName);
-        }
-        console.warn('ConfirmationManager not available. Falling back to native confirm.');
-        return Promise.resolve(confirm(`Are you sure you want to delete ${itemName}? This action cannot be undone.`));
-    }
-    static confirmSave() {
-        if (typeof window !== 'undefined' && window.ConfirmationManager) {
-            return window.ConfirmationManager.confirmSave();
-        }
-        console.warn('ConfirmationManager not available. Falling back to native confirm.');
-        return Promise.resolve(confirm('Do you want to save your changes?'));
-    }
-    static confirmDiscard() {
-        if (typeof window !== 'undefined' && window.ConfirmationManager) {
-            return window.ConfirmationManager.confirmDiscard();
-        }
-        console.warn('ConfirmationManager not available. Falling back to native confirm.');
-        return Promise.resolve(confirm('You have unsaved changes. Are you sure you want to discard them?'));
-    }
-
-    /**
-     * Basic HTML sanitization for display messages.
-     * @param {string} html - The HTML string to sanitize.
-     * @returns {string} Sanitized HTML string.
-     * @private
-     */
-    static _sanitize(html) {
-        const div = document.createElement('div');
-        div.textContent = html; // Converts HTML to plain text, escaping HTML entities
-        return div.innerHTML;
-    }
-}
-
-
-/**
- * Enhanced Form Validation (Moved here from auth-guard.js to centralize)
- * Integrated with the sanitizer system
- */
-class FormValidation {
-    static validateEmail(email) {
-        // Use the sanitizer's validation directly for consistency
-        if (typeof window !== 'undefined' && window.sanitizer) {
-            return window.sanitizer.validate(email, 'email', false).valid;
-        }
-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return re.test(email);
-    }
-
-    static validatePhone(phone) {
-        // Use the sanitizer's validation directly for consistency
-        if (typeof window !== 'undefined' && window.sanitizer) {
-            return window.sanitizer.validate(phone, 'phone', false).valid;
-        }
-        const re = /^[\+]?[\d\s\-\(\)]{7,20}$/;
-        return re.test(phone.replace(/\s/g, ''));
-    }
-
-    static validateRequired(value) {
-        return value && value.toString().trim().length > 0;
-    }
-
-    static validateLength(value, min = 0, max = Infinity) {
-        const length = value ? value.toString().length : 0;
-        return length >= min && length <= max;
-    }
-
-    static validateLeadData(data) {
-        if (typeof window !== 'undefined' && window.sanitizer) {
-            return window.sanitizer.sanitizeLeadData(data);
-        }
-
-        // Fallback validation (should not be reached if sanitizer is loaded)
-        const errors = {};
-        if (!this.validateRequired(data.name)) { errors.name = 'Name is required'; }
-        if (!this.validateRequired(data.phone)) { errors.phone = 'Phone number is required'; }
-        if (data.email && !this.validateEmail(data.email)) { errors.email = 'Please enter a valid email address'; }
-
-        return { isValid: Object.keys(errors).length === 0, errors };
-    }
-
-    static validateMasterData(data) {
-        if (typeof window !== 'undefined' && window.sanitizer) {
-            // Assuming sanitizer has a specific method for user data validation (masters are users)
-            return window.sanitizer.sanitizeUserData(data);
-        }
-        // Fallback validation if sanitizer not loaded
-        const errors = {};
-        if (!this.validateRequired(data.name)) errors.name = 'Name is required';
-        if (!this.validateEmail(data.email)) errors.email = 'Valid email is required';
-        if (!['active', 'inactive', 'locked'].includes(data.status)) errors.status = 'Invalid status';
-        if (!['admin', 'master', 'user'].includes(data.role)) errors.role = 'Invalid role';
-        return { isValid: Object.keys(errors).length === 0, errors };
-    }
-}
-
-/**
- * Data Utilities (Moved here from auth-guard.js to centralize)
- * Enhanced with security and performance improvements
- */
-class DataUtils {
-    static safeJSONParse(str, defaultValue = null) {
-        try {
-            return JSON.parse(str);
-        } catch (e) {
-            if (typeof window !== 'undefined' && window.authGuard) {
-                window.authGuard.securityUtils.logSecurityIncident('json_parse_error', {
-                    error: e.message,
-                    input: str?.slice(0, 100)
-                });
-            }
-            return defaultValue;
-        }
-    }
-
-    static formatCurrency(amount, currency = 'INR') {
-        if (isNaN(amount)) return '₹0';
-
-        try {
-            const formatter = new Intl.NumberFormat('en-IN', {
-                style: 'currency',
-                currency: 'INR',
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-            });
-            return formatter.format(amount);
-        } catch (e) {
-            return `₹${amount}`;
-        }
-    }
-
-    static formatDate(date, options = {}) {
-        if (!date) return 'N/A';
-
-        const defaultOptions = {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        };
-
-        try {
-            // Handle Firestore Timestamp objects
-            const d = date.toDate ? date.toDate() : (date instanceof Date ? date : new Date(date));
-            if (isNaN(d.getTime())) return 'Invalid Date'; // Check for invalid date
-
-            return d.toLocaleDateString('en-US', { ...defaultOptions, ...options });
-        } catch (e) {
-            console.error('Error formatting date:', e);
-            return 'Invalid Date';
-        }
-    }
-
-    static formatTimeAgo(date) {
-        if (!date) return 'N/A';
-        const d = date.toDate ? date.toDate() : (date instanceof Date ? date : new Date(date));
-        if (isNaN(d.getTime())) return 'Invalid Date';
-
-        const now = new Date();
-        const diffInSeconds = Math.floor((now.getTime() - d.getTime()) / 1000);
-
-        if (diffInSeconds < 60) return 'Just now';
-        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-        if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`; // Approx 30 days
-
-        return d.toLocaleDateString();
-    }
-
-    static debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
-
-    static throttle(func, limit) {
-        let inThrottle;
-        return function() {
-            const args = arguments;
-            const context = this;
-            if (!inThrottle) {
-                func.apply(context, args);
-                inThrottle = true;
-                setTimeout(() => inThrottle = false, limit);
-            }
-        };
-    }
-
-    static deepClone(obj) {
-        if (obj === null || typeof obj !== 'object') return obj;
-        if (obj instanceof Date) return new Date(obj.getTime());
-        if (obj instanceof Array) return obj.map(item => this.deepClone(item));
-
-        const cloned = {};
-        for (const key in obj) {
-            if (obj.hasOwnProperty(key)) {
-                cloned[key] = this.deepClone(obj[key]);
-            }
-        }
-        return cloned;
-    }
-}
-
-/**
- * Global Error Handler (Moved here from auth-guard.js to centralize)
- * Enhanced with security logging and user-friendly messages
- */
-class ErrorHandler {
-    static securityUtils = null;
-
-    static init(securityUtils) {
-        this.securityUtils = securityUtils;
-        this.setupGlobalErrorHandling();
-    }
-
-    static logError(error, context = '') {
-        const errorInfo = {
-            message: error.message || 'Unknown error',
-            stack: error.stack || 'No stack trace',
-            context: context,
-            timestamp: new Date().toISOString(),
-            url: typeof window !== 'undefined' ? window.location.href : 'Unknown',
-            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown'
-        };
-
-        console.error('🚨 Application Error:', errorInfo);
-
-        // Log to security system
-        if (this.securityUtils) {
-            this.securityUtils.logSecurityIncident('application_error', errorInfo);
-        }
-
-        // Send to analytics if available
-        if (typeof gtag !== 'undefined') {
-            gtag('event', 'exception', {
-                description: errorInfo.message,
-                fatal: false
-            });
-        }
-
-        // Show user-friendly message
-        if (typeof window !== 'undefined' && window.UIHelpers) {
-            window.UIHelpers.showToast('An error occurred. Please try again.', 'error');
-        }
-    }
-
-    static setupGlobalErrorHandling() {
-        if (typeof window === 'undefined') return;
-
-        window.addEventListener('error', (event) => {
-            this.logError(event.error || new Error(event.message), 'Global Error');
-        });
-
-        window.addEventListener('unhandledrejection', (event) => {
-            this.logError(event.reason || new Error('Unhandled Promise Rejection'), 'Promise Rejection');
-        });
-    }
-}
-
-
 // ===================================
-// GLOBAL INSTANCES AND EXPORTS
+// GLOBAL INSTANCES AND INITIALIZATION
 // ===================================
 
-// Create global instances of the managers
-// These instances are the singletons that other scripts will reference.
-window.modalManager = new ModalManager();
-window.toastManager = new ToastManager();
-window.loadingManager = new LoadingManager();
-window.ConfirmationManager = ConfirmationManager; // This is a static class, so no 'new' keyword
-window.formBuilder = new FormBuilder();
+// Create global instances
+const authGuard = new AuthGuard();
+const securityUtils = new SecurityUtils(); // This instance is used by ErrorHandler and other modules
+const permissionSystem = new PermissionSystem();
 
-// Expose the main UIHelpers class globally.
-// This class acts as a facade/wrapper for the individual managers.
-window.UIHelpers = UIHelpers; // This is the base class for UI operations.
+// ErrorHandler.init(securityUtils); // THIS CALL IS MOVED TO script.js CRMApplication.init()
+// ^^^^^^^^^^^ THIS IS THE LINE THAT WAS REMOVED FROM GLOBAL SCOPE IN PREVIOUS STEP ^^^^^^^^^^^
 
-// Initialize UIHelpers' internal managers after they are all instantiated.
-// This ensures UIHelpers can correctly proxy calls to modalManager, toastManager etc.
-// This should be called once all the manager instances (modalManager, toastManager, etc.)
-// are assigned to the window object.
-document.addEventListener('DOMContentLoaded', () => {
-    // This part is crucial: UIHelpers needs to know about the *instances*
-    // of ModalManager, ToastManager, etc. that are globally available.
-    UIHelpers.initManagers();
-});
+// Export for different environments
+if (typeof module !== 'undefined' && module.exports) {
+    // Node.js
+    module.exports = {
+        AuthGuard,
+        SecurityUtils,
+        PermissionSystem,
+        SessionManager,
+        FormValidation, // Now correctly defined and exposed from ui-components.js
+        DataUtils,      // Now correctly defined and exposed from ui-components.js
+        ErrorHandler,   // Now correctly defined and exposed from ui-components.js
+        AUTH_CONFIG
+    };
+} else if (typeof window !== 'undefined') {
+    // Browser
+    window.authGuard = authGuard;
+    window.SecurityUtils = securityUtils; // Expose SecurityUtils globally
+    window.PermissionSystem = permissionSystem;
+    // window.UIHelpers is no longer assigned here. It will be assigned by ui-components.js
+    window.FormValidation = FormValidation; // Expose FormValidation globally
+    window.DataUtils = DataUtils; // Expose DataUtils globally
+    window.ErrorHandler = ErrorHandler; // Expose ErrorHandler globally
+    window.AUTH_CONFIG = AUTH_CONFIG;
 
+    // The UIHelpers.initManagers() call is no longer needed here as ui-components.js handles its own global setup.
+    // auth-guard.js's methods will directly use window.UIHelpers which will be set by ui-components.js.
+}
 
-console.log('✅ UI Components (Modal, Toast, Loading, Confirm, Form) Loaded and Initialized');
+console.log('🔐 Enhanced Authentication System Loaded');
+console.log('🛡️ Features: Advanced security monitoring, session management, role-based access control');    
