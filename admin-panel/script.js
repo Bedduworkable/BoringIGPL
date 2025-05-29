@@ -3892,14 +3892,14 @@ class AuthGuard {
                     const lastActiveText = master.lastActive ? DataUtils.formatTimeAgo(master.lastActive) : 'Never logged in';
 
                     return `
-                        <div class="master-card" data-master-id="${master.id}">
+                        <div class="master-card" data-master-id="${master.id}" onclick="window.adminManager?.masterManager?.viewMasterDetails('${master.id}')">
                             <div class="master-header">
                                 <div class="master-avatar">
                                     ${(master.name || master.email || 'M').charAt(0).toUpperCase()}
                                 </div>
                                 <div class="master-info">
-                                    <h3>${DataUtils.sanitizeHtml(master.name || 'Unnamed Master')}</h3>
-                                    <p>${DataUtils.sanitizeHtml(master.email)}</p>
+                                    <h3>${window.sanitizer?.sanitize(master.name || 'Unnamed Master', 'text') || master.name || 'Unnamed Master'}</h3>
+                                    <p>${window.sanitizer?.sanitize(master.email, 'email') || master.email}</p>
                                     <div class="master-badge">Master</div>
                                 </div>
                             </div>
@@ -3922,7 +3922,7 @@ class AuthGuard {
                                     </span>
                                     <small>Last active: ${lastActiveText}</small>
                                 </div>
-                                <div class="master-actions">
+                                <div class="master-actions" onclick="event.stopPropagation()">
                                     <button class="action-btn edit" onclick="window.adminManager?.masterManager?.editMaster('${master.id}')">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -4044,6 +4044,434 @@ class AuthGuard {
                     } finally {
                         UIHelpers.hideLoading();
                     }
+                }
+
+                /**
+                 * View Master Details with Users and Leads
+                 */
+                async viewMasterDetails(masterId) {
+                    try {
+                        console.log('📋 Loading master details for:', masterId);
+
+                        // Show loading in the section instead of global
+                        const targetSection = document.getElementById('users-section');
+                        if (targetSection) {
+                            targetSection.innerHTML = `
+                                <div class="loading-state">
+                                    <div class="loading-spinner"></div>
+                                    <p>Loading master details...</p>
+                                </div>
+                            `;
+                        }
+
+                        // Get master data with error handling
+                        let master;
+                        try {
+                            master = await this.firebaseService.db.get('users', masterId);
+                            console.log('✅ Master loaded:', master);
+                        } catch (error) {
+                            console.error('❌ Error loading master:', error);
+                            throw new Error('Could not load master data');
+                        }
+
+                        if (!master) {
+                            throw new Error('Master not found');
+                        }
+
+                        // Get team members with error handling
+                        let teamMembers = [];
+                        try {
+                            teamMembers = await this.firebaseService.db.get('users', null, {
+                                filters: [{ field: 'linkedMaster', operator: '==', value: masterId }]
+                            });
+                            console.log('✅ Team members loaded:', teamMembers.length);
+                        } catch (error) {
+                            console.error('❌ Error loading team members:', error);
+                            teamMembers = []; // Continue with empty team
+                        }
+
+                        // Get leads with error handling
+                        let leads = [];
+                        try {
+                            const teamUserIds = [masterId, ...teamMembers.map(member => member.id)];
+
+                            // If teamUserIds is large, we might hit Firestore 'in' limit (10 items)
+                            if (teamUserIds.length <= 10) {
+                                leads = await this.firebaseService.db.get('leads', null, {
+                                    filters: [{ field: 'assignedTo', operator: 'in', value: teamUserIds }]
+                                });
+                            } else {
+                                // If more than 10 users, get leads for master only
+                                leads = await this.firebaseService.db.get('leads', null, {
+                                    filters: [{ field: 'assignedTo', operator: '==', value: masterId }]
+                                });
+                            }
+                            console.log('✅ Leads loaded:', leads.length);
+                        } catch (error) {
+                            console.error('❌ Error loading leads:', error);
+                            leads = []; // Continue with empty leads
+                        }
+
+                        // Render the view
+                        this._renderMasterDetailView(master, teamMembers, leads);
+                        console.log('✅ Master detail view completed');
+
+                    } catch (error) {
+                        console.error('❌ Error in viewMasterDetails:', error);
+
+                        // Show error in the section
+                        const targetSection = document.getElementById('users-section');
+                        if (targetSection) {
+                            targetSection.innerHTML = `
+                                <div class="error-state">
+                                    <div class="error-icon">⚠️</div>
+                                    <h3>Error Loading Master Details</h3>
+                                    <p>${error.message}</p>
+                                    <button class="btn btn-primary" onclick="window.adminManager?.masterManager?.loadManagementPanel()">
+                                        Back to Masters
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    }
+                }
+
+                /**
+                 * Render Master Detail View
+                 */
+                _renderMasterDetailView(master, teamMembers, leads) {
+                    const targetSection = document.getElementById('users-section');
+                    if (!targetSection) return;
+
+                    // Calculate statistics
+                    const masterStats = this._calculateMasterDetailStats(master, teamMembers, leads);
+
+                    targetSection.innerHTML = `
+                        <div class="master-detail-container">
+                            <!-- Header with Back Button -->
+                            <div class="master-detail-header">
+                                <button class="back-btn" onclick="window.adminManager?.masterManager?.loadManagementPanel()">
+                                    <span class="back-icon">←</span>
+                                    Back to Masters
+                                </button>
+                                <div class="master-detail-title">
+                                    <h1>${this._sanitize(master.name || 'Unnamed Master')}</h1>
+                                    <p>Master Details & Team Overview</p>
+                                </div>
+                            </div>
+
+                            <!-- Master Info Card -->
+                            <div class="master-info-card">
+                                <div class="master-profile">
+                                    <div class="master-avatar-large">
+                                        ${(master.name || master.email || 'M').charAt(0).toUpperCase()}
+                                    </div>
+                                    <div class="master-profile-info">
+                                        <h2>${this._sanitize(master.name || 'Unnamed Master')}</h2>
+                                        <p class="master-email">${this._sanitize(master.email)}</p>
+                                        <div class="master-badges">
+                                            <span class="role-badge master">Master</span>
+                                            <span class="status-badge ${master.status === 'active' ? 'status-active' : 'status-inactive'}">
+                                                ${master.status === 'active' ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </div>
+                                        <div class="master-meta">
+                                            <div class="meta-item">
+                                                <span class="meta-label">Joined:</span>
+                                                <span class="meta-value">${master.createdAt ? DataUtils.formatDate(master.createdAt) : 'Unknown'}</span>
+                                            </div>
+                                            <div class="meta-item">
+                                                <span class="meta-label">Last Login:</span>
+                                                <span class="meta-value">${master.lastLogin ? DataUtils.formatTimeAgo(master.lastLogin) : 'Never'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Stats Overview -->
+                                <div class="master-stats-overview">
+                                    <div class="stat-item">
+                                        <div class="stat-icon">👥</div>
+                                        <div class="stat-content">
+                                            <div class="stat-number">${masterStats.totalUsers}</div>
+                                            <div class="stat-label">Team Members</div>
+                                        </div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-icon">📋</div>
+                                        <div class="stat-content">
+                                            <div class="stat-number">${masterStats.totalLeads}</div>
+                                            <div class="stat-label">Total Leads</div>
+                                        </div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-icon">✅</div>
+                                        <div class="stat-content">
+                                            <div class="stat-number">${masterStats.activeLeads}</div>
+                                            <div class="stat-label">Active Leads</div>
+                                        </div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-icon">🎯</div>
+                                        <div class="stat-content">
+                                            <div class="stat-number">${masterStats.conversionRate}%</div>
+                                            <div class="stat-label">Conversion</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Team Members Section -->
+                            <div class="team-section">
+                                <div class="section-header">
+                                    <h2>Team Members (${teamMembers.length})</h2>
+                                    <button class="btn btn-primary" onclick="window.adminManager?.masterManager?.addTeamMember('${master.id}')">
+                                        <span>👤</span>
+                                        Add Team Member
+                                    </button>
+                                </div>
+                                <div class="team-members-grid">
+                                    ${teamMembers.length > 0 ? teamMembers.map(member => this._renderTeamMemberCard(member, leads)).join('') : this._renderEmptyTeamState()}
+                                </div>
+                            </div>
+
+                            <!-- Leads Overview Section -->
+                            <div class="leads-section">
+                                <div class="section-header">
+                                    <h2>Team Leads Overview (${leads.length})</h2>
+                                    <div class="leads-filters">
+                                        <select id="user-filter" onchange="window.adminManager?.masterManager?.filterLeadsByUser(this.value)">
+                                            <option value="all">All Team Members</option>
+                                            <option value="${master.id}">${master.name} (Master)</option>
+                                            ${teamMembers.map(member => `<option value="${member.id}">${member.name}</option>`).join('')}
+                                        </select>
+                                        <select id="status-filter" onchange="window.adminManager?.masterManager?.filterLeadsByStatus(this.value)">
+                                            <option value="all">All Statuses</option>
+                                            <option value="newLead">New Leads</option>
+                                            <option value="contacted">Contacted</option>
+                                            <option value="interested">Interested</option>
+                                            <option value="booked">Booked</option>
+                                            <option value="closed">Closed</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="leads-table-container">
+                                    <table class="leads-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Lead Name</th>
+                                                <th>Phone</th>
+                                                <th>Status</th>
+                                                <th>Assigned To</th>
+                                                <th>Source</th>
+                                                <th>Created</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="master-leads-table">
+                                            ${this._renderLeadsTableRows(leads, [...teamMembers, master])}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    // Store data for filtering
+                    this.currentMasterData = {
+                        master,
+                        teamMembers,
+                        leads,
+                        allUsers: [...teamMembers, master]
+                    };
+                }
+
+                /**
+                 * Render Team Member Card
+                 */
+                _renderTeamMemberCard(member, leads) {
+                    const memberLeads = leads.filter(lead => lead.assignedTo === member.id);
+                    const activeLeads = memberLeads.filter(lead => !['closed', 'dropped', 'notinterested'].includes(lead.status?.toLowerCase()));
+
+                    return `
+                        <div class="team-member-card">
+                            <div class="member-header">
+                                <div class="member-avatar">
+                                    ${(member.name || member.email || 'U').charAt(0).toUpperCase()}
+                                </div>
+                                <div class="member-info">
+                                    <h3>${this._sanitize(member.name || 'Unnamed User')}</h3>
+                                    <p>${this._sanitize(member.email)}</p>
+                                    <span class="role-badge user">User</span>
+                                </div>
+                            </div>
+                            <div class="member-stats">
+                                <div class="member-stat">
+                                    <span class="stat-number">${memberLeads.length}</span>
+                                    <span class="stat-label">Total Leads</span>
+                                </div>
+                                <div class="member-stat">
+                                    <span class="stat-number">${activeLeads.length}</span>
+                                    <span class="stat-label">Active</span>
+                                </div>
+                            </div>
+                            <div class="member-actions">
+                                <button class="action-btn view" onclick="window.adminManager?.masterManager?.viewUserLeads('${member.id}')">
+                                    <span>👁️</span>
+                                    View Leads
+                                </button>
+                                <button class="action-btn edit" onclick="window.adminManager?.masterManager?.editTeamMember('${member.id}')">
+                                    <span>✏️</span>
+                                    Edit
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                /**
+                 * Render Leads Table Rows
+                 */
+                _renderLeadsTableRows(leads, users) {
+                    if (leads.length === 0) {
+                        return '<tr><td colspan="7" class="empty-cell">No leads found for this team</td></tr>';
+                    }
+
+                    return leads.map(lead => {
+                        const assignedUser = users.find(user => user.id === lead.assignedTo);
+                        const createdDate = lead.createdAt ? DataUtils.formatDate(lead.createdAt) : 'Unknown';
+
+                        return `
+                            <tr data-lead-id="${lead.id}" data-user-id="${lead.assignedTo}" data-status="${lead.status}">
+                                <td>
+                                    <div class="lead-name">
+                                        <strong>${this._sanitize(lead.name || 'Unnamed Lead')}</strong>
+                                    </div>
+                                </td>
+                                <td>${this._sanitize(lead.phone || 'No phone')}</td>
+                                <td>
+                                    <span class="status-badge status-${lead.status || 'new'}">
+                                        ${this._getStatusText(lead.status)}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="assigned-user">
+                                        <span class="user-avatar-small">
+                                            ${(assignedUser?.name || assignedUser?.email || 'U').charAt(0).toUpperCase()}
+                                        </span>
+                                        ${this._sanitize(assignedUser?.name || 'Unknown User')}
+                                    </div>
+                                </td>
+                                <td>${this._sanitize(lead.source || 'Unknown')}</td>
+                                <td>${createdDate}</td>
+                                <td>
+                                    <div class="lead-actions">
+                                        <button class="action-btn view" onclick="window.leadManager?.viewLead('${lead.id}')">
+                                            <span>👁️</span>
+                                        </button>
+                                        <button class="action-btn edit" onclick="window.leadManager?.editLead('${lead.id}')">
+                                            <span>✏️</span>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                /**
+                 * Calculate Master Detail Statistics
+                 */
+                _calculateMasterDetailStats(master, teamMembers, leads) {
+                    const totalUsers = teamMembers.length;
+                    const totalLeads = leads.length;
+                    const activeLeads = leads.filter(lead => !['closed', 'dropped', 'notinterested'].includes(lead.status?.toLowerCase())).length;
+                    const closedLeads = leads.filter(lead => ['closed', 'booked'].includes(lead.status?.toLowerCase())).length;
+                    const conversionRate = totalLeads > 0 ? Math.round((closedLeads / totalLeads) * 100) : 0;
+
+                    return {
+                        totalUsers,
+                        totalLeads,
+                        activeLeads,
+                        closedLeads,
+                        conversionRate
+                    };
+                }
+
+                /**
+                 * Filter leads by user
+                 */
+                filterLeadsByUser(userId) {
+                    if (!this.currentMasterData) return;
+
+                    const rows = document.querySelectorAll('#master-leads-table tr');
+                    rows.forEach(row => {
+                        const rowUserId = row.getAttribute('data-user-id');
+                        if (userId === 'all' || rowUserId === userId) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                }
+
+                /**
+                 * Filter leads by status
+                 */
+                filterLeadsByStatus(status) {
+                    if (!this.currentMasterData) return;
+
+                    const rows = document.querySelectorAll('#master-leads-table tr');
+                    rows.forEach(row => {
+                        const rowStatus = row.getAttribute('data-status');
+                        if (status === 'all' || rowStatus === status) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                }
+
+                /**
+                 * Render Empty Team State
+                 */
+                _renderEmptyTeamState() {
+                    return `
+                        <div class="empty-team-state">
+                            <div class="empty-icon">👥</div>
+                            <h3>No Team Members</h3>
+                            <p>This master doesn't have any team members yet.</p>
+                            <button class="btn btn-primary" onclick="window.adminManager?.masterManager?.addTeamMember()">
+                                Add Team Member
+                            </button>
+                        </div>
+                    `;
+                }
+
+                /**
+                 * Get Status Text
+                 */
+                _getStatusText(status) {
+                    const statusMap = {
+                        'newLead': 'New Lead',
+                        'contacted': 'Contacted',
+                        'interested': 'Interested',
+                        'followup': 'Follow Up',
+                        'visit': 'Visit',
+                        'booked': 'Booked',
+                        'closed': 'Closed',
+                        'notinterested': 'Not Interested',
+                        'dropped': 'Dropped'
+                    };
+                    return statusMap[status] || 'New Lead';
+                }
+
+                /**
+                 * Sanitize text for display
+                 */
+                _sanitize(text) {
+                    if (!text) return '';
+                    return text.toString().replace(/[<>]/g, '');
                 }
 
                 async editMaster(masterId) {
@@ -4779,35 +5207,160 @@ class AuthGuard {
                 /**
                  * Load dashboard data
                  */
+                /**
+                 * Load dashboard data
+                 */
                 async loadDashboardData() {
-                    try {
-                        console.log('📊 Loading dashboard data...');
-                        UIHelpers.showLoading('global', { message: 'Refreshing dashboard...' });
+                    console.log('📊 Loading dashboard data...');
 
+                    try {
                         const user = window.authGuard?.getCurrentUser();
                         const role = window.authGuard?.getCurrentRole();
 
                         if (!user) {
-                            throw new Error('User not authenticated');
+                            console.warn('User not authenticated, skipping dashboard load');
+                            return;
                         }
 
-                        // Load leads data
-                        await this.managers.lead.fetchLeads();
-                        this.managers.lead.renderLeads();
+                        // Show loading for specific elements instead of global
+                        this._showDashboardLoading(true);
 
-                        // Load statistics
-                        await this._loadStatistics();
-
-                        // Load recent activity
-                        await this._loadRecentActivity();
+                        // Load data with error handling for each section
+                        await Promise.allSettled([
+                            this._safeLoadLeads(),
+                            this._safeLoadStatistics(),
+                            this._safeLoadRecentActivity()
+                        ]);
 
                         console.log('✅ Dashboard data loaded successfully');
 
                     } catch (error) {
                         console.error('❌ Error loading dashboard data:', error);
-                        UIHelpers.error('Failed to load dashboard data: ' + error.message);
+                        // Don't show error toast for dashboard loads, just log it
                     } finally {
-                        UIHelpers.hideLoading('global');
+                        // Always hide loading
+                        this._showDashboardLoading(false);
+                    }
+                }
+
+                /**
+                 * Show/hide dashboard loading state
+                 */
+                _showDashboardLoading(show) {
+                    const elements = [
+                        document.getElementById('total-leads'),
+                        document.getElementById('active-leads'),
+                        document.getElementById('pending-followups'),
+                        document.getElementById('overdue-tasks'),
+                        document.getElementById('activity-list'),
+                        document.getElementById('leads-table-body')
+                    ];
+
+                    elements.forEach(el => {
+                        if (el) {
+                            if (show) {
+                                el.innerHTML = '<div class="loading-text">Loading...</div>';
+                            }
+                        }
+                    });
+                }
+
+                /**
+                 * Safely load leads data
+                 */
+                async _safeLoadLeads() {
+                    try {
+                        if (this.managers.lead) {
+                            await this.managers.lead.fetchLeads();
+                            this.managers.lead.renderLeads();
+                        }
+                    } catch (error) {
+                        console.error('Error loading leads:', error);
+                        // Set fallback content
+                        const tbody = document.getElementById('leads-table-body');
+                        if (tbody) {
+                            tbody.innerHTML = '<tr><td colspan="6" class="loading-cell">Unable to load leads</td></tr>';
+                        }
+                    }
+                }
+
+                /**
+                 * Safely load statistics
+                 */
+                async _safeLoadStatistics() {
+                    try {
+                        const user = window.authGuard?.getCurrentUser();
+                        const role = window.authGuard?.getCurrentRole();
+
+                        if (!user || !this.services.firebase?.ops) {
+                            throw new Error('Services not available');
+                        }
+
+                        const stats = await this.services.firebase.ops.getUserStats(user.uid, role);
+
+                        // Update stat cards with fallback values
+                        document.getElementById('total-leads').textContent = stats.totalLeads || 0;
+                        document.getElementById('active-leads').textContent = stats.activeLeads || 0;
+                        document.getElementById('pending-followups').textContent = stats.pendingFollowups || 0;
+                        document.getElementById('overdue-tasks').textContent = stats.completedLeads || 0;
+
+                    } catch (error) {
+                        console.error('Error loading statistics:', error);
+                        // Set fallback values
+                        document.getElementById('total-leads').textContent = '0';
+                        document.getElementById('active-leads').textContent = '0';
+                        document.getElementById('pending-followups').textContent = '0';
+                        document.getElementById('overdue-tasks').textContent = '0';
+                    }
+                }
+
+                /**
+                 * Safely load recent activity
+                 */
+                async _safeLoadRecentActivity() {
+                    try {
+                        const activities = await window.activityLogger?.getRecentActivities(5) || [];
+                        const activityList = document.getElementById('activity-list');
+
+                        if (!activityList) return;
+
+                        if (activities.length === 0) {
+                            activityList.innerHTML = `
+                                <div class="activity-item">
+                                    <div class="activity-icon">📝</div>
+                                    <div class="activity-content">
+                                        <div class="activity-text">No recent activity</div>
+                                        <div class="activity-time">Start by creating some leads</div>
+                                    </div>
+                                </div>
+                            `;
+                            return;
+                        }
+
+                        activityList.innerHTML = activities.map(activity => `
+                            <div class="activity-item">
+                                <div class="activity-icon">📝</div>
+                                <div class="activity-content">
+                                    <div class="activity-text">${this._getActivityDescription(activity.action)}</div>
+                                    <div class="activity-time">${DataUtils.formatTimeAgo(activity.timestamp)}</div>
+                                </div>
+                            </div>
+                        `).join('');
+
+                    } catch (error) {
+                        console.error('Error loading recent activity:', error);
+                        const activityList = document.getElementById('activity-list');
+                        if (activityList) {
+                            activityList.innerHTML = `
+                                <div class="activity-item">
+                                    <div class="activity-icon">⚠️</div>
+                                    <div class="activity-content">
+                                        <div class="activity-text">Unable to load recent activity</div>
+                                        <div class="activity-time">Please try refreshing</div>
+                                    </div>
+                                </div>
+                            `;
+                        }
                     }
                 }
 
@@ -4932,15 +5485,25 @@ class AuthGuard {
                 /**
                  * Load section-specific data
                  */
+                /**
+                 * Load section-specific data
+                 */
                 async _loadSectionData(sectionName) {
+                    console.log(`Loading data for section: ${sectionName}`);
+
                     try {
                         switch (sectionName) {
                             case 'overview':
-                                await this.loadDashboardData();
+                                // Don't await this, let it load in background
+                                this.loadDashboardData().catch(err =>
+                                    console.error('Background dashboard load failed:', err)
+                                );
                                 break;
                             case 'leads':
-                                await this.managers.lead.fetchLeads();
-                                this.managers.lead.renderLeads();
+                                if (this.managers.lead) {
+                                    await this.managers.lead.fetchLeads();
+                                    this.managers.lead.renderLeads();
+                                }
                                 break;
                             case 'users':
                                 if (window.authGuard?.hasRole('admin')) {
@@ -4956,7 +5519,8 @@ class AuthGuard {
                                 console.log(`No specific data loading for section: ${sectionName}`);
                         }
                     } catch (error) {
-                        console.error(`❌ Error loading data for section ${sectionName}:`, error);
+                        console.error(`Error loading data for section ${sectionName}:`, error);
+                        // Don't show user-facing errors for section loads
                     }
                 }
 

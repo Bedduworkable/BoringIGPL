@@ -3,983 +3,271 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real Estate CRM - Premium Enterprise Dashboard</title>
+    <title>Real Estate CRM - Clean Dashboard</title>
 
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' https://www.gstatic.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 
-    <link rel="stylesheet" href="styles.css">
-
+    <!-- Firebase Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-    <style>
-        /* Premium Professional Design System */
-        :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            --danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            --glass-bg: rgba(255, 255, 255, 0.95);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --shadow-premium: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-            --border-premium: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        /* Premium Login Design */
-        .login-page {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .login-page::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background:
-                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1), transparent 50%),
-                radial-gradient(circle at 40% 80%, rgba(120, 119, 198, 0.2), transparent 50%);
-            animation: backgroundShift 20s ease-in-out infinite;
-        }
-
-        @keyframes backgroundShift {
-            0%, 100% { transform: translateX(0px) translateY(0px); }
-            33% { transform: translateX(-30px) translateY(-20px); }
-            66% { transform: translateX(20px) translateY(-30px); }
-        }
-
-        .login-container {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: var(--border-premium);
-            box-shadow: var(--shadow-premium);
-            border-radius: 24px;
-            padding: 48px 40px;
-            max-width: 480px;
-            position: relative;
-            z-index: 10;
-            animation: slideInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .login-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: var(--primary-gradient);
-            border-radius: 24px 24px 0 0;
-        }
-
-        .premium-logo {
-            width: 88px;
-            height: 88px;
-            background: var(--primary-gradient);
-            border-radius: 22px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0 auto 32px;
-            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .premium-logo::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            right: -50%;
-            bottom: -50%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent);
-            transform: rotate(45deg);
-            animation: logoShine 3s infinite;
-        }
-
-        @keyframes logoShine {
-            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-            50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-            100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-        }
-
-        .login-header h1 {
-            font-size: 32px;
-            font-weight: 800;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-align: center;
-            margin-bottom: 8px;
-            letter-spacing: -0.5px;
-        }
-
-        .login-header p {
-            color: #64748b;
-            font-size: 16px;
-            text-align: center;
-            font-weight: 500;
-            margin-bottom: 40px;
-        }
-
-        /* Premium Input Design */
-        .premium-input-group {
-            position: relative;
-            margin-bottom: 28px;
-        }
-
-        .premium-input-group label {
-            position: absolute;
-            top: 50%;
-            left: 20px;
-            transform: translateY(-50%);
-            color: #94a3b8;
-            font-weight: 600;
-            font-size: 15px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .premium-input-group input {
-            width: 100%;
-            padding: 20px 20px;
-            border: 2px solid #e2e8f0;
-            border-radius: 16px;
-            font-size: 16px;
-            background: rgba(255, 255, 255, 0.8);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            z-index: 2;
-        }
-
-        .premium-input-group input:focus,
-        .premium-input-group input:not(:placeholder-shown) {
-            border-color: #667eea;
-            background: rgba(255, 255, 255, 1);
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-        }
-
-        .premium-input-group input:focus + label,
-        .premium-input-group input:not(:placeholder-shown) + label {
-            top: -14px;
-            left: 16px;
-            font-size: 13px;
-            color: #667eea;
-            background: white;
-            padding: 0 12px;
-            border-radius: 12px;
-            font-weight: 700;
-        }
-
-        .premium-toggle-password {
-            position: absolute;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: #94a3b8;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-            z-index: 3;
-        }
-
-        .premium-toggle-password:hover {
-            color: #667eea;
-            background: rgba(102, 126, 234, 0.1);
-        }
-
-        .premium-login-btn {
-            width: 100%;
-            padding: 20px;
-            background: var(--primary-gradient);
-            border: none;
-            border-radius: 16px;
-            color: white;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            margin-top: 16px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .premium-login-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
-        }
-
-        .premium-login-btn:active {
-            transform: translateY(-1px);
-        }
-
-        .premium-login-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s ease;
-        }
-
-        .premium-login-btn:hover::before {
-            left: 100%;
-        }
-
-        /* Premium Dashboard Navigation */
-        .navbar {
-            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-            border-right: 1px solid #e2e8f0;
-            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.04);
-        }
-
-        .nav-brand {
-            padding: 24px;
-            border-bottom: 1px solid #e2e8f0;
-            background: var(--primary-gradient);
-            color: white;
-            font-weight: 800;
-            font-size: 18px;
-            text-align: center;
-        }
-
-        .nav-item {
-            margin: 8px 16px;
-            border-radius: 12px;
-            font-weight: 600;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .nav-item::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            background: var(--primary-gradient);
-            transform: scaleY(0);
-            transition: transform 0.3s ease;
-        }
-
-        .nav-item.active::before,
-        .nav-item:hover::before {
-            transform: scaleY(1);
-        }
-
-        .nav-item.active {
-            background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
-            color: #667eea;
-            font-weight: 700;
-        }
-
-        .nav-item:hover:not(.active) {
-            background: #f8fafc;
-            transform: translateX(4px);
-        }
-
-        /* Premium Metric Cards */
-        .premium-metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 24px;
-            margin-bottom: 40px;
-        }
-
-        .premium-metric-card {
-            background: white;
-            border-radius: 20px;
-            padding: 32px 28px;
-            box-shadow: var(--shadow-card);
-            border: 1px solid rgba(226, 232, 240, 0.8);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .premium-metric-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: var(--primary-gradient);
-        }
-
-        .premium-metric-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
-        }
-
-        .premium-metric-card.success::before { background: var(--success-gradient); }
-        .premium-metric-card.warning::before { background: var(--warning-gradient); }
-        .premium-metric-card.danger::before { background: var(--danger-gradient); }
-
-        .metric-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .premium-metric-icon {
-            width: 64px;
-            height: 64px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            background: var(--primary-gradient);
-            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
-        }
-
-        .metric-value {
-            font-size: 42px;
-            font-weight: 800;
-            color: #1e293b;
-            margin-bottom: 8px;
-            line-height: 1;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-        }
-
-        .metric-label {
-            color: #64748b;
-            font-size: 14px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-        }
-
-        .metric-trend {
-            font-size: 13px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 16px;
-            padding: 8px 12px;
-            border-radius: 20px;
-            background: rgba(0, 0, 0, 0.04);
-        }
-
-        .trend-up {
-            color: #10b981;
-            background: rgba(16, 185, 129, 0.1);
-        }
-        .trend-down {
-            color: #ef4444;
-            background: rgba(239, 68, 68, 0.1);
-        }
-        .trend-neutral {
-            color: #6b7280;
-            background: rgba(107, 114, 128, 0.1);
-        }
-
-        /* Premium Activity Section */
-        .premium-activity-section {
-            background: white;
-            border-radius: 20px;
-            padding: 32px;
-            box-shadow: var(--shadow-card);
-            margin-bottom: 40px;
-            border: 1px solid rgba(226, 232, 240, 0.8);
-        }
-
-        .activity-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 28px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #f1f5f9;
-        }
-
-        .activity-header h3 {
-            font-size: 22px;
-            font-weight: 800;
-            color: #1e293b;
-        }
-
-        .premium-filter-btn {
-            padding: 10px 20px;
-            border: 2px solid #e2e8f0;
-            background: white;
-            border-radius: 25px;
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .premium-filter-btn.active {
-            background: var(--primary-gradient);
-            color: white;
-            border-color: transparent;
-            box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
-        }
-
-        .premium-filter-btn:hover:not(.active) {
-            border-color: #667eea;
-            color: #667eea;
-            transform: translateY(-2px);
-        }
-
-        /* Enhanced Activity Items */
-        .premium-activity-item {
-            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-            border-left: 4px solid;
-            border-image: var(--primary-gradient) 1;
-            margin-bottom: 16px;
-            border-radius: 0 12px 12px 0;
-            padding: 20px 24px;
-            transition: all 0.3s ease;
-        }
-
-        .premium-activity-item:hover {
-            transform: translateX(4px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-
-        /* Security Indicators */
-        .security-badge {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(16, 185, 129, 0.9);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            backdrop-filter: blur(10px);
-        }
-
-        .security-badge::before {
-            content: '🔒';
-            font-size: 14px;
-        }
-
-        /* Loading States */
-        .premium-loading {
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            animation: premiumShimmer 2s infinite;
-            border-radius: 8px;
-            height: 20px;
-        }
-
-        @keyframes premiumShimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-
-        /* Premium Animations */
-        .fade-in-up {
-            animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(50px) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        /* Premium Responsive Design */
-        @media (max-width: 768px) {
-            .login-container {
-                margin: 20px;
-                padding: 36px 28px;
-            }
-
-            .premium-metrics-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 16px;
-            }
-
-            .premium-metric-card {
-                padding: 24px 20px;
-            }
-
-            .metric-value {
-                font-size: 32px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .premium-metrics-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .login-header h1 {
-                font-size: 28px;
-            }
-
-            .premium-logo {
-                width: 72px;
-                height: 72px;
-            }
-        }
-
-        /* Role visibility with smooth transitions */
-        .admin-only, .master-only {
-            display: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .admin-only.show, .master-only.show {
-            display: flex;
-            opacity: 1;
-        }
-
-        /* Premium Error States */
-        .premium-error {
-            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-            border: 2px solid #fca5a5;
-            color: #991b1b;
-            padding: 16px 20px;
-            border-radius: 12px;
-            font-weight: 600;
-            margin-top: 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .premium-error::before {
-            content: '⚠️';
-            font-size: 16px;
-        }
-
-        /* Premium Success States */
-        .premium-success {
-            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-            border: 2px solid #86efac;
-            color: #166534;
-            padding: 16px 20px;
-            border-radius: 12px;
-            font-weight: 600;
-            margin-top: 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .premium-success::before {
-            content: '✅';
-            font-size: 16px;
-        }
-    </style>
+    <!-- Clean Styles -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="clean-styles.css">
 </head>
 <body>
+<!-- Security Badge -->
 <div class="security-badge" id="security-badge" style="display: none;">
-    Enterprise Security Active
+    <span>🔒</span>
+    Secure Connection
 </div>
 
+<!-- Loading Screen -->
 <div id="loading-screen" class="loading-screen">
-    <div class="loading-spinner"></div>
-    <p class="loading-message">Loading Premium CRM...</p>
+    <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p class="loading-message">Loading Real Estate CRM...</p>
+    </div>
 </div>
 
+<!-- Login Page -->
 <div id="login-page" class="page login-page">
     <div class="login-container">
         <div class="login-header">
-            <div class="premium-logo">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <path d="M3 9.5L12 4l9 5.5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-11z"/>
-                    <polyline points="9,22 9,12 15,12 15,22"/>
-                </svg>
+            <div class="logo">
+                <div class="logo-icon">🏢</div>
             </div>
             <h1>Real Estate CRM</h1>
-            <p>Premium Enterprise Dashboard</p>
+            <p>Sign in to your dashboard</p>
         </div>
 
         <form id="login-form" class="login-form">
-            <div class="premium-input-group">
-                <input type="email" id="email" name="email" required placeholder=" " autocomplete="email">
+            <div class="form-group">
                 <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required placeholder="Enter your email">
             </div>
 
-            <div class="premium-input-group">
-                <input type="password" id="password" name="password" required placeholder=" " autocomplete="current-password">
+            <div class="form-group">
                 <label for="password">Password</label>
-                <button type="button" id="toggle-password" class="premium-toggle-password">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                </button>
+                <div class="password-input">
+                    <input type="password" id="password" name="password" required placeholder="Enter your password">
+                    <button type="button" id="toggle-password" class="toggle-password">
+                        <span class="show-text">👁️</span>
+                        <span class="hide-text" style="display: none;">🙈</span>
+                    </button>
+                </div>
             </div>
 
             <div class="form-options">
-                <label class="remember-me">
+                <label class="checkbox-label">
                     <input type="checkbox" id="remember-me">
+                    <span class="checkmark"></span>
                     Remember me
                 </label>
-                <a href="#" class="forgot-password">Forgot Password?</a>
             </div>
 
-            <button type="submit" id="login-btn" class="premium-login-btn">
-                <span class="btn-text">Sign In Securely</span>
+            <button type="submit" id="login-btn" class="login-btn">
+                <span class="btn-text">Sign In</span>
                 <div class="btn-spinner" style="display: none;">
                     <div class="spinner"></div>
                 </div>
             </button>
 
-            <div id="error-message" class="premium-error" style="display: none;"></div>
+            <div id="error-message" class="error-message" style="display: none;"></div>
         </form>
-
-        <div class="login-footer">
-            <p>&copy; 2025 Premium Real Estate CRM. Enterprise Security Enabled.</p>
-        </div>
     </div>
 </div>
 
+<!-- Dashboard Page -->
 <div id="dashboard-page" class="page dashboard-page" style="display: none;">
-    <nav class="navbar">
-        <div class="nav-brand">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M3 9.5L12 4l9 5.5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-11z"/>
-                <polyline points="9,22 9,12 15,12 15,22"/>
-            </svg>
-            <span>Premium CRM</span>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">🏢</div>
+                <span class="logo-text">Real Estate CRM</span>
+            </div>
         </div>
 
         <div class="nav-menu">
-            <button class="nav-item active" data-section="overview">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="7" height="7"/>
-                    <rect x="14" y="3" width="7" height="7"/>
-                    <rect x="14" y="14" width="7" height="7"/>
-                    <rect x="3" y="14" width="7" height="7"/>
-                </svg>
-                Dashboard
-            </button>
+            <div class="nav-item active" data-section="overview">
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">Dashboard</span>
+            </div>
 
-            <button class="nav-item" data-section="leads">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                </svg>
-                Leads
-            </button>
+            <div class="nav-item" data-section="leads">
+                <span class="nav-icon">👥</span>
+                <span class="nav-text">Leads</span>
+            </div>
 
-            <button class="nav-item master-only" data-section="team" id="team-nav">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-                Team Management
-            </button>
+            <div class="nav-item admin-only master-only" data-section="users">
+                <span class="nav-icon">👤</span>
+                <span class="nav-text">Master Management</span>
+            </div>
 
-            <button class="nav-item admin-only" data-section="users" id="users-nav">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                </svg>
-                User Management
-            </button>
-
-            <button class="nav-item admin-only master-only" data-section="reports" id="reports-nav">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14,2 14,8 20,8"/>
-                </svg>
-                Reports & Analytics
-            </button>
+            <div class="nav-item admin-only" data-section="reports">
+                <span class="nav-icon">📈</span>
+                <span class="nav-text">Reports</span>
+            </div>
         </div>
 
-        <div class="nav-user">
+        <div class="sidebar-footer">
             <div class="user-info">
-                <span id="user-name">Loading...</span>
-                <span id="user-email">...</span>
-                <span id="user-role" class="user-role">USER</span>
+                <div class="user-avatar">
+                    <span id="user-initial">U</span>
+                </div>
+                <div class="user-details">
+                    <div class="user-name" id="user-name">Loading...</div>
+                    <div class="user-role" id="user-role">USER</div>
+                </div>
             </div>
             <button id="logout-btn" class="logout-btn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                    <polyline points="16,17 21,12 16,7"/>
-                    <line x1="21" y1="12" x2="9" y2="12"/>
-                </svg>
+                <span>🚪</span>
                 Logout
             </button>
         </div>
     </nav>
 
+    <!-- Main Content -->
     <main class="main-content">
+        <!-- Overview Section -->
         <section id="overview-section" class="content-section active">
-            <div class="section-header">
-                <h2>Premium Dashboard</h2>
-                <p>Enterprise real estate CRM with advanced security and analytics</p>
+            <div class="page-header">
+                <h1>Dashboard Overview</h1>
+                <p>Welcome to your Real Estate CRM dashboard</p>
             </div>
 
-            <div class="premium-metrics-grid">
-                <div class="premium-metric-card fade-in-up">
-                    <div class="metric-header">
-                        <div class="premium-metric-icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="metric-value" id="total-leads">-</div>
-                    <div class="metric-label">Total Leads</div>
-                    <div class="metric-trend trend-up" id="total-leads-trend">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/>
-                        </svg>
-                        Loading...
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="total-leads">0</div>
+                        <div class="stat-label">Total Leads</div>
                     </div>
                 </div>
 
-                <div class="premium-metric-card success fade-in-up" style="animation-delay: 0.1s;">
-                    <div class="metric-header">
-                        <div class="premium-metric-icon" style="background: var(--success-gradient);">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <polyline points="20,6 9,17 4,12"/>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="metric-value" id="active-leads">-</div>
-                    <div class="metric-label">Active Leads</div>
-                    <div class="metric-trend trend-up" id="active-leads-trend">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/>
-                        </svg>
-                        Loading...
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="active-leads">0</div>
+                        <div class="stat-label">Active Leads</div>
                     </div>
                 </div>
 
-                <div class="premium-metric-card warning fade-in-up" style="animation-delay: 0.2s;">
-                    <div class="metric-header">
-                        <div class="premium-metric-icon" style="background: var(--warning-gradient);">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <circle cx="12" cy="12" r="10"/>
-                                <polyline points="12,6 12,12 16,14"/>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="metric-value" id="pending-followups">-</div>
-                    <div class="metric-label">Pending Follow-ups</div>
-                    <div class="metric-trend trend-neutral" id="followups-trend">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                        </svg>
-                        Loading...
+                <div class="stat-card">
+                    <div class="stat-icon">⏰</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="pending-followups">0</div>
+                        <div class="stat-label">Follow-ups</div>
                     </div>
                 </div>
 
-                <div class="premium-metric-card danger fade-in-up" style="animation-delay: 0.3s;">
-                    <div class="metric-header">
-                        <div class="premium-metric-icon" style="background: var(--danger-gradient);">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                                <line x1="12" y1="9" x2="12" y2="13"/>
-                                <line x1="12" y1="17" x2="12.01" y2="17"/>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="metric-value" id="overdue-tasks">-</div>
-                    <div class="metric-label">Overdue Tasks</div>
-                    <div class="metric-trend trend-down" id="overdue-trend">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="1,18 8.5,10.5 13.5,15.5 23,6"/>
-                        </svg>
-                        Loading...
+                <div class="stat-card">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="overdue-tasks">0</div>
+                        <div class="stat-label">Conversions</div>
                     </div>
                 </div>
             </div>
 
-            <div class="premium-activity-section">
-                <div class="activity-header">
-                    <h3>Recent Activity</h3>
+            <!-- Recent Activity -->
+            <div class="content-card">
+                <div class="card-header">
+                    <h2>Recent Activity</h2>
                     <div class="activity-filters">
-                        <button class="premium-filter-btn active" data-filter="all">All</button>
-                        <button class="premium-filter-btn" data-filter="leads">Leads</button>
-                        <button class="premium-filter-btn" data-filter="contacts">Contacts</button>
-                        <button class="premium-filter-btn" data-filter="visits">Visits</button>
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="leads">Leads</button>
+                        <button class="filter-btn" data-filter="users">Users</button>
                     </div>
                 </div>
-
-                <div id="activity-list" class="activity-list">
-                    <div class="premium-activity-item">
-                        <div class="activity-icon">
-                            <div class="premium-loading" style="width: 40px; height: 40px; border-radius: 10px;"></div>
-                        </div>
-                        <div class="activity-content">
-                            <div class="premium-loading" style="width: 250px; height: 18px; margin-bottom: 8px;"></div>
-                            <div class="premium-loading" style="width: 120px; height: 14px;"></div>
+                <div class="card-content">
+                    <div id="activity-list" class="activity-list">
+                        <div class="activity-item">
+                            <div class="activity-icon">📝</div>
+                            <div class="activity-content">
+                                <div class="activity-text">Loading recent activities...</div>
+                                <div class="activity-time">Just now</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="data-table-container">
-                <div class="table-header">
-                    <h3>Recent Leads</h3>
-                    <div style="display: flex; gap: 12px;">
+            <!-- Recent Leads Table -->
+            <div class="content-card">
+                <div class="card-header">
+                    <h2>Recent Leads</h2>
+                    <div class="card-actions">
                         <div class="search-box">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="8"/>
-                                <path d="M21 21l-4.35-4.35"/>
-                            </svg>
-                            <input type="text" placeholder="Search leads..." id="leads-search">
+                            <input type="text" id="leads-search" placeholder="Search leads...">
+                            <span class="search-icon">🔍</span>
                         </div>
-                        <button class="refresh-btn" onclick="crmApp.loadDashboardData()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="23,4 23,10 17,10"/>
-                                <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10"/>
-                            </svg>
-                            Refresh
-                        </button>
+                        <button class="refresh-btn">🔄 Refresh</button>
                     </div>
                 </div>
-
-                <div class="table-wrapper">
-                    <table class="data-table">
-                        <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Phone</th>
-                            <th>Status</th>
-                            <th>Source</th>
-                            <th>Created</th>
-                            <th>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody id="leads-table-body">
-                        <tr>
-                            <td colspan="6" class="loading-row">Loading your premium dashboard...</td>
-                        </tr>
-                        </tbody>
-                    </table>
+                <div class="card-content">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                                <th>Source</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody id="leads-table-body">
+                            <tr>
+                                <td colspan="6" class="loading-cell">Loading leads...</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </section>
 
+        <!-- Leads Section -->
         <section id="leads-section" class="content-section">
-            <div class="section-header">
-                <h2>Lead Management</h2>
-                <p>Advanced lead tracking and management</p>
+            <div class="page-header">
+                <h1>Lead Management</h1>
+                <p>Manage and track your leads</p>
             </div>
             <div class="coming-soon">
-                <div class="coming-soon-icon">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                    </svg>
-                </div>
-                <h3>Premium Lead Management</h3>
-                <p>Advanced lead management with AI insights coming soon.</p>
+                <div class="coming-soon-icon">👥</div>
+                <h3>Advanced Lead Management</h3>
+                <p>Complete lead management system coming soon.</p>
             </div>
         </section>
 
-        <section id="team-section" class="content-section master-only">
-            <div class="section-header">
-                <h2>Team Management</h2>
-                <p>Manage your team performance and productivity</p>
+        <!-- Users Section -->
+        <section id="users-section" class="content-section admin-only master-only">
+            <div class="page-header">
+                <h1>Master Management</h1>
+                <p>Manage your master users and teams</p>
             </div>
-            <div class="coming-soon">
-                <div class="coming-soon-icon">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                    </svg>
-                </div>
-                <h3>Advanced Team Analytics</h3>
-                <p>Comprehensive team management dashboard coming soon.</p>
-            </div>
+            <!-- Content will be loaded dynamically -->
         </section>
 
-        <section id="users-section" class="content-section admin-only">
-            <div class="section-header">
-                <h2>User Management</h2>
-                <p>Manage system users and permissions</p>
+        <!-- Reports Section -->
+        <section id="reports-section" class="content-section admin-only">
+            <div class="page-header">
+                <h1>Reports & Analytics</h1>
+                <p>View detailed reports and analytics</p>
             </div>
-            <div class="coming-soon">
-                <div class="coming-soon-icon">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                    </svg>
-                </div>
-                <h3>Enterprise User Management</h3>
-                <p>Advanced user management with role-based access control.</p>
-            </div>
-        </section>
-
-        <section id="reports-section" class="content-section admin-only master-only">
-            <div class="section-header">
-                <h2>Reports & Analytics</h2>
-                <p>Advanced business intelligence and reporting</p>
-            </div>
-            <div class="coming-soon">
-                <div class="coming-soon-icon">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14,2 14,8 20,8"/>
-                    </svg>
-                </div>
-                <h3>Premium Analytics Suite</h3>
-                <p>Advanced reporting with predictive analytics coming soon.</p>
-            </div>
+            <!-- Content will be loaded dynamically -->
         </section>
     </main>
 </div>
 
-
-
-
+<!-- Scripts -->
 <script src="script.js"></script>
 </body>
 </html>
